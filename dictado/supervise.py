@@ -10,7 +10,7 @@ gets the real exit code:
 - a crash                                          -> crash report, restart within ~2 s
   with --after-crash <report> so the app says so on the pill and recovers the audio;
   the 3rd crash in 10 minutes stops the restarts (state "crashed": Home says so).
-- with hang_s (macOS): frozen longer than that (FreezeWatch's marker) -> report, kill, restart.
+- with hang_s (both platforms, 60 s): frozen longer than that (FreezeWatch's marker) -> report, kill, restart.
 
 On macOS the "handle" is the pid (MacProc): the watchdog isn't the app's parent, so there is
 no exit code; crash.is_crash then goes by the fault trace and the log.
@@ -30,7 +30,7 @@ log = logging.getLogger(__name__)
 MUTEX = "Local\\DictadoSupervisor"
 MAX_CRASHES, WINDOW_S = 3, 600
 RESTART_WAIT_S = 30
-HANG_S = 60.0  # macOS: a main thread frozen this long is killed and restarted
+HANG_S = 60.0  # a main thread frozen this long (as watched by the watchdog) is killed and restarted
 
 
 def _read(p: Path) -> dict:
@@ -52,6 +52,7 @@ class Supervisor:
         self.crashes: list[float] = []
         self.waiting_since: float | None = None
         self.hang_s = hang_s
+        self._frozen_seen: tuple | None = None  # (pid, when this watchdog first saw its frozen marker)
 
     def _status(self) -> dict:
         return _read(self.data / "status.json")
@@ -99,14 +100,20 @@ class Supervisor:
         if not self.hang_s:
             return "ok"
         m = crash.crashes_dir(self.data) / "live" / f"frozen-{self.pid}"
-        try:
-            since = float(m.read_text(encoding="utf-8"))
-        except (OSError, ValueError):
+        if not m.exists():
+            self._frozen_seen = None
             return "ok"
-        if self.clock() - since < self.hang_s:
+        # Count the freeze from when WE first saw it, not from the app's last beat: after the
+        # PC sleeps the last beat is hours old, and a just-woken healthy app would be killed.
+        now = self.clock()
+        if self._frozen_seen is None or self._frozen_seen[0] != self.pid:
+            self._frozen_seen = (self.pid, now)
             return "ok"
+        if now - self._frozen_seen[1] < self.hang_s:
+            return "ok"
+        self._frozen_seen = None
         old = self.pid
-        log.error("Dictado pid=%s frozen for %.0f s: killing it", old, self.clock() - since)
+        log.error("Dictado pid=%s frozen for %.0f s (watched): killing it", old, self.hang_s)
         self.proc.kill(self.handle)
         self.handle = None
         m.unlink(missing_ok=True)
@@ -169,6 +176,20 @@ class WinProc:
         import win32process
         return win32process.GetExitCodeProcess(h) & 0xFFFFFFFF
 
+    def kill(self, h) -> None:
+        """A frozen app: end it (the watch handle can't, so open one that may terminate)."""
+        import win32api
+        import win32process
+        try:
+            pid = win32process.GetProcessId(h)
+            t = win32api.OpenProcess(0x0001, False, pid)  # PROCESS_TERMINATE
+            try:
+                win32api.TerminateProcess(t, 0xDEAD)
+            finally:
+                win32api.CloseHandle(t)
+        except Exception:
+            log.exception("could not end the frozen Dictado")
+
 
 class MacProc:
     """macOS: the handle is the pid. No exit code for a process we didn't start."""
@@ -227,7 +248,7 @@ def main() -> int:
         return 0
     mac = sys.platform == "darwin"
     sup = Supervisor(data, spawn=ipc.spawn, proc=MacProc() if mac else WinProc(), log_path=data / "dictado.log",
-                     config_path=paths.config_path(), version=__version__, hang_s=HANG_S if mac else None)
+                     config_path=paths.config_path(), version=__version__, hang_s=HANG_S)
     log.info("watchdog %s up pid=%d", __version__, os.getpid())
     r = sup.run()
     log.info("watchdog ends: %s", r)

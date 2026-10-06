@@ -160,9 +160,10 @@ def test_frozen_past_hang_s_is_killed_reported_and_restarted(tmp_path):
     dump = fw.check()  # the app's own thread notices the freeze and dumps every stack
     assert dump and fw.marker().exists()
     (fw.marker()).write_text(str(t[0] - 5))  # the marker holds wall time; the test clock stands in for it
+    assert sup.step() == "ok" and procs.killed == []  # first sighting: the 60 s count starts now
     t[0] += 30
-    assert sup.step() == "ok" and procs.killed == [] and spawned == []  # frozen 35 s: not yet
-    t[0] += 30
+    assert sup.step() == "ok" and procs.killed == [] and spawned == []  # watched 30 s: not yet
+    t[0] += 31
     assert sup.step() == "ok" and procs.killed == [100]
     [rep] = crash.reports(data)
     assert spawned == [["--restarted", "--after-crash", str(rep)]]
@@ -199,3 +200,51 @@ def test_restarted_copy_quit_before_it_was_picked_up_is_a_quit(tmp_path):
     assert sup.step() == "quit"
     t[0] += 60
     assert len(spawned) == 1  # never started again
+
+
+
+def test_waking_from_sleep_does_not_kill_a_healthy_app(tmp_path):
+    """The marker's last beat is hours old after the PC slept; the app answers again at once."""
+    sup, procs, spawned, data, t = mac_setup(tmp_path, hang_s=60)
+    fw = crash.FreezeWatch(data, 100, limit_s=3.0, clock=lambda: t[0])
+    t[0] += 8 * 3600  # a night's sleep
+    fw.check()  # the freeze thread wakes first and writes the marker
+    assert sup.step() == "ok" and procs.killed == []
+    fw.beat()  # the main thread answers: marker gone
+    t[0] += 120
+    assert sup.step() == "ok" and procs.killed == [] and spawned == []
+
+
+def test_windows_frozen_app_is_killed_too(tmp_path):
+    """dictado-yjr: the same hang check on Windows (WinProc gained kill)."""
+    sup, procs, spawned, data, t = setup(tmp_path)
+    killed = []
+    procs.kill = lambda h: (killed.append(h), procs.end(h, 0xDEAD))
+    sup.hang_s = 60
+    m = crash.crashes_dir(data) / "live" / "frozen-100"
+    m.parent.mkdir(parents=True, exist_ok=True)
+    m.write_text("0")
+    sup.step()
+    t[0] += 61
+    sup.step()
+    assert killed == [100] and spawned and spawned[0][:2] == ["--restarted", "--after-crash"]
+
+
+def test_winproc_kill_ends_a_real_process():
+    import subprocess
+    import sys
+    import time
+
+    import pytest
+    if sys.platform != "win32":
+        pytest.skip("Windows process handles")
+    from dictado.supervise import WinProc
+    p = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(60)"])
+    wp = WinProc()
+    h = wp.open(p.pid)
+    assert wp.alive(h)
+    wp.kill(h)
+    end = time.monotonic() + 5
+    while wp.alive(h) and time.monotonic() < end:
+        time.sleep(0.05)
+    assert not wp.alive(h) and wp.exit_code(h) == 0xDEAD
