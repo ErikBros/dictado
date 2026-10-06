@@ -700,7 +700,7 @@ async function renderSettings() {
   $("#f-speakers").disabled = !s.speakers_addon;
   $("#f-speakers-help").textContent = s.speakers_addon
     ? "After a call, the other side is split into Speaker 1, 2, 3… Click a name in a transcript to rename that person."
-    : "Needs the speaker add-on (Dictado-Speakers-Setup), which isn't installed.";
+    : MAC ? "Needs the speaker add-on (Dictado Speakers, drag it to Applications), which isn't installed." : "Needs the speaker add-on (Dictado-Speakers-Setup), which isn't installed.";
   const box = $("#f-languages"), on = new Set(String(s.values.languages || "en").split(","));
   box.innerHTML = "";
   for (const o of s.options.languages) {

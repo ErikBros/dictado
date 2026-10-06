@@ -52,6 +52,6 @@ Built once for both. "Check on Mac" = works in tests, still to be tried for real
 | Window buttons -> background app (commands) | done | done |
 | Watchdog: watch, restart, kill a frozen app | done | done |
 | A frozen app can't lag the computer's input | done (hooks in their own process) | not needed: macOS times out a stuck event tap by itself |
-| Speakers + Remember voices (add-on) | done | ticket dictado-4yu |
+| Speakers + Remember voices (add-on) | done | done (Dictado Speakers.app; pyannote on the Apple GPU, same results as CPU, 2x faster) |
 | Claude app connection (MCP) | done | done (~/Library/Application Support/Claude) |
 | Installer | done (.exe, Inno Setup) | done (.app + .dmg, self-signed: this Mac only; a public build needs a Developer ID) |

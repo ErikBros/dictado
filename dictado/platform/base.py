@@ -83,7 +83,7 @@ CAPABILITIES: dict[str, dict] = {
     },
     "Speakers + Remember voices (add-on)": {
         "windows": "file:packaging/speakers/speakers_main.py",
-        "macos": ("ticket", "dictado-4yu"),
+        "macos": "dictado.platform.macos.speakers:addon_exe",  # Dictado Speakers.app, pyannote on MPS
     },
     "Claude app connection (MCP)": {
         "windows": "dictado.claude_link:config_files,connect",
