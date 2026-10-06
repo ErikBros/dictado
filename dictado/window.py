@@ -103,6 +103,13 @@ if sys.platform == "darwin":  # dictado/platform/macos/desktop.py + procs.py
     from .platform.macos.procs import alive as _pid_alive  # noqa: F811
 
 
+def _platform() -> str:
+    import platform
+    if sys.platform == "darwin":
+        return f"macOS {platform.mac_ver()[0]} ({platform.machine()})"
+    return f"Windows {platform.release()} ({platform.version()})"
+
+
 def _copy(text: str) -> None:
     from .deliver import set_clipboard_text
     set_clipboard_text(text, private=False)
@@ -626,11 +633,14 @@ class Api:
         reps = crash.reports(d)[:5]
         live = sorted((crash.crashes_dir(d) / "live").glob("freeze-*.log")) if (crash.crashes_dir(d) / "live").exists() else []
         parts = [f"Dictado debug info. Please find what's wrong. Data folder: {d}", "",
-                 f"Version: {__version__}", f"Status: {json.dumps(status.read(d / 'status.json') or {}, ensure_ascii=False)}", "",
+                 f"Version: {__version__}", f"Platform: {_platform()}", f"Status: {json.dumps(status.read(d / 'status.json') or {}, ensure_ascii=False)}", "",
                  "Recent crashes: " + (", ".join(p.name for p in reps) or "none"),
                  "Freezes recorded: " + (", ".join(p.name for p in live[-5:]) or "none"), "",
                  "## config.toml (calendar link removed)", "```", cfg.strip(), "```", ""]
-        for name, n in (("dictado.log", 200), ("engine-worker.log", 40), ("supervisor.log", 30), ("detect.log", 20)):
+        logs = (("dictado.log", 200), ("engine-worker.log", 40), ("supervisor.log", 30), ("detect.log", 20))
+        if sys.platform == "darwin":  # native libraries (MLX, PyObjC) print their errors to stderr.log
+            logs += (("stderr.log", 40),)
+        for name, n in logs:
             parts += [f"## {name} (last {n} lines)", "```", tail(name, n), "```", ""]
         for p in live[-2:]:
             parts += [f"## {p.name}", "```", p.read_text(encoding="utf-8", errors="replace")[:5000], "```", ""]
@@ -641,7 +651,7 @@ class Api:
         return {"ok": True}
 
     def open_logs_folder(self) -> dict:
-        os.startfile(str(self._data_dir))
+        _startfile(str(self._data_dir))  # Explorer / Finder
         return {"ok": True}
 
     def open_log(self) -> dict:
