@@ -275,3 +275,20 @@ def test_no_mic_chosen_means_the_windows_default_without_a_warning():
     devs = [{"name": "Microphone (USB)", "hostapi": 0, "max_input_channels": 1}]
     assert pick_device(devs, [{"name": "MME"}], "", "MME") is None
     assert pick_device(devs, [{"name": "MME"}], "  ", "MME") is None
+
+
+def test_file_source_hands_the_spool_what_it_heard_so_far(tmp_path, monkeypatch):
+    from dictado import audio
+    clip = np.arange(16000 * 2, dtype=np.float32)
+    monkeypatch.setattr(audio, "read_wav", lambda p: clip)
+    t = [100.0]
+    monkeypatch.setattr(audio.time, "monotonic", lambda: t[0])
+    src = audio.FileSource(tmp_path / "x.wav")
+    assert src.chunks_since(0) == ([], 0)  # not recording
+    src.begin()
+    t[0] += 0.35
+    chunks, n = src.chunks_since(0)
+    assert n == 3 and np.array_equal(np.concatenate(chunks), clip[:4800])
+    t[0] += 5  # past the end of the clip
+    chunks, n = src.chunks_since(n)
+    assert n == 20 and np.array_equal(np.concatenate(chunks), clip[4800:])
