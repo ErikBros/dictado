@@ -1,7 +1,7 @@
 """DictadoSpeakers.exe <audio> <out.json>: who spoke when, for Ecoscribe's speakers pass (t0u.22).
 
 pyannote speaker-diarization-community-1 with its weights bundled in model/ (no Hugging
-Face token at runtime), on CUDA when there is one. Writes [[t0, t1, "SPEAKER_00"], ...]
+Face token at runtime), on CUDA when there is one; on a Mac on the Apple GPU (MPS), else the CPU. Writes [[t0, t1, "SPEAKER_00"], ...]
 atomically; exit 0 = done, 2 = bad arguments, 1 = failed (traceback on stderr).
 1.1.0 (t0u.32, voice memory): also <out stem>.voices.json = {"SPEAKER_00": [256 floats], ...},
 pyannote's centroid embedding per speaker, so Ecoscribe can recognise a voice it was told the
@@ -19,12 +19,24 @@ from pathlib import Path
 # is false: Ecoscribe keeps everything on the PC. Set before pyannote is imported.
 os.environ["PYANNOTE_METRICS_ENABLED"] = "false"
 os.environ["HF_HUB_OFFLINE"] = "1"  # the weights are bundled: never reach for the Hub
+# Apple GPU: an op MPS doesn't have runs on the CPU instead of failing the whole pass
+os.environ.setdefault("PYTORCH_ENABLE_MPS_FALLBACK", "1")
 
 
 def model_dir() -> Path:
     if os.environ.get("DICTADO_SPEAKERS_MODEL"):  # dev runs, unfrozen
         return Path(os.environ["DICTADO_SPEAKERS_MODEL"])
     return Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parent)) / "model"
+
+
+def devices(torch) -> list[str]:
+    """Where to try, in order: the NVIDIA GPU (Windows), the Apple GPU then the CPU (Mac), the CPU."""
+    if torch.cuda.is_available():
+        return ["cuda"]
+    mps = getattr(torch.backends, "mps", None)
+    if mps is not None and mps.is_available():
+        return ["mps", "cpu"]
+    return ["cpu"]
 
 
 def main(argv: list[str]) -> int:
@@ -43,9 +55,17 @@ def main(argv: list[str]) -> int:
     # Measured 2026-10-05 on the 3070 Ti: cuDNN's default conv algorithms for the embedding model ate
     # all 8 GB (free 0 MB) and Windows paged to shared memory: 30 s for a 2.5-min call. benchmark: 6.5 s.
     torch.backends.cudnn.benchmark = True
-    device = "cuda" if torch.cuda.is_available() else "cpu"
-    pipe.to(torch.device(device))
-    res = pipe({"waveform": wav, "sample_rate": sr})
+    tries = devices(torch)
+    for device in tries:
+        try:
+            pipe.to(torch.device(device))
+            res = pipe({"waveform": wav, "sample_rate": sr})
+            break
+        except Exception as e:
+            if device == tries[-1]:
+                raise
+            print(f"speakers on {device} failed ({type(e).__name__}: {e}); trying {tries[tries.index(device) + 1]}",
+                  file=sys.stderr)
     ann = getattr(res, "speaker_diarization", res)
     turns = [[round(s.start, 2), round(s.end, 2), spk] for s, _, spk in ann.itertracks(yield_label=True)]
     tmp = out + ".tmp"

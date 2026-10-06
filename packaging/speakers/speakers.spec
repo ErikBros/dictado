@@ -25,3 +25,10 @@ a = Analysis(["speakers_main.py"], pathex=[], binaries=binaries, datas=datas, hi
 pyz = PYZ(a.pure)
 exe = EXE(pyz, a.scripts, [], exclude_binaries=True, name="DictadoSpeakers", console=True, upx=False)
 coll = COLLECT(exe, a.binaries, a.datas, strip=False, upx=False, name="DictadoSpeakers")
+
+import sys  # noqa: E402
+if sys.platform == "darwin":  # macOS: "Dictado Speakers.app", no window, no Dock icon (build_speakers_mac.py)
+    app = BUNDLE(coll, name="Dictado Speakers.app", bundle_identifier="com.erikbros.dictado.speakers",
+                 version=os.environ.get("DICTADO_SPEAKERS_VERSION", "1.1.0"),
+                 info_plist={"LSUIElement": True, "LSBackgroundOnly": True, "CFBundleName": "Dictado Speakers",
+                             "LSMinimumSystemVersion": "14.4"})
