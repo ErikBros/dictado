@@ -87,7 +87,7 @@ CAPABILITIES: dict[str, dict] = {
     },
     "Claude app connection (MCP)": {
         "windows": "dictado.claude_link:config_files,connect",
-        "macos": ("ticket", "dictado-iej"),
+        "macos": "dictado.platform.macos.claude_link:config_files",  # connect() is shared
     },
     "Installer": {
         "windows": "file:packaging/dictado.iss",
