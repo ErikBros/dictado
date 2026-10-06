@@ -75,7 +75,7 @@ function demoApi() {
     get_session: async (n) => ({ session: find(n), segments: find(n)?.status !== "done" ? [] : n.endsWith("kund") ? SEGS_MULTI : SEGS,
       exports: ["transcript.txt"], notes: notes[n] || "" }),
     voices_info: async () => window.__noVoices ? { count: 0, names: [], on: true } : { count: 2, names: ["Ana", "Tom"], on: true },
-    crashes: async () => (params.get("crash") === "1" ? { items: [{ name: "2026-10-06_140325", when: "2026-10-06 140325", exit: "0xC0000005 (access violation)" }], gave_up: false } : { items: [], gave_up: false }),
+    crashes: async () => (params.get("crash") === "1" ? { items: [{ name: "2026-10-06_140325", when: "2026-10-06 140325", exit: MAC ? "unknown" : "0xC0000005 (access violation)" }], gave_up: false } : { items: [], gave_up: false }),
     copy_crash_report: async () => ({ ok: true }), dismiss_crash: async () => ({ ok: true }),
     copy_debug_info: async () => ({ ok: true }), open_logs_folder: async () => ({ ok: true }),
     test_calendar: async (u) => (u ? { ok: true, today: 4, now: "Sprint retro" } : { ok: false, error: "Paste the secret address in iCal format first." }),
@@ -251,8 +251,8 @@ async function crashCard() {  // t0u.37: a crash is never silent
   if (card.hidden) return;
   const more = c.items.length > 1 ? ` (${c.items.length} crashes)` : "";
   $("#crash-title").textContent = c.gave_up ? "Ecoscribe crashed 3 times and stopped" : `Ecoscribe crashed${x ? " " + x.when.slice(11, 13) + ":" + x.when.slice(13, 15) : ""} and restarted${more}`;
-  $("#crash-sub").textContent = c.gave_up ? "Start it again from the Start menu. The reports say where it failed."
-    : `${x.exit}. A report with everything needed to find the cause was saved.`;
+  $("#crash-sub").textContent = c.gave_up ? (MAC ? "Open it again from Applications." : "Start it again from the Start menu.") + " The reports say where it failed."
+    : `${x.exit && x.exit !== "unknown" ? x.exit + ". " : ""}A report with everything needed to find the cause was saved.`;  // macOS: no exit code
   $("#crash-copy").hidden = !x;
   $("#crash-copy").onclick = async () => { await api.copy_crash_report(x.name); toast("Copied. Paste it to Claude."); crashCard(); };
   $("#crash-dismiss").onclick = async () => { for (const i of c.items) await api.dismiss_crash(i.name); crashCard(); };
