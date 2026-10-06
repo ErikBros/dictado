@@ -22,14 +22,14 @@ Built once for both. "Check on Mac" = works in tests, still to be tried for real
 | Pill shows the language it heard, tray "Next dictation in" | done | check on Mac |
 | Your words (spelling list) | done | done |
 | Snippets | done | done |
-| Voice commands + full list in Settings | done | check on Mac (dictado-tjn) |
+| Voice commands + full list in Settings | done | done (real desktop run: line break + Enter, no command words typed) |
 | Meetings: live transcript, notes, Me / Others, exports, Copy for Claude | done | check on Mac (dictado-tjn): needs the System Audio Recording permission |
 | Meeting / file languages incl. Greek + Spanish mixed | done | done (GPU test passes on mlx) |
 | Meeting names + attendees from a calendar (iCal link) | done | check on Mac (dictado-tjn) |
-| File transcription (drag and drop) | done | check on Mac (dictado-tjn) |
+| File transcription (drag and drop) | done | done (installed app: Greek file on the Apple GPU, 2.4% WER) |
 | Crash reports, freeze traces, watchdog restart | done | done |
-| Dictation recovered after a crash | done | check on Mac (dictado-tjn) |
-| Home crash card, Settings > Troubleshooting | done | check on Mac (dictado-4ey) |
+| Dictation recovered after a crash | done | done (real crash mid-dictation: back in History, not pasted) |
+| Home crash card, Settings > Troubleshooting | done | done (real SIGSEGV of the installed app: report, restart, card) |
 | Call detection tried on real calls | done | needs real calls (dictado-nhn) |
 
 ## Platform-specific

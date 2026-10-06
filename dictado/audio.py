@@ -210,6 +210,9 @@ def read_wav(path: Path) -> np.ndarray:
     return (data.astype(np.float32) / 32768.0)
 
 
+FILE_CHUNK = SR // 10
+
+
 class FileSource:
     """Stands in for the mic in tests: 'hears' a wav file in real time from begin()."""
 
@@ -241,6 +244,14 @@ class FileSource:
         self.recording = False
         n = int((time.monotonic() - self._t0) * SR)
         return self._clip[:n].copy()
+
+    def chunks_since(self, i: int):
+        """Like Recorder.chunks_since: 100 ms chunks of what was 'heard' so far, so the spool (crash
+        recovery) works in --test-audio runs too."""
+        if not self.recording:
+            return [], i
+        heard = min(len(self._clip), int((time.monotonic() - self._t0) * SR)) // FILE_CHUNK
+        return [self._clip[k * FILE_CHUNK:(k + 1) * FILE_CHUNK] for k in range(i, heard)], max(i, heard)
 
     def abort(self) -> None:
         self.recording = False
