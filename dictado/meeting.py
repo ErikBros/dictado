@@ -51,7 +51,10 @@ def stop_checker(d: Path, event_name: str | None = STOP_EVENT):
 
 def _default_recorder(d: Path, on_chunk):
     from . import config, paths
-    from .loopback import Loopback
+    if sys.platform == "darwin":  # a Core Audio process tap instead of WASAPI loopback
+        from .platform.macos.systap import Loopback
+    else:
+        from .loopback import Loopback
     from .micgate import MicGate
     from .session_rec import MicSource, SessionRecorder
     audio_cfg = config.load(paths.config_path()).audio
