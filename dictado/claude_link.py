@@ -55,3 +55,7 @@ def connect(files: list[Path], entry: dict) -> list[Path]:
         os.replace(tmp, f)
         done.append(f)
     return done
+
+
+if sys.platform == "darwin":  # ~/Library/Application Support/Claude (dictado/platform/macos/claude_link.py)
+    from .platform.macos.claude_link import config_files  # noqa: F811
