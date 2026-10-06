@@ -1,0 +1,40 @@
+# Unit tests on Windows and macOS for every push and pull request: the parity guard
+# (tests/test_platform_contract.py + FEATURES.md) runs on both. GPU tests (-m gpu) and
+# real-desktop tests (-m win) stay local: they need a GPU and a real screen.
+name: tests
+on:
+  push:
+    branches: [main]
+  pull_request:
+jobs:
+  unit:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-14]
+    runs-on: ${{ matrix.os }}
+    # macOS: until dictado-pty marks the tests that need macOS permissions or real keys, a red
+    # Mac job shows up on the PR without blocking it.
+    continue-on-error: ${{ matrix.os == 'macos-14' }}
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install (Windows)
+        if: runner.os == 'Windows'
+        run: python -m pip install -r requirements-win.txt pytest
+      - name: Install (macOS)
+        if: runner.os == 'macOS'
+        run: python -m pip install -r requirements-mac.txt pytest
+      - name: Unit tests
+        run: python -m pytest -q -p no:cacheprovider -m "not gpu and not win"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Window smoke test (jsdom)
+        run: |
+          npm install --no-audit --no-fund
+          node tests/ui/smoke.mjs
