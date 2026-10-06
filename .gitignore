@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+# local run output (paths and sessions of whoever ran them)
+tests/e2e/*.log
+tests/e2e/*report*.json
+packaging/shots/
+dist/
+build/
+tests/e2e/*.png

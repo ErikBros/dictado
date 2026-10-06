@@ -1,0 +1,3 @@
+Okay, let's get started, thanks everyone for joining. The main thing today is the launch timeline. Engineering says the release candidate will be ready on Thursday, but QA needs at least three days for the regression tests, so realistically we're looking at the middle of next week. Sarah, can you let the customers know? And please mention that the mobile app ships a few days later.
+
+Second item is the budget. We're about ten percent over on cloud costs this quarter, mostly because of the new staging environment. I'd like to shut it down at night and on weekends. If nobody objects, Tom will set that up by Friday. Last thing, the office in Denver is closed on the twentieth, so plan your demos around that. Anything else? Great, let's wrap up and meet again on Monday.
