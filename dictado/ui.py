@@ -13,6 +13,7 @@ import math
 import os
 import queue
 import struct
+import sys
 import threading
 import time
 import tkinter as tk
@@ -24,20 +25,21 @@ from . import meetui
 from . import palette as P
 
 log = logging.getLogger(__name__)
-u32 = ctypes.windll.user32
-u32.GetWindowLongW.argtypes = (w.HWND, ctypes.c_int)
-u32.SetWindowLongW.argtypes = (w.HWND, ctypes.c_int, ctypes.c_long)
-u32.ShowWindow.argtypes = (w.HWND, ctypes.c_int)
-u32.SetWindowPos.argtypes = (w.HWND, w.HWND, ctypes.c_int, ctypes.c_int, ctypes.c_int, ctypes.c_int, w.UINT)
-u32.MonitorFromWindow.argtypes = (w.HWND, w.DWORD)
-u32.MonitorFromWindow.restype = w.HANDLE
-u32.GetForegroundWindow.restype = w.HWND
+if sys.platform != "darwin":  # macOS has its own shell (dictado/platform/macos/shell.py)
+    u32 = ctypes.windll.user32
+    u32.GetWindowLongW.argtypes = (w.HWND, ctypes.c_int)
+    u32.SetWindowLongW.argtypes = (w.HWND, ctypes.c_int, ctypes.c_long)
+    u32.ShowWindow.argtypes = (w.HWND, ctypes.c_int)
+    u32.SetWindowPos.argtypes = (w.HWND, w.HWND, ctypes.c_int, ctypes.c_int, ctypes.c_int, ctypes.c_int, w.UINT)
+    u32.MonitorFromWindow.argtypes = (w.HWND, w.DWORD)
+    u32.MonitorFromWindow.restype = w.HANDLE
+    u32.GetForegroundWindow.restype = w.HWND
 
 GWL_EXSTYLE = -20
 WS_EX_NOACTIVATE, WS_EX_TOOLWINDOW, WS_EX_TOPMOST = 0x08000000, 0x80, 0x8
 WS_EX_LAYERED, WS_EX_TRANSPARENT = 0x80000, 0x20
 SW_HIDE, SW_SHOWNOACTIVATE = 0, 4
-HWND_TOPMOST = w.HWND(-1)
+HWND_TOPMOST = w.HWND(-1) if sys.platform != "darwin" else None
 SWP_NOSIZE, SWP_NOACTIVATE = 0x1, 0x10
 W, H = 210, 44
 RW, RH = 230, 54  # the dictating pill: timer + how to cancel (t0u.36)

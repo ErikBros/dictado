@@ -135,7 +135,10 @@ def _start_meetings(cfg, data, ui, root, log):
     from . import ipc, meetui
     from .meetings import Controller
     from .meetwatch import MeetWatch
-    from .ui import PromptWindow
+    if sys.platform == "darwin":
+        from .platform.macos.shell import PromptWindow
+    else:
+        from .ui import PromptWindow
     try:
         ctl = Controller(data, cfg)
     except Exception:
@@ -234,6 +237,14 @@ def main(argv=None) -> int:
             log.info("already running, exiting")
         return 0
     status_path = data / ("status-test.json" if args.test else "status.json")
+    if sys.platform == "darwin":  # logout, Activity Monitor > Quit: a quit, not a crash (the watchdog leaves)
+        import signal
+
+        def _on_term(*_):
+            status.write(status_path, state="stopped")
+            log.info("SIGTERM: quitting")
+            winutil.hard_exit(0)
+        signal.signal(signal.SIGTERM, _on_term)
     status.write(status_path, state="loading", error=None, version=__version__, test=args.test)
     (data / ("dictado-test.pid" if args.test else "dictado.pid")).write_text(str(os.getpid()))
     log.info("dictado %s starting pid=%d test=%s", __version__, os.getpid(), args.test)
@@ -244,16 +255,21 @@ def main(argv=None) -> int:
         log.exception("crash logging not enabled")
     winutil.add_cuda_dll_dirs()
 
-    import tkinter as tk
-
     from . import config as config_mod
     from .app import App
     from .audio import FileSource, Recorder
     from .deliver import deliver
     from .engine import Engine
-    from .hook import HookThread
     from .micgate import MicGate
-    from .ui import Overlay, Sounds, Tray, Ui
+    from .ui import Ui
+    if sys.platform == "darwin":  # one AppKit main loop owns the menu bar item and the panels (uat.5)
+        from .platform.macos.keyhook import HookThread
+        from .platform.macos.shell import Overlay, Root, Sounds, Tray
+    else:
+        import tkinter as tk
+
+        from .hook import HookThread
+        from .ui import Overlay, Sounds, Tray
 
     try:
         cfg = config_mod.load(Path(args.config) if args.config else paths.config_path())
@@ -264,9 +280,13 @@ def main(argv=None) -> int:
         logging.getLogger().setLevel(logging.DEBUG)
         log.info("detailed logging on")
 
-    root = tk.Tk()
+    root = Root() if sys.platform == "darwin" else tk.Tk()
     root.withdraw()
-    overlay = Overlay(root, hint=hotkeys.cancel_hint(cfg.hotkey.key)) if cfg.ui.overlay else None
+    hint = hotkeys.cancel_hint(cfg.hotkey.key)
+    if sys.platform == "darwin":  # the Mac pill says how to finish and cancel (dictado/platform/macos/shell.py)
+        from .platform.macos.shell import cancel_hint as mac_hint
+        hint = mac_hint(cfg.hotkey)
+    overlay = Overlay(root, hint=hint) if cfg.ui.overlay else None
     sounds = Sounds(data / "sounds", enabled=cfg.ui.sounds and not args.no_sounds)
     ui = Ui(root, overlay, sounds)
 
@@ -307,7 +327,7 @@ def main(argv=None) -> int:
             ui.tray.stop()
         root.after(0, root.destroy)
 
-    if not args.no_tray:
+    if not (args.no_tray or os.environ.get("DICTADO_NO_TRAY")):  # env: survives a watchdog restart (checks)
         meet_kw = {}
         if meet_ctl:
             from . import meetui
@@ -355,16 +375,29 @@ def main(argv=None) -> int:
                                    ui.flash("Couldn't restart: settings apply the next time Dictado starts")))
 
     from .hotkeys import ComboMatcher, combo_vks
-    from .hook import HookClient, spawn_hook_process
-    use_proc = cfg.limits.hook_process  # test instances too: run_e2e exercises the real path
-    hook_cls = HookClient if use_proc else HookThread
-    hook_kw = {"spawn": spawn_hook_process} if use_proc else {}
+    # macOS: the event tap stays in-process (macOS times out a slow tap instead of lagging the keyboard)
+    use_proc = cfg.limits.hook_process and sys.platform != "darwin"  # test instances too: run_e2e exercises the real path
+    hook_cls, hook_kw = HookThread, {}
+    if use_proc:
+        from .hook import HookClient, spawn_hook_process
+        hook_cls, hook_kw = HookClient, {"spawn": spawn_hook_process}
     hook = hook_cls(app.on_action, cfg.hotkey.vk, cfg.hotkey.max_tap_s, **hook_kw,
                       combo=ComboMatcher(cfg.hotkey.key) if combo_vks(cfg.hotkey.key) else None,
                       accept_injected=args.test, reinstall_s=cfg.limits.hook_reinstall_s,
                       swallow_cancel=lambda: app.state == "recording",
                       hold=cfg.hotkey.hold_to_talk and not combo_vks(cfg.hotkey.key), hold_s=cfg.hotkey.hold_s)
     hook.start()
+    if sys.platform == "darwin":  # say which permission is missing instead of a dead hotkey (pre-mortem #3)
+        def _permissions():
+            hook.ready.wait(5)
+            from .platform.macos import permissions
+            st = permissions.status()
+            missing = permissions.missing()
+            status.write(status_path, permissions=st, key_tap=bool(hook.ok))
+            if missing:
+                log.warning("missing macOS permissions: %s (key tap ok=%s)", ", ".join(missing), hook.ok)
+                ui.flash("Dictado needs " + " + ".join(missing) + ": see Settings", )
+        threading.Thread(target=_permissions, name="dictado-permissions", daemon=True).start()
 
     # only now: restart() needs the hook to exist
     watcher = ipc.ReloadWatcher(lambda: root.after(0, restart),
@@ -417,7 +450,8 @@ def main(argv=None) -> int:
         recover_spool()
 
     threading.Thread(target=load_model, name="dictado-load", daemon=True).start()
-    if not args.test and (getattr(sys, "frozen", False) or os.environ.get("DICTADO_SUPERVISE")):
+    if not args.test and (sys.platform == "darwin" or getattr(sys, "frozen", False)
+                          or os.environ.get("DICTADO_SUPERVISE")):
         from . import supervise
 
         def keep_watchdog():  # started now, and again if it ever goes missing

@@ -195,6 +195,13 @@ def running_apps() -> set[str]:
     return out
 
 
+if __import__("sys").platform == "darwin":  # Core Audio process objects + Accessibility (dictado/platform/macos/detect.py)
+    from .platform.macos.detect import foreground_app, read_consent, running_apps, window_titles  # noqa: F811
+    from .platform.macos.procs import exe_of_pid as _exe_of_pid  # noqa: F811
+    CALL_APPS = CALL_APPS | {"facetime"}
+    BROWSERS = BROWSERS | {"safari"}
+
+
 class Detector:
     """Feed it a poll every couple of seconds; it returns start / end events."""
 

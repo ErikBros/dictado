@@ -10,6 +10,19 @@ import os
 
 import pytest
 
+MAC = sys.platform == "darwin"
+# Windows-only modules (SendInput, the LL hook): run on the PC; macOS has its own tests for its versions
+collect_ignore = ["test_deliver_win.py", "test_hook_win.py", "test_hook_process.py"] if MAC else []
+
+
+def pytest_collection_modifyitems(config, items):
+    if not MAC:
+        return
+    skip = pytest.mark.skip(reason="Windows desktop / win32 API: runs on the PC")
+    for item in items:
+        if item.get_closest_marker("win") or item.get_closest_marker("win32_api"):
+            item.add_marker(skip)
+
 
 @pytest.fixture(autouse=True)
 def _desktop_tests_only_when_idle(request):

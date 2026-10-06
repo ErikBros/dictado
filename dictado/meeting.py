@@ -12,6 +12,7 @@ from __future__ import annotations
 import json
 import logging
 import queue
+import sys
 import threading
 import time
 from pathlib import Path
@@ -29,9 +30,9 @@ MAX_S = 4 * 3600  # a forgotten recording stops itself after 4 h
 
 
 def stop_checker(d: Path, event_name: str | None = STOP_EVENT):
-    """True once DIR/stop exists or the named event is set."""
+    """True once DIR/stop exists or the named event is set (macOS: the file only)."""
     handle = None
-    if event_name:
+    if event_name and sys.platform != "darwin":
         try:
             import win32event
             handle = win32event.CreateEvent(None, True, False, event_name)
@@ -98,7 +99,7 @@ def _label(d: Path) -> None:
 
 
 def run(session_dir: Path, cfg: TranscribeCfg, recorder_factory=_default_recorder, stop_check=None,
-        poll_s: float = 0.25, factory=transcribe._default_factory, resolve=models.for_transcribe,
+        poll_s: float = 0.25, factory=transcribe._default_factory, resolve=None,
         clock=time.monotonic, prompt: str | None = None, speech=transcribe._speech) -> int:
     d = Path(session_dir)
     stop_check = stop_check or stop_checker(d)
@@ -108,6 +109,7 @@ def run(session_dir: Path, cfg: TranscribeCfg, recorder_factory=_default_recorde
         lang = meta["lang"]
         live_lang = None if lang == "auto" else lang  # auto: each chunk detects; the final pass routes
         name = cfg.detector_model if lang == "auto" else model_for(lang, cfg)
+        resolve = resolve or transcribe._resolve_for(factory)
         model, _ = transcribe._load(name, cfg, 0, factory, resolve, d, cache)
         sessions.write_meta(d, status="recording")
         chunks: queue.Queue = queue.Queue()

@@ -7,8 +7,9 @@ import sys
 import threading
 from pathlib import Path
 
-import win32con
-import win32event
+if sys.platform != "darwin":
+    import win32con
+    import win32event
 
 log = logging.getLogger(__name__)
 RELOAD_EVENT = "Local\\DictadoReload"
@@ -86,3 +87,8 @@ def open_ui(page: str | None = None) -> None:
     if focus_ui():
         return
     spawn(["--ui"] + (["--page", page] if page else []))
+
+
+if sys.platform == "darwin":  # macOS: same names over Unix sockets (dictado/platform/macos/ipc.py)
+    from .platform.macos.ipc import (RELOAD_EVENT, UI_FOCUS, UI_MUTEX, UI_TITLE, ReloadWatcher, _package_parent,  # noqa: F811,F401
+                          focus_ui, open_ui, self_command, signal_reload, spawn)

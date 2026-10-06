@@ -45,14 +45,19 @@ def write_history(api, rows):
 
 def test_get_settings_defaults_and_options(api):
     s = api.get_settings()
-    assert s["values"]["hotkey"] == "rctrl"
     assert s["values"]["languages"] == "en"
-    assert s["values"]["mic"] == ""  # a fresh install uses the Windows default mic
-    assert {"value": "rctrl", "label": "Right Ctrl (recommended)"} in s["options"]["hotkeys"]
     assert "ralt" not in [h["value"] for h in s["options"]["hotkeys"]]
-    assert s["options"]["mics"][0] == {"value": "", "label": "Windows default"}
-    assert {"value": "Microphone (Anker PowerConf C20", "label": "Anker PowerConf C20"} in s["options"]["mics"]
     assert s["can_startup"] is True
+    if config.MAC:  # Right Command, the system's default mic
+        assert s["values"]["hotkey"] == "rcmd" and s["values"]["mic"] == ""
+        assert {"value": "rcmd", "label": "Right Command (recommended)"} in s["options"]["hotkeys"]
+        assert s["options"]["mics"][0] == {"value": "", "label": "System default"}
+    else:
+        assert s["values"]["hotkey"] == "rctrl"
+        assert s["values"]["mic"] == ""  # a fresh install uses the Windows default mic
+        assert {"value": "rctrl", "label": "Right Ctrl (recommended)"} in s["options"]["hotkeys"]
+        assert s["options"]["mics"][0] == {"value": "", "label": "Windows default"}
+        assert {"value": "Microphone (Anker PowerConf C20", "label": "Anker PowerConf C20"} in s["options"]["mics"]
 
 
 def test_current_mic_kept_even_if_unplugged(api):
@@ -233,6 +238,11 @@ def test_meeting_settings_and_on_demand_round_trip(api):
 
 
 def test_combo_shortcuts(api):
+    if config.MAC:
+        assert api.check_hotkey("Shift + Cmd + D") == {"ok": True, "value": "shift+cmd+d", "label": "Shift+Cmd+D"}
+        assert not api.check_hotkey("cmd+c")["ok"] and not api.check_hotkey("alt+d")["ok"]
+        assert api.save_settings({"hotkey": "shift+cmd+d"})["ok"] and config.load(api._config_path).hotkey.vk == 0
+        return
     assert api.check_hotkey("Ctrl + L") == {"ok": True, "value": "ctrl+l", "label": "Ctrl+L"}
     assert not api.check_hotkey("ctrl+c")["ok"] and not api.check_hotkey("ctrl+alt+d")["ok"]
     assert api.save_settings({"hotkey": "ctrl+shift+d"})["ok"]

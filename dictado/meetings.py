@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import json
 import logging
+import sys
 import threading
 import time
 from datetime import datetime
@@ -81,6 +82,20 @@ def attach_pid(pid: int):
         return None
     h = ctypes.windll.kernel32.OpenProcess(0x100000 | 0x1000 | 0x1, False, pid)  # SYNCHRONIZE|QUERY|TERMINATE
     return PidProc(pid, h) if h else None
+
+
+if sys.platform == "darwin":  # dictado/platform/macos/procs.py; the worker stops on DIR/stop, no named event
+    from .platform.macos.procs import PidProc, attach_pid  # noqa: F811
+
+    class _StopEvent:  # noqa: F811
+        def __init__(self, name: str = STOP_EVENT):
+            pass
+
+        def set(self):
+            pass
+
+        def reset(self):
+            pass
 
 
 def _default_spawn(args):

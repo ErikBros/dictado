@@ -13,6 +13,8 @@ def pick_device(devices: list[dict], hostapis: list[dict], name: str, host: str)
     if not (name or "").strip():
         return None
     want, want_host = name.lower(), host.lower()
+    if not want.strip() and want_host == "core audio":
+        return None  # Mac: no name = the system default input (PortAudio's default device)
     for i, d in enumerate(devices):
         if d.get("max_input_channels", 0) <= 0:
             continue

@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import logging
+import sys
 import tomllib
 from dataclasses import dataclass, field, fields
 from pathlib import Path
@@ -11,11 +12,16 @@ log = logging.getLogger(__name__)
 # Right Alt is deliberately absent: on the user's Swedish layout it is AltGr (@ { [ ]).
 KEYS = {"rctrl": 0xA3, "scrolllock": 0x91, "pause": 0x13}
 KEYS.update({f"f{n}": 0x7C + (n - 13) for n in range(13, 25)})
+MAC = sys.platform == "darwin"
+if MAC:  # Mac virtual keycodes. No Right Ctrl on a MacBook: Right Command (uat, D2). Right Option is the
+    # Swedish layout's @ [ ] { } key, the AltGr of the Mac: not allowed, same rule as Windows.
+    KEYS = {"rcmd": 54, "rctrl": 62, "fn": 63, "f13": 105, "f14": 107, "f15": 113, "f16": 106,
+            "f17": 64, "f18": 79, "f19": 80}
 
 
 @dataclass
 class HotkeyCfg:
-    key: str = "rctrl"
+    key: str = "rcmd" if MAC else "rctrl"
     max_tap_s: float = 1.0
     # t0u.28: hold the key to talk, let go to stop (a tap still toggles). Lone keys only.
     hold_to_talk: bool = False
@@ -29,22 +35,22 @@ class HotkeyCfg:
 
 @dataclass
 class AudioCfg:
-    device: str = ""  # part of the mic's name; "" = the Windows default mic
-    host: str = "MME"
+    device: str = ""  # part of the mic's name; "" = the system's default mic
+    host: str = "Core Audio" if MAC else "MME"
     samplerate: int = 16000
     preroll_s: float = 0.4
     # Closed while idle: no permanent "app is using your microphone" icon. Costs the
     # pre-roll (which only holds silence anyway while the mic is muted) and ~25 ms.
     keep_open: bool = False
     # Both mics were found muted at volume 0; open the mic only while recording.
-    unmute_while_recording: bool = True
+    unmute_while_recording: bool = not MAC  # the muted-at-0 mics were a PC thing
     unmute_volume: float = 0.8
 
 
 @dataclass
 class WhisperCfg:
     model: str = "large-v3-turbo"
-    device: str = "cuda"
+    device: str = "mlx" if MAC else "cuda"  # mlx = Apple GPU (Metal), spike/report-mac.md
     compute_type: str = "float16"
     beam_size: int = 5
     languages: list = field(default_factory=lambda: ["en"])  # English by default; add "es" to allow Spanish

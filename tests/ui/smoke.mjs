@@ -6,7 +6,7 @@ import { fileURLToPath } from "url";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const web = path.resolve(here, "../../dictado/web");
-const JSDOM_PATHS = ["/home/erikb/tools/beads-viewer/node_modules/jsdom/lib/api.js", "/home/erikb/node_modules/jsdom/lib/api.js"];
+const JSDOM_PATHS = [process.env.DICTADO_JSDOM, "/home/erikb/tools/beads-viewer/node_modules/jsdom/lib/api.js", "/home/erikb/node_modules/jsdom/lib/api.js"].filter(Boolean);  // DICTADO_JSDOM: the Mac's copy
 const { JSDOM } = await import(JSDOM_PATHS.find((p) => fs.existsSync(p)));
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 let failed = 0;

@@ -6,8 +6,11 @@ const $ = (s, el = document) => el.querySelector(s);
 const $$ = (s, el = document) => [...el.querySelectorAll(s)];
 const params = new URLSearchParams(location.search);
 const LANG_LABEL = { en: "English", "en,es": "English and Spanish", es: "Spanish", sv: "Swedish" };
-const HOTKEY_LABEL = { rctrl: "Right Ctrl", scrolllock: "Scroll Lock", pause: "Pause" };
-const hotkeyLabel = (k) => HOTKEY_LABEL[k] || (k ? k.split("+").map((p) => (p.length > 1 && !/^f\d/.test(p) ? p[0].toUpperCase() + p.slice(1) : p.toUpperCase())).join("+") : "Right Ctrl");
+// macOS (WKWebView): ?mac=1 forces it for screenshots. Windows wording stays the default everywhere else.
+const MAC = /Mac/.test(navigator.platform || "") || new URLSearchParams(location.search).get("mac") === "1";
+const HOTKEY_LABEL = { rctrl: MAC ? "Right Control" : "Right Ctrl", scrolllock: "Scroll Lock", pause: "Pause", rcmd: "Right Command", fn: "Fn" };
+const DEFAULT_MIC = MAC ? "System default" : "Windows default";
+const hotkeyLabel = (k) => HOTKEY_LABEL[k] || (k ? k.split("+").map((p) => (p.length > 1 && !/^f\d/.test(p) ? p[0].toUpperCase() + p.slice(1) : p.toUpperCase())).join("+") : (MAC ? "Right Command" : "Right Ctrl"));
 
 /* ---------------------------------------------------------------- demo API */
 function demoApi() {
@@ -19,7 +22,7 @@ function demoApi() {
       snippets: [{ trigger: "my email", text: "alex@example.com" }] },
     options: {
       hotkeys: [{ value: "rctrl", label: "Right Ctrl (recommended)" }, { value: "scrolllock", label: "Scroll Lock" }, { value: "pause", label: "Pause" }, { value: "f13", label: "F13" }],
-      mics: [{ value: "", label: "Windows default" }, { value: "Headset (Zone Vibe 100)", label: "Zone Vibe 100" }, { value: "Anker PowerConf", label: "Anker PowerConf C20" }],
+      mics: [{ value: "", label: DEFAULT_MIC }, { value: "Headset (Zone Vibe 100)", label: "Zone Vibe 100" }, { value: "Anker PowerConf", label: "Anker PowerConf C20" }],
       languages: [{ value: "en", label: "English" }, { value: "sv", label: "Swedish" }, { value: "es", label: "Spanish" }, { value: "en,es", label: "English and Spanish" }],
       meet_modes: [{ value: "prompt", label: "Ask" }, { value: "auto", label: "Start by itself" }, { value: "off", label: "Don't detect" }],
       meet_langs: [{ value: "sv", label: "Swedish" }, { value: "en", label: "English" }, { value: "es", label: "Spanish" }, { value: "el", label: "Greek" }, { value: "el,es", label: "Greek + Spanish" }, { value: "auto", label: "Detect" }],
@@ -226,7 +229,7 @@ function paintHero(s, state, short, long) {
     $("#tip-cancel").hidden = true;
   }
   const none = state === "stopped" ? "—" : "…";
-  $("#fact-mic").textContent = s.mic ? (s.fell_back ? "Windows default" : prettyMic(s.mic)) : none;
+  $("#fact-mic").textContent = s.mic ? (s.fell_back ? DEFAULT_MIC : prettyMic(s.mic)) : none;
   $("#fact-mic").title = s.mic || "";
   const fl = $("#fact-lang"), cur = s.languages ? s.languages.join(",") : "";
   if (document.activeElement !== fl && !fl.dataset.pending) {  // don't fight a choice being made or applied
@@ -520,7 +523,7 @@ async function rDropped(paths) {  // from Python's drop handler: full paths of t
   $("#r-drop").hidden = true;
   if (current !== "reuniones") await show("reuniones");
   const ok = (paths || []).filter(Boolean);
-  if (!ok.length) { toast("Drag the file from Windows Explorer."); return; }
+  if (!ok.length) { toast(MAC ? "Drag the file from Finder." : "Drag the file from Windows Explorer."); return; }
   await rImport(ok);
 }
 function rWire() {
@@ -798,7 +801,9 @@ async function stopMicTest() {
 }
 
 /* Shortcut recorder: Change, then tap a lone key or press a combo; Python validates it. */
-const HK_CODE = { ControlRight: "rctrl", ScrollLock: "scrolllock", Pause: "pause" };
+const HK_CODE = MAC ? { MetaRight: "rcmd", ControlRight: "rctrl", Fn: "fn" } : { ControlRight: "rctrl", ScrollLock: "scrolllock", Pause: "pause" };
+const HK_HINT = MAC ? "Tap a lone key (Right Command, Fn, F13-F19) or press a combo like Shift+Cmd+D."
+  : "Tap a lone key (Right Ctrl, F13-F24, Pause) or press a combo like Ctrl+L.";
 const HK_MODS = new Set(["ControlLeft", "ControlRight", "ShiftLeft", "ShiftRight", "AltLeft", "AltRight", "MetaLeft", "MetaRight"]);
 const hk = { on: false, other: false };
 function hkName(e) {
@@ -812,7 +817,7 @@ function hkStop(msg) {
   hk.on = false;
   $("#hk-change").textContent = "Change";
   $("#hk-label").classList.remove("listening");
-  $("#hk-hint").textContent = msg || "Tap a lone key (Right Ctrl, F13-F24, Pause) or press a combo like Ctrl+L.";
+  $("#hk-hint").textContent = msg || HK_HINT;
 }
 async function hkTry(value) {
   const r = await api.check_hotkey(value);
@@ -857,7 +862,7 @@ function holdFits() {  // hold-to-talk needs a lone key: a combo fires on its pr
   const combo = ($("#f-hotkey").value || "").includes("+");
   $("#f-hold").disabled = combo;
   if (combo) $("#f-hold").checked = false;
-  $("#f-hold-help").textContent = combo ? "Needs a lone key like Right Ctrl: a combo can't be held."
+  $("#f-hold-help").textContent = combo ? `Needs a lone key like ${MAC ? "Right Command" : "Right Ctrl"}: a combo can't be held.`
     : "Hold the key while you speak and let go to stop. A quick tap still starts hands-free dictation.";
 }
 function hkWire() {
@@ -875,7 +880,7 @@ function hkWire() {
     if (e.code === "Escape" && !e.ctrlKey && !e.altKey && !e.shiftKey && !e.metaKey) { hkStop(); $("#hk-label").textContent = hotkeyLabel($("#f-hotkey").value); return; }
     if (HK_MODS.has(e.code)) return;  // wait: a combo or a lone modifier tap
     hk.other = true;
-    const mods = [e.ctrlKey && "ctrl", e.altKey && "alt", e.shiftKey && "shift", e.metaKey && "win"].filter(Boolean);
+    const mods = [e.ctrlKey && "ctrl", e.altKey && "alt", e.shiftKey && "shift", e.metaKey && (MAC ? "cmd" : "win")].filter(Boolean);
     hkTry([...mods, hkName(e)].join("+"));
   }, true);
   document.addEventListener("keyup", (e) => {
@@ -920,6 +925,7 @@ async function closeWelcome() {
 /* ---------------------------------------------------------------- boot */
 async function boot() {
   api = getApi();
+  if (MAC) macify();
   for (const b of $$(".nav-item")) b.onclick = () => { if (b.dataset.page === "reuniones") r.open = null; show(b.dataset.page); };
   rWire();
   notesWire();
@@ -949,6 +955,24 @@ async function boot() {
     $("#f-sounds").checked = !$("#f-sounds").checked; dirty();
   }
   document.body.dataset.ready = "1";
+}
+
+/* macOS wording: the same page, Mac keys and places (uat.5) */
+function macify() {
+  const set = (sel, html) => { const el = $(sel); if (el) el.innerHTML = html; };
+  set("#hero-how", 'Tap <kbd class="key key-wide">⌘</kbd> <span class="key-side">(right Command)</span>, talk, and tap it again. The text appears wherever the cursor is.');
+  set("#tip-cancel", '<span class="keys"><kbd class="key">⌘</kbd><span class="plus">+</span><kbd class="key">Esc</kbd></span><span>Hold Right Command and press Esc to cancel.</span>');
+  set("#hk-label", "Right Command");
+  set("#hk-hint", HK_HINT);
+  set("#w-key", "⌘");
+  for (const el of $$(".tip .keys kbd.key")) if (el.textContent === "Ctrl") el.textContent = "⌘";
+  const startup = $("#row-startup .row-label"); if (startup) startup.textContent = "Open at login";
+  const unmute = $("#f-unmute"); if (unmute) unmute.closest("label").hidden = true;  // a PC fix (mics muted at 0)
+  for (const p of $$("#welcome p")) {
+    p.innerHTML = p.innerHTML.replace("<strong>Right Ctrl</strong>", "<strong>Right Command</strong>")
+      .replace("Dictado stays in the system tray, next to the clock, and starts with Windows. Open it any time from the Start menu.",
+               "Dictado lives in the menu bar (the mic at the top right) and opens at login. Open this window any time from that menu or from Applications.");
+  }
 }
 
 if (params.get("demo") === "1") boot();               // screenshots, smoke tests

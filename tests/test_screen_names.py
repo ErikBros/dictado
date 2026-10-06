@@ -5,6 +5,7 @@ names right 76.6 % -> 87.3 %, WER 5.75 % -> 4.44 % when the names are on screen;
 screen only shows names you never say (no harm); median transcription 264 -> 258 ms (no cost).
 Measured with tools/context_bench.py.
 """
+import sys
 import time
 from types import SimpleNamespace
 
@@ -127,7 +128,9 @@ def test_setting_round_trips(tmp_path):
 
 import pytest  # noqa: E402
 
+uia_only = pytest.mark.skipif(sys.platform == "darwin", reason="Windows UI Automation (COM thread); macOS reads AX")
 
+@uia_only
 @pytest.mark.real_window_texts
 def test_every_uia_read_runs_on_one_permanent_thread(monkeypatch):
     """t0u.37: COM objects must never be made, used or freed on different threads."""
@@ -150,6 +153,7 @@ def test_every_uia_read_runs_on_one_permanent_thread(monkeypatch):
     assert all(o[-1] == "Sarah Lindqvist" for o in outs)
 
 
+@uia_only
 @pytest.mark.real_window_texts
 def test_a_failed_read_comes_back_as_an_error_not_a_com_object(monkeypatch):
     from dictado import context

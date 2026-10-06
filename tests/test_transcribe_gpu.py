@@ -64,7 +64,22 @@ def _assert_close(tr, name, ceiling=0.3):
     assert wer(ref, hyp) < ceiling, (wer(ref, hyp), hyp[:300])
 
 
+def _worker_mem_mb() -> int:
+    """macOS: unified memory, so "VRAM" is the Dictado worker processes' own footprint (MB)."""
+    out = subprocess.run(["pgrep", "-f", "dictado --(engine-worker|transcribe|meeting)"], capture_output=True, text=True).stdout
+    total = 0
+    for pid in out.split():
+        fp = subprocess.run(["footprint", "-p", pid], capture_output=True, text=True).stdout
+        for line in fp.splitlines():
+            if "phys_footprint:" in line:
+                n, unit = line.split("phys_footprint:")[1].split()[:2]
+                total += float(n) * {"KB": 1 / 1024, "MB": 1, "GB": 1024}.get(unit, 1)
+    return int(total)
+
+
 def _vram_used_mb() -> int:
+    if sys.platform == "darwin":
+        return _worker_mem_mb()
     out = subprocess.run(["nvidia-smi", "--query-gpu=memory.used", "--format=csv,noheader,nounits"],
                          capture_output=True, text=True, timeout=20).stdout
     return int(out.strip().splitlines()[0])

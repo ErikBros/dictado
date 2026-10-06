@@ -37,7 +37,7 @@ def factory_with(first_failures, gpu_reload_ok=True):
 def test_cuda_error_at_runtime_reloads_and_retries():
     fails = []
     factory, made = factory_with([])
-    e = Engine(WhisperCfg(), TextCfg(), model_factory=factory)
+    e = Engine(WhisperCfg(device="cuda"), TextCfg(), model_factory=factory)
     e.load()
     # break it after warm-up, like a driver reset during sleep
     made[0].script = [RuntimeError("CUDA failed with error unspecified launch failure")]
@@ -48,7 +48,7 @@ def test_cuda_error_at_runtime_reloads_and_retries():
 
 def test_gpu_gone_falls_back_to_cpu_and_keeps_working():
     factory, made = factory_with([], gpu_reload_ok=False)
-    e = Engine(WhisperCfg(), TextCfg(), model_factory=factory)
+    e = Engine(WhisperCfg(device="cuda"), TextCfg(), model_factory=factory)
     e.load()
     made[0].script = [RuntimeError("cuBLAS failed with status CUBLAS_STATUS_EXECUTION_FAILED")]
     r = e.transcribe(np.zeros(16000, np.float32))
@@ -58,7 +58,7 @@ def test_gpu_gone_falls_back_to_cpu_and_keeps_working():
 
 def test_non_cuda_error_is_raised():
     factory, made = factory_with([])
-    e = Engine(WhisperCfg(), TextCfg(), model_factory=factory)
+    e = Engine(WhisperCfg(device="cuda"), TextCfg(), model_factory=factory)
     e.load()
     made[0].script = [ValueError("bad audio")]
     try:
@@ -74,7 +74,7 @@ def test_reload_never_destroys_the_old_model():
     """Destroying a CTranslate2 Whisper model after a long transcription aborts the
     process (uncaught C++ exception, measured 2026-10-02), so reload must retire it."""
     factory, made = factory_with([])
-    e = Engine(WhisperCfg(), TextCfg(), model_factory=factory)
+    e = Engine(WhisperCfg(device="cuda"), TextCfg(), model_factory=factory)
     e.load()
     first = made[0]
     first.script = [RuntimeError("CUDA failed with error unspecified launch failure")]

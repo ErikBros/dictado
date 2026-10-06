@@ -7,6 +7,8 @@ Ctrl+Alt combo, which is AltGr on the user's Swedish layout.
 """
 from __future__ import annotations
 
+import sys
+
 from .config import KEYS
 
 MODS = ("ctrl", "alt", "shift", "win")
@@ -16,7 +18,18 @@ MAIN.update({str(d): 0x30 + d for d in range(10)})
 MAIN.update({f"f{n}": 0x6F + n for n in range(1, 25)})
 RESERVED = {"win+l", "alt+tab", "alt+f4", "ctrl+esc", "alt+esc", "win+d", "win+tab", "win+r", "win+e"} | \
     {f"ctrl+{k}" for k in "cvxzyasfpwnt"}
-LABEL = {"rctrl": "Right Ctrl", "scrolllock": "Scroll Lock", "pause": "Pause"}
+LABEL = {"rctrl": "Right Ctrl", "scrolllock": "Scroll Lock", "pause": "Pause", "rcmd": "Right Command", "fn": "Fn"}
+MAC = sys.platform == "darwin"
+if MAC:  # Mac keycodes, shifted the way the event tap feeds them (dictado/platform/macos/keymap.py)
+    from .platform.macos.keymap import MAIN as _MAC_MAIN
+    from .platform.macos.keymap import to_vk as _to_vk
+    MODS = ("ctrl", "alt", "shift", "cmd")
+    MOD_VKS = {"ctrl": (_to_vk(59), _to_vk(62)), "shift": (_to_vk(56), _to_vk(60)), "alt": (_to_vk(58), _to_vk(61)),
+               "cmd": (_to_vk(55), _to_vk(54))}
+    MAIN = {k: _to_vk(kc) for k, kc in _MAC_MAIN.items()}
+    # what macOS and every app use (quit, close, copy/paste, find, new, print, hide, minimize, open...)
+    RESERVED = {f"cmd+{k}" for k in "qwcvxzasfpnthmorl,"} | {"cmd+shift+z", "cmd+1", "cmd+2", "cmd+3", "ctrl+cmd+q",
+                                                            "ctrl+cmd+f", "cmd+shift+3", "cmd+shift+4", "cmd+shift+5"}
 
 
 def parse(s: str) -> tuple[frozenset[str], str]:
@@ -28,6 +41,8 @@ def parse(s: str) -> tuple[frozenset[str], str]:
     if not mods:
         if main in KEYS:
             return frozenset(), main
+        if sys.platform == "darwin":
+            raise ValueError(f"{main!r} alone is not allowed: use Right Command, Fn, F13-F19, or a combo like Ctrl+L")
         raise ValueError(f"{main!r} alone is not allowed: use Right Ctrl, F13-F24, Pause or Scroll Lock, or a combo like Ctrl+L")
     bad = [m for m in mods if m not in MODS]
     if bad or len(set(mods)) != len(mods):
@@ -35,10 +50,12 @@ def parse(s: str) -> tuple[frozenset[str], str]:
     if main not in MAIN:
         raise ValueError(f"{main!r} can't be the key of a combo (use a letter, a digit or an F-key)")
     ms = frozenset(mods)
-    if {"ctrl", "alt"} <= ms:
+    if MAC and "alt" in ms and not ms & {"cmd", "ctrl"}:
+        raise ValueError("Option types characters on the Mac (@, [, ] on a Swedish layout): add Cmd or Ctrl")
+    if not MAC and {"ctrl", "alt"} <= ms:
         raise ValueError("Ctrl+Alt is AltGr on a Swedish keyboard: pick another combo")
     if canonical(ms, main) in RESERVED:
-        raise ValueError(f"{label(canonical(ms, main))} is taken by Windows or by editing: pick another combo")
+        raise ValueError(f"{label(canonical(ms, main))} is taken by {'macOS' if MAC else 'Windows'} or by editing: pick another combo")
     return ms, main
 
 

@@ -99,3 +99,8 @@ def hard_exit(code: int = 0) -> None:
         k32.TerminateProcess.argtypes = (ctypes.c_void_p, ctypes.c_uint)
         k32.TerminateProcess(k32.GetCurrentProcess(), code)
         os._exit(code)  # not reached
+
+
+if sys.platform == "darwin":  # macOS: file lock, no CUDA/DPI, os._exit (dictado/platform/macos/sysutil.py)
+    from .platform.macos.sysutil import (add_cuda_dll_dirs, hard_exit, release_instance, set_dpi_aware,  # noqa: F811
+                              single_instance)

@@ -2,7 +2,9 @@
 from __future__ import annotations
 
 import sys
-import winreg
+
+if sys.platform != "darwin":
+    import winreg
 
 RUN_KEY = r"Software\Microsoft\Windows\CurrentVersion\Run"
 NAME = "Dictado"
@@ -38,3 +40,7 @@ def disable(name: str = NAME) -> None:
             winreg.DeleteValue(k, name)
     except OSError:
         pass
+
+
+if sys.platform == "darwin":  # a LaunchAgent instead of the Run key (dictado/platform/macos/startup.py)
+    from .platform.macos.startup import NAME, app_command, disable, enable, get, is_enabled  # noqa: F811,F401
