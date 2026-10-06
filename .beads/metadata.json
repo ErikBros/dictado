@@ -1,0 +1,7 @@
+{
+  "database": "dolt",
+  "backend": "dolt",
+  "dolt_mode": "embedded",
+  "dolt_database": "dictado",
+  "project_id": "4f112952-f6bd-4974-a108-287e630b3620"
+}

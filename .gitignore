@@ -8,3 +8,8 @@ packaging/shots/
 dist/
 build/
 tests/e2e/*.png
+
+# Beads / Dolt files (added by bd init)
+.dolt/
+*.db
+.beads-credential-key
