@@ -1,0 +1,1 @@
+{"id":"int-1f8d2421","kind":"field_change","created_at":"2026-10-06T17:58:22.093791868Z","actor":"ErikBros","issue_id":"dictado-yjr","extra":{"field":"status","new_value":"closed","old_value":"in_progress","reason":"Shipped on main: Windows hang -> kill + restart, sleep-safe count (both platforms)."}}

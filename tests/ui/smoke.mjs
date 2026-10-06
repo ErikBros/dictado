@@ -2,12 +2,26 @@
 // main interactions work. Run from WSL: node tests/ui/smoke.mjs
 import fs from "fs";
 import path from "path";
-import { fileURLToPath } from "url";
+import { fileURLToPath, pathToFileURL } from "url";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const web = path.resolve(here, "../../dictado/web");
-const JSDOM_PATHS = [process.env.DICTADO_JSDOM, "/home/erikb/tools/beads-viewer/node_modules/jsdom/lib/api.js", "/home/erikb/node_modules/jsdom/lib/api.js"].filter(Boolean);  // DICTADO_JSDOM: the Mac's copy
-const { JSDOM } = await import(JSDOM_PATHS.find((p) => fs.existsSync(p)));
+// jsdom: DICTADO_JSDOM (path to jsdom/lib/api.js) if set, else Node's normal lookup from this folder up
+// (a node_modules here, in the repo, or in any parent folder), else the global install.
+async function loadJsdom() {
+  if (process.env.DICTADO_JSDOM) return import(pathToFileURL(process.env.DICTADO_JSDOM).href);
+  const { createRequire } = await import("module");
+  for (const base of [import.meta.url, pathToFileURL(path.join(process.env.NODE_PATH || "", "x")).href]) {
+    try { return import(pathToFileURL(createRequire(base).resolve("jsdom")).href); } catch {}
+  }
+  try {
+    const { execSync } = await import("child_process");
+    const root = execSync("npm root -g").toString().trim();
+    return import(pathToFileURL(createRequire(path.join(root, "x")).resolve("jsdom")).href);
+  } catch {}
+  throw new Error("jsdom not found: npm install jsdom (here or globally) or set DICTADO_JSDOM");
+}
+const { JSDOM } = await loadJsdom();
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 let failed = 0;
 const check = (cond, msg) => { if (!cond) { failed++; console.log("FAIL", msg); } else console.log("ok  ", msg); };

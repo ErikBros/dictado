@@ -36,11 +36,18 @@ Dictado is Python 3.12 (faster-whisper / CTranslate2 on CUDA, pywebview window, 
 wtest "$APP_W\\tests" -q -m "not gpu and not win"  # unit tests (~500)
 wtest "$APP_W\\tests" -q -m gpu                  # needs an NVIDIA GPU and the models
 wtest "$APP_W\\tests" -q -m win                  # real desktop: waits until nobody has touched the PC for 45 s
-node tests/ui/smoke.mjs                          # the window's JavaScript in jsdom
+npm install && npm run smoke                     # the window's JavaScript in jsdom
 wpy "$APP_W\\tools\\build.py" --installer         # Dictado.exe + Dictado-Setup-<version>.exe (needs Inno Setup 6)
 ```
 
 Windows Python needs the packages in the build spec (`packaging/dictado.spec`): faster-whisper, numpy, sounddevice, pyaudiowpatch, pywin32, comtypes, pycaw, pystray, Pillow, pywebview, python-dateutil, tzdata, pyinstaller. The speaker add-on builds separately (`packaging/speakers/`) and needs the gated `pyannote/speaker-diarization-community-1` weights from Hugging Face.
+
+## Windows and macOS stay in step
+
+One codebase; OS-specific code is listed in [`dictado/platform/base.py`](dictado/platform/base.py) and
+[`FEATURES.md`](FEATURES.md). A capability added on one platform needs the other one done, a ticket,
+or a "not needed" reason, or `tests/test_platform_contract.py` fails. GitHub Actions runs the unit
+tests on Windows and macOS for every push and pull request.
 
 ## Layout
 
