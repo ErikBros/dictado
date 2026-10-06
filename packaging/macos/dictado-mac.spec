@@ -25,7 +25,7 @@ a = Analysis(
                    *collect_submodules("mlx"),
                    "AppKit", "Foundation", "Quartz", "ApplicationServices", "AVFoundation", "CoreAudio", "WebKit",
                    "PyObjCTools.AppHelper"],
-    excludes=["torch", "tensorflow", "matplotlib", "pandas", "IPython", "pytest", "PyInstaller", "tkinter",
+    excludes=["torch", "tensorflow", "matplotlib", "pandas", "IPython", "pytest", "PyInstaller",  # tkinter stays: dictado.ui (shared) imports it
               "pyaudiowpatch", "win32api", "win32con", "win32event", "comtypes", "pystray"],
     noarchive=False,
 )
