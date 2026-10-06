@@ -13,9 +13,6 @@ jobs:
       matrix:
         os: [windows-latest, macos-14]
     runs-on: ${{ matrix.os }}
-    # macOS: until dictado-pty marks the tests that need macOS permissions or real keys, a red
-    # Mac job shows up on the PR without blocking it.
-    continue-on-error: ${{ matrix.os == 'macos-14' }}
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
