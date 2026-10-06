@@ -23,7 +23,7 @@ Built once for both. "Check on Mac" = works in tests, still to be tried for real
 | Your words (spelling list) | done | done |
 | Snippets | done | done |
 | Voice commands + full list in Settings | done | check on Mac (dictado-tjn) |
-| Meetings: live transcript, notes, Me / Others, exports, Copy for Claude | done | waits for system audio (dictado-qkg) |
+| Meetings: live transcript, notes, Me / Others, exports, Copy for Claude | done | check on Mac (dictado-tjn): needs the System Audio Recording permission |
 | Meeting / file languages incl. Greek + Spanish mixed | done | done (GPU test passes on mlx) |
 | Meeting names + attendees from a calendar (iCal link) | done | check on Mac (dictado-tjn) |
 | File transcription (drag and drop) | done | check on Mac (dictado-tjn) |
@@ -43,7 +43,7 @@ Built once for both. "Check on Mac" = works in tests, still to be tried for real
 | Speech engine on the GPU | done (faster-whisper, CUDA) | done (mlx-whisper, Metal) |
 | Mic list in Settings | done | done |
 | Unmute the mic only while recording | done | not needed: macOS mics aren't left muted at volume 0 |
-| System audio for meetings (the other side of a call) | done (WASAPI loopback) | ticket dictado-qkg (Core Audio process tap) |
+| System audio for meetings (the other side of a call) | done (WASAPI loopback) | done (Core Audio process tap; real capture: check on Mac, dictado-tjn) |
 | Call detection (who uses the mic, call windows) | done | done (real-call check: dictado-nhn) |
 | Tray / menu bar, pill and prompt box | done | done (AppKit) |
 | Start at login | done (Run key) | done (LaunchAgent) |
