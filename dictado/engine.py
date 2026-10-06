@@ -44,9 +44,13 @@ if sys.platform == "darwin":  # mlx on the Apple GPU behind the same interface (
     from .platform.macos.mlx_engine import factory as _default_factory  # noqa: F811
 
 
+BIG_MODEL_LANGS = {"sv", "el"}  # turbo is clearly worse on these (measured 2026-10-05)
+
+
 def dictation_model(cfg: WhisperCfg) -> tuple[str, str]:
-    """(model, compute_type) for the dictation languages: Swedish alone gets its own model."""
-    if list(cfg.languages) == ["sv"]:
+    """(model, compute_type) for the dictation languages: any Swedish or Greek in the mix runs
+    everything on large-v3 (still well under a second, about twice turbo's time)."""
+    if BIG_MODEL_LANGS & set(cfg.languages):
         return cfg.sv_model, cfg.sv_compute_type
     return cfg.model, cfg.compute_type
 
@@ -102,27 +106,29 @@ class Engine:
                                        vad_filter=vad, without_timestamps=True,
                                        condition_on_previous_text=False)[0])
 
-    def transcribe(self, audio: np.ndarray, words=None) -> Result:
+    def transcribe(self, audio: np.ndarray, words=None, lang: str | None = None, prefer: str | None = None) -> Result:
         """`words`: extra names for this dictation only (from the screen), after Your words."""
         t0 = time.perf_counter()
         audio = np.asarray(audio, dtype=np.float32)
         try:
-            text, lang, speech_s = self._run(audio, words)
+            text, lang, speech_s = self._run(audio, words, lang, prefer)
         except Exception as e:
             if not _is_gpu_error(e):
                 raise
             log.error("whisper failed at runtime (%s: %s); reloading and retrying", type(e).__name__, e)
             self.load()
-            text, lang, speech_s = self._run(audio, words)
+            text, lang, speech_s = self._run(audio, words, lang, prefer)
         return Result(text=text, lang=lang, speech_s=speech_s, ms=int((time.perf_counter() - t0) * 1000))
 
-    def _run(self, audio: np.ndarray, words=None):
-        if len(self.cfg.languages) == 1:
+    def _run(self, audio: np.ndarray, words=None, forced: str | None = None, prefer: str | None = None):
+        if forced:
+            lang = forced  # the user chose this dictation's language (dictation key + L)
+        elif len(self.cfg.languages) == 1:
             lang = self.cfg.languages[0]  # nothing to choose: skip the extra encoder pass
         else:
             try:
                 _, _, probs = self.model.detect_language(audio, vad_filter=True)
-                lang = pick_language(probs, self.cfg.languages)
+                lang = pick_language(probs, self.cfg.languages, prefer)
             except Exception as e:
                 if _is_gpu_error(e):
                     raise

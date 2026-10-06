@@ -24,6 +24,7 @@ from .win32types import (HOOKPROC, KBDLLHOOKSTRUCT, LLKHF_INJECTED, LLMHF_INJECT
                          kernel32, user32)
 
 log = logging.getLogger(__name__)
+VK_LANG = 0x4C  # L: dictation key + L picks the next dictation's language (dictation-languages)
 _DOWN = {WM_KEYDOWN, WM_SYSKEYDOWN}
 _UP = {WM_KEYUP, WM_SYSKEYUP}
 
@@ -44,6 +45,7 @@ class HookThread(threading.Thread):
         self.combo = combo  # hotkeys.ComboMatcher when the shortcut is a combo like Ctrl+L
         self._toggle_down = False  # tracked inside the hook callback itself
         self._eat_esc_up = False
+        self._lang_held = False  # L went down with the dictation key held: swallowed until it's up
         self._q: queue.SimpleQueue = queue.SimpleQueue()
         self._emit = emit or self._q.put  # the hook process sends events over a pipe instead (t0u.37)
         self._consume_events = consume
@@ -52,6 +54,17 @@ class HookThread(threading.Thread):
         self._ms_proc = HOOKPROC(self._ms)
         self._consumer = threading.Thread(target=self._consume, name="dictado-keys", daemon=True)
         self._running = True
+
+    def lang_key(self, vk: int, down: bool) -> bool:
+        """Dictation key + L: emit "lang" once per press and swallow the L (down and up)."""
+        if self.combo is not None or vk != VK_LANG or not (self._toggle_down or self._lang_held):
+            return False
+        if down and not self._lang_held:  # auto-repeat doesn't cycle again
+            self._lang_held = True
+            self._emit(("lang", VK_LANG, time.monotonic()))
+        elif not down:
+            self._lang_held = False
+        return True
 
     def would_swallow(self, vk: int, down: bool) -> bool:
         if vk != VK_ESCAPE:
@@ -82,6 +95,8 @@ class HookThread(threading.Thread):
                     if k.vkCode == self.toggle_vk:
                         self._toggle_down = down
                     self._emit(("down" if down else "up", k.vkCode, time.monotonic()))
+                    if self.lang_key(k.vkCode, down):
+                        return 1  # the app under the cursor never sees this L (no Ctrl+L)
                     if self.would_swallow(k.vkCode, down):
                         return 1
         return user32.CallNextHookEx(None, code, wparam, lparam)
@@ -157,7 +172,7 @@ class HookThread(threading.Thread):
                 return
             try:
                 if ev:
-                    action = "toggle" if ev[0] == "combo" else self.keys.feed(*ev)
+                    action = {"combo": "toggle", "lang": "lang"}.get(ev[0]) or self.keys.feed(*ev)
                     if action:
                         self.on_action(action)
                 action = self.keys.tick(time.monotonic())  # also between auto-repeat downs

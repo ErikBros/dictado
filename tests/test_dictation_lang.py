@@ -40,5 +40,5 @@ def test_tray_switch_saves_the_language(tmp_path):
     assert config.load(path).whisper.languages == ["sv"]
     import pytest
     with pytest.raises(ValueError):
-        save_dictation_languages(path, "sv,en")
+        save_dictation_languages(path, "sv,fr")  # French isn't a dictation language (dictado-bvf: mixes are fine)
     assert config.load(path).whisper.languages == ["sv"]  # a refused value changes nothing

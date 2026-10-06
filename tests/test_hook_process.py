@@ -115,3 +115,18 @@ def test_no_hook_process_at_all_falls_back_at_once(monkeypatch):
     c = client(spawn, [])
     c.start()
     assert fell_back.wait(3) and c.mode == "inprocess"
+
+
+def test_language_key_from_the_hook_process():
+    """dictado-bvf: the hook process's 'lang' line becomes the app's 'lang' action."""
+    t = time.monotonic()
+    hold = threading.Event()
+    actions = []
+    c = client(lambda args: FakeProc([b"ready\n", f"lang 76 {t:.4f}\n".encode()], hold), actions)
+    c.start()
+    end = time.monotonic() + 2
+    while time.monotonic() < end and not actions:
+        time.sleep(0.01)
+    assert actions == ["lang"]
+    c._stopping = True
+    hold.set()

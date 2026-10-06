@@ -87,12 +87,9 @@ async function load(query) {
   rows[0].querySelector(".snip-del").click();
   check(doc.querySelectorAll(".snip").length === 1, "remove drops the row");
 }
-{ // inicio: dictation language from Home (t0u.24)
-  const { window, doc } = await load("page=inicio");
-  const fl = doc.querySelector("#fact-lang");
-  check(fl.tagName === "SELECT" && fl.value === "en" && [...fl.options].map((o) => o.value).join("|") === "en|sv|es|en,es", "Home language is a dropdown: " + [...fl.options].map((o) => o.value));
-  fl.value = "sv"; fl.dispatchEvent(new window.Event("change")); await sleep(80);
-  check(doc.querySelector("#toast").textContent.includes("Swedish"), "switching to Swedish saves and says it restarts");
+{ // inicio: the dictation languages, read-only (dictado-bvf: set them in Settings)
+  const { doc } = await load("page=inicio");
+  check(doc.querySelector("#fact-lang").textContent === "English", "Home shows the dictation language: " + doc.querySelector("#fact-lang").textContent);
 }
 { // ajustes: speakers toggle follows the add-on (t0u.22)
   const on = await load("page=ajustes");
@@ -160,7 +157,9 @@ async function load(query) {
   check(!doc.querySelector("#savebar").hidden, "savebar appears on change");
   sounds.checked = true; sounds.dispatchEvent(new window.Event("change", { bubbles: true }));
   check(doc.querySelector("#savebar").hidden, "savebar hides when change undone");
-  doc.querySelector('.seg[data-value="en,es"]').click();
+  const es = doc.querySelector('#f-languages input[value="es"]');
+  check(doc.querySelectorAll("#f-languages input").length === 4, "four dictation languages to tick");
+  es.checked = true; es.dispatchEvent(new window.Event("change", { bubbles: true }));
   check(!doc.querySelector("#savebar").hidden, "language change marks dirty");
   let sent = null;
   const api = window.__dictado.api;
