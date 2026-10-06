@@ -90,7 +90,7 @@ def selftest(wav: str, out: str | None) -> int:
         audio = read_wav(Path(wav))
         e.transcribe(audio)
         r = e.transcribe(audio)
-        res.update(ok=e.device == "cuda" and bool(r.text), device=e.device, fallback=e.fallback_reason,
+        res.update(ok=e.device in ("cuda", "mlx") and bool(r.text), device=e.device, fallback=e.fallback_reason,
                    ms=r.ms, text=r.text, lang=r.lang, frozen=bool(getattr(sys, "frozen", False)),
                    exe=sys.executable, pid=_os.getpid(), nvidia_dlls=_loaded_nvidia_dlls())
     except Exception as ex:  # report, don't crash silently in a windowed exe

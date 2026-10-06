@@ -54,4 +54,4 @@ Built once for both. "Check on Mac" = works in tests, still to be tried for real
 | A frozen app can't lag the computer's input | done (hooks in their own process) | not needed: macOS times out a stuck event tap by itself |
 | Speakers + Remember voices (add-on) | done | ticket dictado-4yu |
 | Claude app connection (MCP) | done | ticket dictado-iej |
-| Installer | done (.exe, Inno Setup) | ticket dictado-ccs (.app + .dmg) |
+| Installer | done (.exe, Inno Setup) | done (.app + .dmg, self-signed: this Mac only; a public build needs a Developer ID) |

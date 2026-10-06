@@ -91,6 +91,6 @@ CAPABILITIES: dict[str, dict] = {
     },
     "Installer": {
         "windows": "file:packaging/dictado.iss",
-        "macos": ("ticket", "dictado-ccs"),
+        "macos": "file:tools/build_mac.py",  # Dictado.app + .dmg, signed so permissions survive updates
     },
 }
