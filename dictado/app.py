@@ -329,5 +329,9 @@ class App:
 
 
 def _press_enter() -> None:
+    import sys
+    if sys.platform == "darwin":
+        from .platform.macos.keys import press_enter
+        return press_enter()
     from .sendkeys import send_keys
     send_keys([(0x0D, True), (0x0D, False)])  # VK_RETURN

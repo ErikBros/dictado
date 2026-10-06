@@ -15,6 +15,7 @@ import json
 import logging
 import math
 import os
+import sys
 import time
 from pathlib import Path
 from types import SimpleNamespace
@@ -41,6 +42,10 @@ _KEEP: list = []  # never freed: see module docstring
 def _default_factory(path, device, compute_type):
     from faster_whisper import WhisperModel
     return WhisperModel(path, device=device, compute_type=compute_type, local_files_only=True)
+
+
+if sys.platform == "darwin":  # mlx on the Apple GPU, CPU fallback (dictado/platform/macos/mlx_engine.py)
+    from .platform.macos.mlx_engine import factory as _default_factory  # noqa: F811
 
 
 def _decode(path: Path) -> np.ndarray:
@@ -146,6 +151,22 @@ def steps(cfg: TranscribeCfg) -> list[tuple[str, str]]:
     return out
 
 
+
+def _plan(cfg: TranscribeCfg, factory) -> list[tuple[str, str]]:
+    """steps(), or on the Mac with the real mlx factory: the Apple GPU, then the CPU."""
+    if sys.platform == "darwin" and factory is _default_factory:
+        from .platform.macos.mlx_engine import steps as mac_steps
+        return mac_steps(cfg)
+    return steps(cfg)
+
+
+def _resolve_for(factory):
+    """models.for_transcribe (CT2 mirror), except for the real Mac factory, which finds its own mlx weights."""
+    if sys.platform == "darwin" and factory is _default_factory:
+        return lambda name, cfg: name
+    return models.for_transcribe
+
+
 class _Progress:
     def __init__(self, d: Path, total_s: float, clock):
         self.path, self.total, self.clock = Path(d) / "progress.json", total_s, clock
@@ -177,7 +198,7 @@ def _load(name, cfg, start, factory, resolve, d, cache=None):
         sessions.write_meta(d, model=name, compute_type=ct, device=device, slow=device == "cpu")
         log.info("route model=%s compute=%s device=%s (already loaded)", name, ct, device)
         return m, i
-    plan = steps(cfg)
+    plan = _plan(cfg, factory)
     path = str(resolve(name, cfg))
     for i in range(start, len(plan)):
         device, ct = plan[i]
@@ -197,10 +218,11 @@ def _load(name, cfg, start, factory, resolve, d, cache=None):
     raise RuntimeError(f"no way to load {name}")
 
 
-def run(session_dir: Path, cfg: TranscribeCfg, factory=_default_factory, resolve=models.for_transcribe,
+def run(session_dir: Path, cfg: TranscribeCfg, factory=_default_factory, resolve=None,
         decode=_decode, clock=time.monotonic, cache: dict | None = None, prompt: str | None = None,
         speech=_speech) -> int:
     d = Path(session_dir)
+    resolve = resolve or _resolve_for(factory)
     cache = {} if cache is None else cache
     try:
         meta = sessions.write_meta(d, status="running", error=None)
@@ -239,7 +261,7 @@ def run(session_dir: Path, cfg: TranscribeCfg, factory=_default_factory, resolve
                     prog.update(s.end + offset)
                 break
             except Exception as e:
-                if not _is_gpu_error(e) or step + 1 >= len(steps(cfg)):
+                if not _is_gpu_error(e) or step + 1 >= len(_plan(cfg, factory)):
                     raise
                 offset = segs[-1]["t1"] if segs else 0.0
                 log.error("GPU error at %.1f s (%s); reloading with the next fallback", offset, e)

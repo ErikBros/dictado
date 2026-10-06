@@ -5,6 +5,8 @@ import numpy as np
 from dictado.audio import FileSource, Recorder
 from dictado.config import AudioCfg
 
+WIN = {"device": "Anker PowerConf", "host": "MME"}  # the fakes below are the PC's MME devices
+
 SR = 16000
 DEVS = [{"name": "Headset (Zone Vibe 100)", "hostapi": 0, "max_input_channels": 1},
         {"name": "Microphone (Anker PowerConf C20", "hostapi": 0, "max_input_channels": 2}]
@@ -54,7 +56,7 @@ class FakeSD:
 def make(sd=None, **kw):
     warnings = []
     kw.setdefault("keep_open", True)
-    r = Recorder(AudioCfg(**{"device": "Anker PowerConf", **kw}), sd_module=sd or FakeSD(), on_warning=warnings.append, monitor_s=0.1)
+    r = Recorder(AudioCfg(**{**WIN, **kw}), sd_module=sd or FakeSD(), on_warning=warnings.append, monitor_s=0.1)
     r.open()
     return r, warnings
 
@@ -138,7 +140,7 @@ def test_open_failure_retries():
     sd = FakeSD()
     sd.InputStream = Boom
     warnings = []
-    r = Recorder(AudioCfg(device="Anker PowerConf", keep_open=True), sd_module=sd, on_warning=warnings.append, monitor_s=0.05, retry_s=0.05)
+    r = Recorder(AudioCfg(**WIN, keep_open=True), sd_module=sd, on_warning=warnings.append, monitor_s=0.05, retry_s=0.05)
     r.open()
     end = time.monotonic() + 3
     while not (FakeStream.instances and FakeStream.instances[-1].active) and time.monotonic() < end:
@@ -175,7 +177,7 @@ def test_file_source_next_clip(tmp_path):
 
 def test_on_demand_opens_only_while_recording():
     sd = FakeSD()
-    r = Recorder(AudioCfg(device="Anker PowerConf", keep_open=False), sd_module=sd, monitor_s=0.05)
+    r = Recorder(AudioCfg(**WIN, keep_open=False), sd_module=sd, monitor_s=0.05)
     r.open()
     assert FakeStream.instances == []  # nothing open while idle: no mic-in-use icon
     r.begin()
@@ -194,7 +196,7 @@ def test_on_demand_opens_only_while_recording():
 
 def test_on_demand_reopens_if_stream_dies_mid_recording():
     sd = FakeSD()
-    r = Recorder(AudioCfg(device="Anker PowerConf", keep_open=False), sd_module=sd, monitor_s=0.05)
+    r = Recorder(AudioCfg(**WIN, keep_open=False), sd_module=sd, monitor_s=0.05)
     r.open(); r.begin()
     FakeStream.instances[-1].active = False
     end = time.monotonic() + 2
@@ -206,11 +208,11 @@ def test_on_demand_reopens_if_stream_dies_mid_recording():
 
 def test_on_demand_resolves_and_warns_at_startup():
     warnings = []
-    r = Recorder(AudioCfg(device="Anker PowerConf", keep_open=False), sd_module=FakeSD(devices=[DEVS[0]]), on_warning=warnings.append)
+    r = Recorder(AudioCfg(**WIN, keep_open=False), sd_module=FakeSD(devices=[DEVS[0]]), on_warning=warnings.append)
     r.open()
     assert FakeStream.instances == [] and r.fell_back and len(warnings) == 1
     r.close()
-    r = Recorder(AudioCfg(device="Anker PowerConf", keep_open=False), sd_module=FakeSD())
+    r = Recorder(AudioCfg(**WIN, keep_open=False), sd_module=FakeSD())
     r.open()
     assert r.device_name.startswith("Microphone (Anker")
     r.close()
@@ -227,7 +229,7 @@ class SlowStream(FakeStream):
 def test_no_orphan_streams_under_monitor_race():
     sd = FakeSD()
     sd.InputStream = SlowStream
-    r = Recorder(AudioCfg(device="Anker PowerConf", keep_open=False), sd_module=sd, monitor_s=0.001, retry_s=0.001)
+    r = Recorder(AudioCfg(**WIN, keep_open=False), sd_module=sd, monitor_s=0.001, retry_s=0.001)
     r.open()
     for _ in range(40):
         r.begin()
@@ -241,7 +243,7 @@ def test_no_orphan_streams_under_monitor_race():
 
 def test_stale_stream_blocks_are_dropped():
     sd = FakeSD()
-    r = Recorder(AudioCfg(device="Anker PowerConf", keep_open=False), sd_module=sd, monitor_s=10)
+    r = Recorder(AudioCfg(**WIN, keep_open=False), sd_module=sd, monitor_s=10)
     r.open()
     r.begin(); old = FakeStream.instances[-1]; old.push(0.2, 0.9); r.end()
     r.begin()
@@ -253,7 +255,7 @@ def test_stale_stream_blocks_are_dropped():
 
 
 def test_last_stream_ok_sampled_before_close():
-    r = Recorder(AudioCfg(device="Anker PowerConf", keep_open=False), sd_module=FakeSD(), monitor_s=10)
+    r = Recorder(AudioCfg(**WIN, keep_open=False), sd_module=FakeSD(), monitor_s=10)
     r.open(); r.begin(); r.end()
     assert r.last_stream_ok is True and not r.stream_open()
 
@@ -261,7 +263,7 @@ def test_last_stream_ok_sampled_before_close():
         def start(self):
             raise RuntimeError("no device")
     sd = FakeSD(); sd.InputStream = Boom
-    r2 = Recorder(AudioCfg(device="Anker PowerConf", keep_open=False), sd_module=sd, monitor_s=10, retry_s=10)
+    r2 = Recorder(AudioCfg(**WIN, keep_open=False), sd_module=sd, monitor_s=10, retry_s=10)
     r2.open(); r2.begin(); r2.end()
     assert r2.last_stream_ok is False
     r.close(); r2.close()

@@ -9,26 +9,30 @@ from __future__ import annotations
 
 import ctypes
 import logging
+import sys
 import threading
 import time
 from ctypes import wintypes as w
 from dataclasses import dataclass
 
-import win32clipboard
-import win32con
+WINDOWS = sys.platform != "darwin"
+if WINDOWS:
+    import win32clipboard
+    import win32con
 
-from .sendkeys import send_keys
-from .win32types import kernel32, user32
+    from .sendkeys import send_keys
+    from .win32types import kernel32, user32
 
 log = logging.getLogger(__name__)
 MODIFIERS = (0x10, 0x11, 0x12, 0x5B, 0x5C)  # shift, ctrl, alt, lwin, rwin
 VK_LCONTROL, VK_V = 0xA2, 0x56
 PROCESS_QUERY_LIMITED_INFORMATION = 0x1000
 
-kernel32.OpenProcess.argtypes = (w.DWORD, w.BOOL, w.DWORD)
-kernel32.OpenProcess.restype = w.HANDLE
-kernel32.QueryFullProcessImageNameW.argtypes = (w.HANDLE, w.DWORD, w.LPWSTR, ctypes.POINTER(w.DWORD))
-kernel32.CloseHandle.argtypes = (w.HANDLE,)
+if WINDOWS:
+    kernel32.OpenProcess.argtypes = (w.DWORD, w.BOOL, w.DWORD)
+    kernel32.OpenProcess.restype = w.HANDLE
+    kernel32.QueryFullProcessImageNameW.argtypes = (w.HANDLE, w.DWORD, w.LPWSTR, ctypes.POINTER(w.DWORD))
+    kernel32.CloseHandle.argtypes = (w.HANDLE,)
 
 _PRIVATE_FORMATS = {
     "ExcludeClipboardContentFromMonitorProcessing": b"\0",
@@ -127,10 +131,11 @@ def _we_are_elevated() -> bool:
         return False
 
 
-user32.GetOpenClipboardWindow.restype = w.HWND
+if WINDOWS:
+    user32.GetOpenClipboardWindow.restype = w.HWND
 
 
-def _wait_clipboard_quiet(quiet_s: float = 0.04, max_s: float = 0.4, owner=user32.GetOpenClipboardWindow,
+def _wait_clipboard_quiet(quiet_s: float = 0.04, max_s: float = 0.4, owner=None,
                           clock=time.monotonic, sleep=time.sleep) -> float:
     """Wait until nobody has had the clipboard open for quiet_s.
 
@@ -138,6 +143,7 @@ def _wait_clipboard_quiet(quiet_s: float = 0.04, max_s: float = 0.4, owner=user3
     watchers (Logitech Options+, WSLg's msrdc, clipboard history). A Ctrl+V
     landing in that window makes the target's read fail and the paste vanishes.
     """
+    owner = owner or user32.GetOpenClipboardWindow
     t0 = clock()
     quiet_since = t0
     while clock() - t0 < max_s:
@@ -196,3 +202,8 @@ def _restore(prior: str | None, seq: int) -> None:
         set_clipboard_text(prior, private=False)
     except Exception:
         log.exception("clipboard restore failed")
+
+
+if not WINDOWS:  # NSPasteboard + Cmd+V (dictado/platform/macos/deliver.py)
+    from .platform.macos.deliver import (ClipboardBusy, DeliveryResult, _read, _restore, deliver, foreground_exe,  # noqa: F811,F401
+                              get_clipboard_text, set_clipboard_text)

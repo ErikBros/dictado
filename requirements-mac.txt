@@ -1,0 +1,16 @@
+mlx-whisper
+faster-whisper
+av<17  # 17+ dropped open(metadata_errors=), which faster-whisper 1.2.1 passes
+numpy
+sounddevice
+huggingface_hub
+pillow
+python-dateutil  # calendar_ics: recurring events
+pywebview
+pyobjc-core
+pyobjc-framework-Cocoa
+pyobjc-framework-Quartz
+pyobjc-framework-ApplicationServices
+pyobjc-framework-AVFoundation
+pyobjc-framework-CoreAudio
+pytest

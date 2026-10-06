@@ -192,6 +192,10 @@ def window_texts(max_elems: int = 1500, hwnd: int | None = None, timeout: float 
     return [title] + com_thread().call(lambda: _read(hwnd, max_elems), timeout)
 
 
+if __import__("sys").platform == "darwin":  # Accessibility instead of UI Automation (dictado/platform/macos/context.py)
+    from .platform.macos.context import window_texts  # noqa: F811
+
+
 class ScreenNames:
     """Started at the tap, read at the stop: never adds time after you stop talking."""
 

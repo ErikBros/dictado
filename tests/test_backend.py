@@ -82,7 +82,8 @@ def test_startup_command_only_when_frozen(monkeypatch):
     assert startup.app_command() is None
     monkeypatch.setattr(sys, "frozen", True, raising=False)
     monkeypatch.setattr(sys, "executable", r"C:\Apps\Dictado\Dictado.exe")
-    assert startup.app_command() == '"C:\\Apps\\Dictado\\Dictado.exe"'
+    want = r"C:\Apps\Dictado\Dictado.exe" if sys.platform == "darwin" else '"C:\\Apps\\Dictado\\Dictado.exe"'
+    assert startup.app_command() == want  # a LaunchAgent takes the bare path, the Run key a quoted one
 
 
 from dictado.__main__ import decide_launch

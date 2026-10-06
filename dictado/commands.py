@@ -11,6 +11,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+import sys
 import threading
 import time
 import uuid
@@ -36,6 +37,10 @@ def _signal(name: str = EVENT) -> bool:
         return False
     win32event.SetEvent(h)
     return True
+
+
+if sys.platform == "darwin":  # a Unix socket instead of the named event (dictado/platform/macos/commands.py)
+    from .platform.macos.commands import _signal  # noqa: F811
 
 
 def send(data_dir: Path, cmd: str, args: dict | None = None, wait_s: float = 3.0, signal=_signal,
@@ -117,6 +122,10 @@ class Watcher(threading.Thread):
 
     def stop(self) -> None:
         self._we.SetEvent(self._stop)
+
+
+if sys.platform == "darwin":
+    from .platform.macos.commands import Watcher  # noqa: F811
 
 
 def handler_for(ctl, watch=None, manual_key: str = "_manual"):

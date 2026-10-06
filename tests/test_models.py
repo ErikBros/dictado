@@ -145,6 +145,7 @@ def test_models_root_puts_cache_and_mirror_on_root(tmp_path):
 def test_empty_models_root_uses_default_dir(tmp_path, monkeypatch):
     from dictado.config import TranscribeCfg
     monkeypatch.setenv("LOCALAPPDATA", str(tmp_path / "lad"))
+    monkeypatch.setenv("DICTADO_DATA_DIR", str(tmp_path / "lad" / "dictado"))  # macOS data dir
     src = make_src(tmp_path)
     calls = []
     out = models.for_transcribe("m", TranscribeCfg(), download=lambda n: calls.append(n) or str(src))
@@ -166,6 +167,7 @@ def test_models_root_reuses_existing_default_mirror(tmp_path, monkeypatch):
     """Dictation's turbo already lives in the default dir: don't download it again to E:."""
     from dictado.config import TranscribeCfg
     monkeypatch.setenv("LOCALAPPDATA", str(tmp_path / "lad"))
+    monkeypatch.setenv("DICTADO_DATA_DIR", str(tmp_path / "lad" / "dictado"))  # macOS data dir
     src = make_src(tmp_path)
     default = models.ensure_local("large-v3-turbo", download=lambda n: str(src))
     out = models.for_transcribe("large-v3-turbo", TranscribeCfg(models_root=str(tmp_path / "E")),

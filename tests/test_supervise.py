@@ -101,3 +101,101 @@ def test_third_crash_in_ten_minutes_stops_restarting(tmp_path):
     st = json.loads((data / "status.json").read_text())
     assert st["state"] == "crashed" and "3 times" in st["error"]
     assert "stopped restarting" in (crash.reports(data)[0] / "report.md").read_text(encoding="utf-8")
+
+
+class MacProcs(Procs):
+    """macOS: the watchdog isn't the app's parent, so there is never an exit code."""
+
+    def __init__(self):
+        super().__init__()
+        self.killed = []
+
+    def exit_code(self, h):
+        return None
+
+    def kill(self, h):
+        self.killed.append(h)
+        self.live.discard(h)
+
+
+def mac_setup(tmp_path, hang_s=None):
+    sup, _, spawned, data, t = setup(tmp_path)
+    procs = MacProcs()
+    procs.live.add(100)
+    sup.proc, sup.hang_s = procs, hang_s
+    return sup, procs, spawned, data, t
+
+
+def test_mac_crash_with_a_native_trace_is_a_crash(tmp_path):
+    sup, procs, spawned, data, _ = mac_setup(tmp_path)
+    fp = crash.fault_path(data, 100)
+    fp.parent.mkdir(parents=True, exist_ok=True)
+    fp.write_text('Fatal Python error: Segmentation fault\n\nCurrent thread 0x1 (most recent call first):\n'
+                  '  File "/x/dictado/engine.py", line 42 in run\n')
+    procs.live.discard(100)
+    assert sup.step() == "ok"
+    [rep] = crash.reports(data)
+    assert spawned == [["--restarted", "--after-crash", str(rep)]]
+    text = (rep / "report.md").read_text(encoding="utf-8")
+    assert "Exit: unknown" in text and "engine.py:42 in run" in text
+
+
+def test_mac_unhandled_error_in_the_log_is_a_crash(tmp_path):
+    sup, procs, spawned, data, _ = mac_setup(tmp_path)
+    (data / "dictado.log").write_text("CRITICAL dictado.crash: unhandled error\nTraceback ...\n")
+    procs.live.discard(100)
+    assert sup.step() == "ok" and len(crash.reports(data)) == 1
+
+
+def test_mac_kill_without_a_trace_is_not_a_crash(tmp_path):
+    sup, procs, spawned, data, _ = mac_setup(tmp_path)
+    procs.live.discard(100)  # kill -9, Activity Monitor > Force Quit
+    assert sup.step() == "killed" and spawned == [] and crash.reports(data) == []
+
+
+def test_frozen_past_hang_s_is_killed_reported_and_restarted(tmp_path):
+    sup, procs, spawned, data, t = mac_setup(tmp_path, hang_s=60)
+    fw = crash.FreezeWatch(data, 100, limit_s=3.0, clock=lambda: t[0])
+    t[0] += 5
+    dump = fw.check()  # the app's own thread notices the freeze and dumps every stack
+    assert dump and fw.marker().exists()
+    (fw.marker()).write_text(str(t[0] - 5))  # the marker holds wall time; the test clock stands in for it
+    t[0] += 30
+    assert sup.step() == "ok" and procs.killed == [] and spawned == []  # frozen 35 s: not yet
+    t[0] += 30
+    assert sup.step() == "ok" and procs.killed == [100]
+    [rep] = crash.reports(data)
+    assert spawned == [["--restarted", "--after-crash", str(rep)]]
+    assert "Frozen" in (rep / "report.md").read_text(encoding="utf-8")
+    assert (rep / dump.name).exists() and not fw.marker().exists()
+
+
+def test_hang_check_is_off_without_hang_s(tmp_path):
+    sup, procs, spawned, data, t = mac_setup(tmp_path)
+    fw = crash.FreezeWatch(data, 100, limit_s=3.0, clock=lambda: t[0])
+    t[0] += 5
+    fw.check()
+    t[0] += 600
+    assert sup.step() == "ok" and procs.killed == [] and spawned == []
+
+
+def test_freeze_marker_goes_when_the_main_thread_answers(tmp_path):
+    data = tmp_path
+    t = [0.0]
+    fw = crash.FreezeWatch(data, 7, limit_s=3.0, clock=lambda: t[0])
+    t[0] = 5
+    fw.check()
+    assert fw.marker().exists()
+    fw.beat()
+    assert not fw.marker().exists()
+
+
+def test_restarted_copy_quit_before_it_was_picked_up_is_a_quit(tmp_path):
+    sup, procs, spawned, data, t = setup(tmp_path)
+    procs.end(100, 0xC0000005)
+    assert sup.step() == "ok" and len(spawned) == 1  # crash -> restarted
+    status(data, pid=200, state="stopped")  # the new copy started and was quit before the next look
+    procs.end(200, 0)
+    assert sup.step() == "quit"
+    t[0] += 60
+    assert len(spawned) == 1  # never started again

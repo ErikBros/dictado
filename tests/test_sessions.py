@@ -85,5 +85,6 @@ def test_delete_removes_folder(tmp_path):
 
 def test_root_dir_default_and_override(tmp_path, monkeypatch):
     monkeypatch.setenv("LOCALAPPDATA", str(tmp_path))
+    monkeypatch.setenv("DICTADO_DATA_DIR", str(tmp_path / "dictado"))  # macOS data dir
     assert sessions.root_dir() == tmp_path / "dictado" / "transcripts"
     assert sessions.root_dir(str(tmp_path / "x")) == tmp_path / "x"

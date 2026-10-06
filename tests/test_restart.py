@@ -1,4 +1,6 @@
 import threading
+
+import pytest
 import time
 import uuid
 
@@ -42,6 +44,7 @@ def test_one_cleanup_step_failing_does_not_stop_the_rest():
     assert ok and calls[-3:] == ["tray", "release", "exit0"] and "gate" in calls
 
 
+@pytest.mark.win32_api
 def test_single_instance_becomes_free_after_holder_releases():
     """The --restarted copy polls single_instance(); it must not keep the mutex alive itself."""
     import win32api
@@ -70,3 +73,32 @@ def test_single_instance_becomes_free_after_holder_releases():
     finally:
         release.set()
         winutil.release_instance()
+
+
+def test_single_instance_lock_on_macos(tmp_path, monkeypatch):
+    """Mac twin of the test above: a file lock instead of the named mutex, same contract."""
+    import multiprocessing as mp
+    import sys
+    if sys.platform != "darwin":
+        pytest.skip("macOS lock")
+    monkeypatch.setenv("DICTADO_DATA_DIR", str(tmp_path))
+    from dictado.platform.macos import sysutil
+    name = f"Local\\DictadoTestLock-{uuid.uuid4().hex[:6]}"
+    assert sysutil.single_instance(name) is True
+    assert sysutil.single_instance(name) is False  # a second try in the same process, like CreateMutex
+    ctx = mp.get_context("spawn")
+    q = ctx.Queue()
+    p = ctx.Process(target=_try_lock, args=(str(tmp_path), name, q))
+    p.start(); p.join(20)
+    assert q.get(timeout=5) is False  # another process can't take it
+    sysutil.release_instance(name)
+    p = ctx.Process(target=_try_lock, args=(str(tmp_path), name, q))
+    p.start(); p.join(20)
+    assert q.get(timeout=5) is True  # free once released
+
+
+def _try_lock(data_dir, name, q):
+    import os
+    os.environ["DICTADO_DATA_DIR"] = data_dir
+    from dictado.platform.macos import sysutil
+    q.put(sysutil.single_instance(name))

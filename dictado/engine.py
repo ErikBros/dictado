@@ -7,6 +7,7 @@ same audio is retried: the utterance is not lost.
 from __future__ import annotations
 
 import logging
+import sys
 import threading
 import time
 from dataclasses import dataclass
@@ -18,7 +19,7 @@ from .config import TextCfg, WhisperCfg
 from .text import clean, is_hallucination, vocab_prompt
 
 log = logging.getLogger(__name__)
-_GPU_ERRORS = ("cuda", "cublas", "cudnn", "out of memory")
+_GPU_ERRORS = ("cuda", "cublas", "cudnn", "out of memory", "metal")  # metal: the Mac GPU
 
 
 @dataclass
@@ -39,6 +40,10 @@ def _default_factory(name, device, compute_type, local_files_only=False):
     return WhisperModel(name, device=device, compute_type=compute_type, local_files_only=local_files_only)
 
 
+if sys.platform == "darwin":  # mlx on the Apple GPU behind the same interface (dictado/platform/macos/mlx_engine.py)
+    from .platform.macos.mlx_engine import factory as _default_factory  # noqa: F811
+
+
 def dictation_model(cfg: WhisperCfg) -> tuple[str, str]:
     """(model, compute_type) for the dictation languages: Swedish alone gets its own model."""
     if list(cfg.languages) == ["sv"]:
@@ -54,7 +59,8 @@ class Engine:
         if resolve is None:
             from .models import ensure_local
             # the default factory loads real WhisperModels: give it a plain-file copy
-            resolve = ensure_local if model_factory is _default_factory else (lambda name: name)
+            # (on the Mac the factory finds its own mlx weights: no CT2 mirror)
+            resolve = ensure_local if model_factory is _default_factory and sys.platform != "darwin" else (lambda name: name)
         self.resolve = resolve
         self.model = None
         self.device = cfg.device

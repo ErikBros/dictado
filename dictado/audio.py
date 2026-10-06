@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import collections
 import logging
+import sys
 import threading
 import time
 import wave
@@ -57,9 +58,14 @@ class Recorder:
         devices = list(self.sd.query_devices())
         hostapis = list(self.sd.query_hostapis())
         idx = pick_device(devices, hostapis, self.cfg.device, self.cfg.host)
-        if idx is None and not (self.cfg.device or "").strip():
+        if idx is None and not (self.cfg.device or "").strip():  # no mic chosen: the default, by design (no warning)
             self.fell_back = False
-            return None, "Windows default mic"  # no mic chosen: the default, by design (no warning)
+            if sys.platform != "darwin":
+                return None, "Windows default mic"
+            try:
+                return None, self.sd.query_devices(kind="input")["name"]
+            except Exception:
+                return None, "System default"
         if idx is None:
             if not self.fell_back:
                 self.on_warning(f"Mic '{self.cfg.device}' not found, using the default")

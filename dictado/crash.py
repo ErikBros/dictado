@@ -49,6 +49,17 @@ def enable(data: Path, pid: int) -> None:
     p.parent.mkdir(parents=True, exist_ok=True)
     _fault_file = open(p, "w", encoding="utf-8")  # noqa: SIM115 (must stay open)
     faulthandler.enable(_fault_file, all_threads=True)
+    if sys.platform == "darwin":
+        import os
+        import signal
+        # `kill -USR1 <pid>` adds every thread's stack to the fault file (the supervisor does, on a hang)
+        faulthandler.register(signal.SIGUSR1, file=_fault_file, all_threads=True, chain=False)
+        try:  # a LaunchAgent/Finder start sends fd 2 nowhere: native libraries (MLX, PyObjC) print there
+            err = open(Path(data) / "stderr.log", "a", encoding="utf-8")  # noqa: SIM115 (must stay open)
+            os.dup2(err.fileno(), 2)
+            sys.stderr = err
+        except OSError:
+            log.exception("stderr not redirected")
 
     def hook(exc_type, exc, tb):
         log.critical("unhandled error", exc_info=(exc_type, exc, tb))
@@ -66,9 +77,10 @@ def exit_name(code: int | None) -> str:
 
 def is_crash(code: int | None, fault_text: str, log_tail: str) -> bool:
     """Native crash codes always; exit code 1 only with a trace (else it was killed: Task
-    Manager, the installer's taskkill); 0 never (the supervisor checks clean state first)."""
+    Manager, the installer's taskkill); 0 never (the supervisor checks clean state first).
+    No exit code (macOS: the supervisor isn't the app's parent): a trace or an unhandled error."""
     if code is None:
-        return bool(fault_text.strip())
+        return bool(fault_text.strip()) or "unhandled error" in log_tail[-4000:]
     code &= 0xFFFFFFFF
     if code in (0, 0x40010004, 0xC000013A):
         return False
@@ -109,6 +121,8 @@ def make_report(data: Path, pid: int, code: int | None, log_path: Path, config_p
     fault = fp.read_text(encoding="utf-8", errors="replace") if fp.exists() else ""
     if fp.exists():
         shutil.move(str(fp), d / "fault.log")
+    for fz in sorted(fp.parent.glob(f"freeze-{pid}-*.log")) if fp.parent.exists() else []:  # FreezeWatch dumps
+        shutil.move(str(fz), d / fz.name)
     tail = _tail(log_path)
     (d / "log-tail.txt").write_text(tail, encoding="utf-8")
     for name in ("status.json",):
@@ -188,10 +202,15 @@ class FreezeWatch:
         self.count = 0
         self._stop = threading.Event()
 
+    def marker(self) -> Path:
+        """Exists while frozen; holds when the main thread last answered (the supervisor's hang check)."""
+        return self.dir / f"frozen-{self.pid}"
+
     def beat(self) -> None:
         if self.frozen:
             log.warning("main thread answering again after %.1f s", self.clock() - self.last)
             self.frozen = False
+            self.marker().unlink(missing_ok=True)
         self.last = self.clock()
 
     def check(self) -> Path | None:
@@ -208,6 +227,7 @@ class FreezeWatch:
             f.flush()
             faulthandler.dump_traceback(f, all_threads=True)
         log.error("FREEZE: main thread not answering for %.1f s; every thread's stack in %s", stale, p)
+        self.marker().write_text(str(time.time() - stale), encoding="utf-8")
         return p
 
     def start(self) -> "FreezeWatch":

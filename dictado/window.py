@@ -22,6 +22,9 @@ from .routing import LANG_NAMES
 log = logging.getLogger(__name__)
 HOTKEYS = [("rctrl", "Right Ctrl (recommended)"), ("scrolllock", "Scroll Lock"), ("pause", "Pause")] + \
           [(f"f{n}", f"F{n}") for n in range(13, 25)]
+if sys.platform == "darwin":  # a MacBook has no Right Ctrl (decision D2: Right Command)
+    HOTKEYS = [("rcmd", "Right Command (recommended)"), ("fn", "Fn / Globe"),
+               ("rctrl", "Right Control (external keyboard)")] + [(f"f{n}", f"F{n}") for n in range(13, 20)]
 LANGUAGES = [("en", "English"), ("sv", "Swedish"), ("es", "Spanish"), ("en,es", "English and Spanish")]
 MEET_MODES = [("prompt", "Ask"), ("auto", "Start by itself"), ("off", "Don't detect")]
 MEET_LANGS = [("sv", "Swedish"), ("en", "English"), ("es", "Spanish"), ("el", "Greek"), ("el,es", "Greek + Spanish"), ("auto", "Detect")]
@@ -81,6 +84,21 @@ def _mme_input_names() -> list[str]:
     return names
 
 
+DEFAULT_MIC_LABEL = "Windows default"
+WEBVIEW_GUI = "edgechromium"
+
+
+def _startfile(path: str) -> None:
+    os.startfile(path)
+
+
+if sys.platform == "darwin":  # dictado/platform/macos/desktop.py + procs.py
+    from .platform.macos.desktop import DEFAULT_MIC_LABEL, WEBVIEW_GUI  # noqa: F811
+    from .platform.macos.desktop import input_names as _mme_input_names  # noqa: F811
+    from .platform.macos.desktop import startfile as _startfile  # noqa: F811
+    from .platform.macos.procs import alive as _pid_alive  # noqa: F811
+
+
 def _copy(text: str) -> None:
     from .deliver import set_clipboard_text
     set_clipboard_text(text, private=False)
@@ -136,7 +154,7 @@ class Api:
         except Exception:
             log.exception("could not list mics")
             labels = []
-        mics = [{"value": "", "label": "Windows default"}] + [{"value": n, "label": pretty_mic(n)} for n in labels]
+        mics = [{"value": "", "label": DEFAULT_MIC_LABEL}] + [{"value": n, "label": pretty_mic(n)} for n in labels]
         cur = c.audio.device
         if cur and cur not in [m["value"] for m in mics]:
             match = next((m for m in mics[1:] if cur.lower() in m["value"].lower()), None)
@@ -479,7 +497,7 @@ class Api:
         return {"ok": True}
 
     def open_folder(self, name: str) -> dict:
-        os.startfile(str(self._session(name)))
+        _startfile(str(self._session(name)))
         return {"ok": True}
 
     def rename_speaker(self, name: str, label: str, new: str) -> dict:
@@ -623,7 +641,7 @@ class Api:
         return {"ok": True}
 
     def open_log(self) -> dict:
-        os.startfile(str(self._data_dir / "dictado.log"))
+        _startfile(str(self._data_dir / "dictado.log"))
         return {"ok": True}
 
     def get_welcome(self) -> dict:
@@ -632,6 +650,30 @@ class Api:
     def finish_welcome(self) -> dict:
         (self._data_dir / "welcome_done").write_text(time.strftime("%Y-%m-%d"), encoding="utf-8")
         return {"ok": True}
+
+
+def _listen_for_focus(win) -> None:
+    import threading
+    from .platform.macos import signals
+    lst = signals.Listener(ipc.UI_FOCUS)
+
+    def run():
+        while True:
+            msg = lst.wait(None)
+            if msg is None:
+                return
+            try:
+                win.restore()
+                win.show()
+                from AppKit import NSApplication
+                from PyObjCTools import AppHelper
+                AppHelper.callAfter(NSApplication.sharedApplication().activateIgnoringOtherApps_, True)  # main thread
+                if msg.startswith(b"page:"):
+                    win.evaluate_js(f"window.__dictado.show({json.dumps(msg[5:].decode())})")
+            except Exception:
+                log.exception("focus request failed")
+    threading.Thread(target=run, name="dictado-ui-focus", daemon=True).start()
+    win.events.closed += lst.close
 
 
 def web_dir() -> Path:
@@ -660,7 +702,9 @@ def main(page: str | None = None) -> int:
         from webview.dom import DOMEventHandler
         win.dom.document.events.drop += DOMEventHandler(on_drop, prevent_default=True, stop_propagation=True)
     win.events.loaded += on_loaded
-    webview.start(gui="edgechromium", private_mode=False,
+    if sys.platform == "darwin":  # no FindWindow: a second launch asks us over a socket to come forward
+        _listen_for_focus(win)
+    webview.start(gui=WEBVIEW_GUI, private_mode=False,
                   storage_path=str(paths.data_dir() / "webview"), debug=bool(os.environ.get("DICTADO_DEVTOOLS")))
     api.mic_test_stop()
     return 0

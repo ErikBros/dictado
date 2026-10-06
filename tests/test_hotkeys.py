@@ -1,8 +1,14 @@
+import sys
+
 import pytest
 
 from dictado import hotkeys
 
+# Windows key rules (VK codes, Win key, AltGr). The Mac rules are in test_mac_keys.py.
+win_rules = pytest.mark.skipif(sys.platform == "darwin", reason="Windows shortcut rules")
 
+
+@win_rules
 def test_lone_keys_and_combos_parse():
     assert hotkeys.parse("rctrl") == (frozenset(), "rctrl")
     assert hotkeys.normalize("Shift + Ctrl + D") == "ctrl+shift+d"
@@ -12,6 +18,7 @@ def test_lone_keys_and_combos_parse():
     assert hotkeys.label("alt+f9") == "Alt+F9"
 
 
+@win_rules
 @pytest.mark.parametrize("bad", ["", "l", "f5", "ctrl+c", "ctrl+v", "alt+tab", "alt+f4", "win+l",
                                  "ctrl+alt+d", "hyper+d", "ctrl+ctrl+d", "ctrl+esc", "ctrl+enter"])
 def test_refused(bad):
@@ -26,12 +33,14 @@ def feed(m, *events):
 LCTRL, RCTRL, SHIFT, L = 0xA2, 0xA3, 0xA0, 0x4C
 
 
+@win_rules
 def test_combo_fires_once_and_is_swallowed():
     m = hotkeys.ComboMatcher("ctrl+l")
     out = feed(m, (LCTRL, True), (L, True), (L, True), (L, False), (LCTRL, False))
     assert out == [(False, False), (True, True), (False, True), (False, True), (False, False)]
 
 
+@win_rules
 def test_either_ctrl_counts_and_extra_modifiers_dont_match():
     m = hotkeys.ComboMatcher("ctrl+l")
     assert feed(m, (RCTRL, True), (L, True), (L, False), (RCTRL, False))[1] == (True, True)

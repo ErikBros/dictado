@@ -61,8 +61,9 @@ def test_first_call_is_warm(engine):
 
 
 def test_loaded_on_gpu(engine):
+    import sys
     assert engine.fallback_reason is None
-    assert engine.device == "cuda"
+    assert engine.device == ("mlx" if sys.platform == "darwin" else "cuda")
 
 
 @pytest.mark.parametrize("name", sorted(EXPECTED))

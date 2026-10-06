@@ -43,7 +43,13 @@ class MicSource:
     def start(self) -> None:
         from .choose import pick_device
         idx = pick_device(list(self.sd.query_devices()), list(self.sd.query_hostapis()), self.cfg.device, self.cfg.host)
-        self.device_name = self.sd.query_devices(idx)["name"] if idx is not None else "predeterminado"
+        if idx is not None:
+            self.device_name = self.sd.query_devices(idx)["name"]
+        else:  # no name asked for (the Mac default) or not found: the system's default input
+            try:
+                self.device_name = self.sd.query_devices(kind="input")["name"]
+            except Exception:
+                self.device_name = "predeterminado"
 
         def cb(indata, frames, t, status):
             block = np.array(indata[:, 0], np.float32, copy=True)
