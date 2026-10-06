@@ -47,7 +47,7 @@ CAPABILITIES: dict[str, dict] = {
     },
     "System audio for meetings (the other side of a call)": {
         "windows": "dictado.loopback:Loopback",
-        "macos": ("ticket", "dictado-qkg"),
+        "macos": "dictado.platform.macos.systap:Loopback",  # Core Audio process tap (dictado-systap helper)
     },
     "Call detection (who uses the mic, call windows)": {
         "windows": "dictado.detect:read_consent,window_titles,running_apps",
