@@ -66,3 +66,12 @@ def test_too_short_flags_the_lost_dictations():
     assert too_short("x" * 116, 36.9)
     assert not too_short("x" * 468, 45.0)  # the same speaker, complete
     assert not too_short("ok", 3.0)  # short ones are never judged
+
+
+def test_a_slow_pass_stretches_the_gap_so_the_model_is_free_at_the_stop():
+    t = [0.0]
+    lp = LivePreview(_source(10), lambda a: (t.__setitem__(0, t[0] + 1.9), "hola")[1], lambda s: None,
+                     min_s=0, clock=lambda: t[0])
+    assert lp.gap() == 2.0
+    lp.step()
+    assert abs(lp.gap() - 4.75) < 1e-9  # a 1.9 s pass (large-v3 on the Mac): next one 4.75 s later

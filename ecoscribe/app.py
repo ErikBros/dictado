@@ -203,7 +203,7 @@ class App:
         ui_cfg = getattr(self.cfg, "ui", None)
         if not (getattr(ui_cfg, "live_text", False) and getattr(ui_cfg, "overlay", True)
                 and hasattr(self.engine, "preview") and hasattr(self.recorder, "chunks_since")
-                and hasattr(self.ui, "live")):
+                and getattr(self.ui, "has_live", False)):  # no pill to show it on: no GPU spent
             return
         from .live import LivePreview
         multi = len(getattr(self.cfg.whisper, "languages", []) or []) > 1
