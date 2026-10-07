@@ -1,7 +1,8 @@
 """Live transcript while you dictate (dictado-live): the pill shows what it has heard so far.
 
 Every `every_s` a quick pass (beam 1, no screen names) runs on the last `window_s` of the recording
-and the pill shows the tail of it. Only a preview: the full, careful transcription still runs at the
+and the pill shows the tail of it. On a slow GPU the gap grows to `slow_x` times the last pass, so the
+model is mostly free when the stop comes (the Mac session measured 1.9 s passes with large-v3). Only a preview: the full, careful transcription still runs at the
 stop and is what gets pasted. A pass never waits: if the model is loading or busy it is skipped, so
 the preview can never delay the paste.
 """
@@ -36,9 +37,11 @@ class LivePreview:
 
     def __init__(self, chunks_since: Callable, preview: Callable[[np.ndarray], str | None],
                  show: Callable[[str], None], every_s: float = 2.0, window_s: float = 15.0,
-                 min_s: float = 1.5, clock=time.monotonic):
+                 min_s: float = 1.5, clock=time.monotonic, slow_x: float = 2.5):
         self.chunks_since, self.preview, self.show = chunks_since, preview, show
         self.every_s, self.window_s, self.min_s, self.clock = every_s, window_s, min_s, clock
+        self.slow_x = slow_x
+        self.last_pass_s = 0.0
         self._chunks: list[np.ndarray] = []
         self._i = 0
         self._stop = threading.Event()
@@ -67,7 +70,9 @@ class LivePreview:
         a = self.audio()
         if len(a) < self.min_s * SR or self._stop.is_set():
             return False
+        t0 = self.clock()
         text = self.preview(a)
+        self.last_pass_s = self.clock() - t0
         if text is None or self._stop.is_set():
             return False
         self.passes += 1
@@ -78,8 +83,12 @@ class LivePreview:
         self.show(t)
         return True
 
+    def gap(self) -> float:
+        """Seconds until the next pass: every_s, or longer after a slow pass."""
+        return max(self.every_s, self.slow_x * self.last_pass_s)
+
     def _loop(self) -> None:
-        while not self._stop.wait(self.every_s):
+        while not self._stop.wait(self.gap()):
             try:
                 self.step()
             except Exception:

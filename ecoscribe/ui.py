@@ -129,6 +129,11 @@ class Ui:
         if self.overlay:
             self._post(self.overlay.recording, t0)
 
+    @property
+    def has_live(self) -> bool:
+        """Can the pill show live text? (the Mac pill can't yet: dictado-ayq)"""
+        return bool(self.overlay) and hasattr(self.overlay, "live")
+
     def live(self, text: str):
         """What the live transcript has heard so far (dictado-live); the pill's own, if it has one."""
         if self.overlay and hasattr(self.overlay, "live"):

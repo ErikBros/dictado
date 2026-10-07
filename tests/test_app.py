@@ -48,6 +48,8 @@ class FakeGate:
 
 
 class FakeUi:
+    has_live = True
+
     def __init__(self): self.events = []
     def __getattr__(self, name):
         return lambda *a: self.events.append((name, *a))
@@ -306,3 +308,15 @@ def test_a_much_too_short_result_keeps_its_audio(tmp_path):
     assert wait(lambda: out)
     kept = list((tmp_path / "suspect").glob("*-es.f32"))
     assert len(kept) == 1 and kept[0].stat().st_size == 30 * SR * 4
+
+
+def test_no_live_text_when_the_pill_cannot_show_it(tmp_path, monkeypatch):
+    """The Mac pill has no live() yet (dictado-ayq): no previews, no GPU spent on them."""
+    monkeypatch.setattr(App, "LIVE_EVERY_S", 0.05)
+    eng = PreviewEngine()
+    app, out = make(tmp_path, rec=StreamingRecorder(), eng=eng)
+    app.ui.has_live = False
+    app.on_action("toggle")
+    time.sleep(0.3)
+    app.on_action("toggle")
+    assert wait(lambda: out) and eng.previews == []
