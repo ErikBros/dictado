@@ -6,6 +6,7 @@ import pytest
 
 from ecoscribe.audio import read_wav
 from ecoscribe.config import TextCfg, WhisperCfg
+from ecoscribe.engine import SR
 
 pytestmark = pytest.mark.gpu
 FIX = Path(__file__).parent / "fixtures"
@@ -97,3 +98,23 @@ def test_latency_10s_under_1s(engine):
     best = min(engine.transcribe(a).ms for _ in range(3))
     print("en_long best ms", best)
     assert best < 1000
+
+
+def _trimmed(name):
+    a = read_wav(FIX / f"{name}.wav")
+    loud = np.flatnonzero(np.abs(a) > 0.02)
+    return a[loud[0]:loud[-1] + 1]
+
+
+@pytest.mark.parametrize("gap_s", [0.3, 0.5])
+def test_mixed_dictation_after_a_breath(engine, gap_s):
+    """dictado-l2x: a language switch after a short breath splits on the real model (MIX_PAD_MS = 30),
+    each run in its own language, in order."""
+    es, en = _trimmed("es_climb"), _trimmed("en_fox")
+    r = engine.transcribe(np.concatenate([es, np.zeros(int(gap_s * SR), np.float32), en]))
+    print(gap_s, r)
+    assert r.lang == "es+en", r
+    half = len(words(r.text)) // 2
+    assert recall(" ".join(words(r.text)[:half + 3]), EXPECTED["es_climb"][1]) >= 0.8, r.text
+    assert recall(r.text, EXPECTED["en_fox"][1]) >= 0.85, r.text
+    assert r.ms < 2500
