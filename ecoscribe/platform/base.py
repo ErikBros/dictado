@@ -86,7 +86,7 @@ CAPABILITIES: dict[str, dict] = {
         "macos": ("not_needed", "macOS times out a stuck event tap by itself and Ecoscribe re-enables it"),
     },
     "Speakers + Remember voices (add-on)": {
-        "windows": "file:packaging/speakers/speakers_main.py",
+        "windows": "ecoscribe.platform.windows.speakers:addon_exe",  # the old Dictado Speakers still found
         "macos": "ecoscribe.platform.macos.speakers:addon_exe",  # Ecoscribe Speakers.app (the old Dictado Speakers.app still found), pyannote on MPS
     },
     "Claude app connection (MCP)": {

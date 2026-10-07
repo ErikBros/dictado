@@ -53,6 +53,6 @@ Built once for both. "Check on Mac" = works in tests, still to be tried for real
 | Window buttons -> background app (commands) | done | done |
 | Watchdog: watch, restart, kill a frozen app | done | done |
 | A frozen app can't lag the computer's input | done (hooks in their own process) | not needed: macOS times out a stuck event tap by itself |
-| Speakers + Remember voices (add-on) | done | done (Ecoscribe Speakers.app, the old Dictado Speakers.app still found; pyannote on the Apple GPU, same results as CPU, 2x faster) |
+| Speakers + Remember voices (add-on) | done (Ecoscribe Speakers; the old Dictado Speakers still found) | done (Ecoscribe Speakers.app, the old Dictado Speakers.app still found; pyannote on the Apple GPU, same results as CPU, 2x faster) |
 | Claude app connection (MCP) | done | done (~/Library/Application Support/Claude) |
 | Installer | done (.exe, Inno Setup) | done (Ecoscribe.app + .dmg, com.erikbros.ecoscribe, self-signed: this Mac only; a public build needs a Developer ID) |

@@ -4,7 +4,7 @@
   #define AppVersion "0.0.0"
 #endif
 #ifndef DistDir
-  #define DistDir "dist\DictadoSpeakers"
+  #define DistDir "dist\EcoscribeSpeakers"
 #endif
 
 [Setup]
@@ -14,15 +14,17 @@ AppVersion={#AppVersion}
 AppVerName=Ecoscribe speaker add-on {#AppVersion}
 AppPublisher=ErikBros
 VersionInfoVersion={#AppVersion}
-DefaultDirName={localappdata}\Programs\Dictado Speakers
+DefaultDirName={localappdata}\Programs\Ecoscribe Speakers
+; same AppId as the Dictado add-on: without this an upgrade would stay in Dictado Speakers (dictado-jtv)
+UsePreviousAppDir=no
 DisableDirPage=yes
 DisableProgramGroupPage=yes
 DisableReadyPage=yes
 PrivilegesRequired=lowest
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
-OutputBaseFilename=Dictado-Speakers-Setup-{#AppVersion}
-SetupIconFile=..\dictado.ico
+OutputBaseFilename=Ecoscribe-Speakers-Setup-{#AppVersion}
+SetupIconFile=..\ecoscribe.ico
 UninstallDisplayName=Ecoscribe speaker add-on
 WizardStyle=modern
 Compression=lzma2/normal
@@ -35,6 +37,10 @@ Name: "en"; MessagesFile: "compiler:Default.isl"
 [Files]
 Source: "{#DistDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
+[InstallDelete]
+; the add-on from before the rename (dictado-jtv): Ecoscribe finds the new one first anyway
+Type: filesandordirs; Name: "{localappdata}\Programs\Dictado Speakers"
+
 [UninstallDelete]
 Type: filesandordirs; Name: "{app}"
 
@@ -44,6 +50,7 @@ procedure StopAddon();
 var
   Code: Integer;
 begin
+  Exec(ExpandConstant('{sys}\taskkill.exe'), '/IM EcoscribeSpeakers.exe /F', '', SW_HIDE, ewWaitUntilTerminated, Code);
   Exec(ExpandConstant('{sys}\taskkill.exe'), '/IM DictadoSpeakers.exe /F', '', SW_HIDE, ewWaitUntilTerminated, Code);
 end;
 

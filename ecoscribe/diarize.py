@@ -2,7 +2,7 @@
 
 Runs after the transcript is done, as its own job (meetings.Controller), so the
 add-on's model never shares the GPU with a Whisper model. The add-on is a separate
-install (PyTorch + pyannote, a few GB): `DictadoSpeakers.exe <audio> <out.json>`
+install (PyTorch + pyannote, a few GB): `EcoscribeSpeakers.exe <audio> <out.json>`
 writes [[t0, t1, "SPEAKER_00"], ...]. A meeting diarizes only system.flac (the user is
 the mic track, labelled Me already); an import diarizes the file. With one remote
 voice nothing changes, so a 1:1 call reads as before; with several, the remote
@@ -13,7 +13,6 @@ from __future__ import annotations
 
 import json
 import logging
-import os
 import subprocess
 import sys
 from pathlib import Path
@@ -25,12 +24,10 @@ NEAREST_S = 2.0  # a segment no turn overlaps takes the closest turn this near
 TIMEOUT_S = 3 * 3600
 
 
-def addon_exe() -> Path:
-    return Path(os.environ.get("LOCALAPPDATA", "")) / "Programs" / "Dictado Speakers" / "DictadoSpeakers.exe"
-
-
 if sys.platform == "darwin":  # /Applications/Ecoscribe Speakers.app (ecoscribe/platform/macos/speakers.py)
-    from .platform.macos.speakers import addon_exe  # noqa: F811
+    from .platform.macos.speakers import addon_exe
+else:  # %LOCALAPPDATA%\\Programs\\Ecoscribe Speakers (ecoscribe/platform/windows/speakers.py)
+    from .platform.windows.speakers import addon_exe
 
 
 def available(cfg, exe: Path | None = None) -> bool:

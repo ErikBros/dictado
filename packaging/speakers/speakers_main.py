@@ -1,4 +1,4 @@
-"""DictadoSpeakers.exe <audio> <out.json>: who spoke when, for Ecoscribe's speakers pass (t0u.22).
+"""EcoscribeSpeakers.exe <audio> <out.json>: who spoke when, for Ecoscribe's speakers pass (t0u.22).
 
 pyannote speaker-diarization-community-1 with its weights bundled in model/ (no Hugging
 Face token at runtime), on CUDA when there is one; on a Mac on the Apple GPU (MPS), else the CPU. Writes [[t0, t1, "SPEAKER_00"], ...]
@@ -6,6 +6,7 @@ atomically; exit 0 = done, 2 = bad arguments, 1 = failed (traceback on stderr).
 1.1.0 (t0u.32, voice memory): also <out stem>.voices.json = {"SPEAKER_00": [256 floats], ...},
 pyannote's centroid embedding per speaker, so Ecoscribe can recognise a voice it was told the
 name of. A sidecar, so Ecoscribe 1.3 (which reads only out.json) keeps working.
+1.2.0 (dictado-jtv): renamed from DictadoSpeakers.exe, nothing else changed.
 """
 from __future__ import annotations
 
