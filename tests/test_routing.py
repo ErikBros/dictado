@@ -35,8 +35,10 @@ def test_defaults_and_spanish_names():
     c = load(None).transcribe
     assert c.detector_model == "large-v3-turbo" and c.compute_type == "int8_float16"
     assert c.beam_size == 5 and c.root == ""
-    assert LANG_NAMES == {"sv": "Swedish", "en": "English", "es": "Spanish", "el": "Greek", "el,es": "Greek + Spanish",
-                          "auto": "Detect"}
+    assert [LANG_NAMES.get(c) for c in ("sv", "en", "es", "el", "el,es", "auto", "de")] == [
+        "Swedish", "English", "Spanish", "Greek", "Greek + Spanish", "Detect", "German"]
+    assert LANG_NAMES.get("xx") is None and LANG_NAMES.get("xx", "xx") == "xx"
+    assert model_for("en,sv", c) == "Systran/faster-whisper-large-v3"  # a mix runs on the stronger model
 
 
 def test_config_writer_round_trips_transcribe(tmp_path):

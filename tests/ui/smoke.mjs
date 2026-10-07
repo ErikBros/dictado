@@ -157,16 +157,22 @@ async function load(query) {
   check(!doc.querySelector("#savebar").hidden, "savebar appears on change");
   sounds.checked = true; sounds.dispatchEvent(new window.Event("change", { bubbles: true }));
   check(doc.querySelector("#savebar").hidden, "savebar hides when change undone");
+  // languages as add-ons (dictado-ehs): English + Swedish built in, Spanish added from the picker
+  check([...doc.querySelectorAll("#f-languages input")].map((i) => i.value).join(",") === "en,sv", "built in: English + Swedish");
+  check(!doc.querySelector("#f-languages .lang-x"), "built-in languages can't be removed");
+  const add = doc.querySelector("#lang-add");
+  check([...add.options].some((o) => o.value === "es") && ![...add.options].some((o) => o.value === "sv"), "the picker offers the rest, not the built-in ones");
+  add.value = "es"; add.dispatchEvent(new window.Event("change", { bubbles: true }));
   const es = doc.querySelector('#f-languages input[value="es"]');
-  check(doc.querySelectorAll("#f-languages input").length === 4, "four dictation languages to tick");
-  es.checked = true; es.dispatchEvent(new window.Event("change", { bubbles: true }));
+  check(es && es.checked && doc.querySelector("#f-languages .lang-x"), "Spanish added, ticked, removable");
   check(!doc.querySelector("#savebar").hidden, "language change marks dirty");
   let sent = null;
   const api = window.__dictado.api;
   const orig = api.save_settings;
   api.save_settings = async (v) => { sent = v; return orig(v); };
   doc.querySelector("#save").click(); await sleep(100);
-  check(sent && sent.languages === "en,es" && Object.keys(sent).length === 1, "saves only the changed field");
+  check(sent && sent.languages === "en,es" && JSON.stringify(sent.extra_languages) === '["es"]' && Object.keys(sent).length === 2,
+        "saves the added language and the ticks: " + JSON.stringify(sent));
   check(doc.querySelector("#savebar").hidden && !doc.querySelector("#toast").hidden, "saved: bar gone, toast shown");
   doc.querySelector("#mic-test").click(); await sleep(300);
   check(doc.querySelector("#mic-test").textContent === "Stop" && parseFloat(doc.querySelector("#meter-fill").style.width) > 0, "mic test moves the meter");
@@ -193,7 +199,7 @@ async function load(query) {
   check(doc.querySelector(".r-row .r-chip").textContent === "Recording", "first row is the recording one");
   check([...doc.querySelectorAll(".r-chip")].some((c) => c.textContent === "Transcribing 42 %"), "job shows its percent");
   check(!doc.querySelector("#r-now").hidden && doc.querySelector("#r-start").disabled, "banner while recording, start disabled");
-  check(doc.querySelector("#r-lang").options.length === 6 && doc.querySelector("#r-lang").value === "sv", "language select (6 incl. Greek + Spanish), Swedish default");
+  check(doc.querySelector("#r-lang").options.length === 4 && doc.querySelector("#r-lang").value === "sv", "meeting languages: English, Swedish, English + Swedish, Detect; Swedish default");
   const s = doc.querySelector("#r-search");
   s.value = "planering"; s.dispatchEvent(new window.Event("input")); await sleep(250);
   check(doc.querySelectorAll(".r-row").length === 1, "search filters sessions");
@@ -202,7 +208,7 @@ async function load(query) {
   check(!doc.querySelector("#r-detail-view").hidden && doc.querySelector("#r-list-view").hidden, "one click opens the session");
   check(!doc.querySelector("#r-d-live-actions").hidden && doc.querySelector("#r-d-stop").textContent === "Stop", "Stop visible while recording");
   const sel = doc.querySelector("#r-d-lang");
-  check(sel.value === "sv" && sel.options.length === 6, "live view shows the meeting language");
+  check(sel.value === "sv" && sel.options.length === 4, "live view shows the meeting language");
   sel.value = "en"; sel.dispatchEvent(new window.Event("change")); await sleep(100);
   check(window.__lang === "en" && doc.querySelector("#toast").textContent.includes("English"), "switching the language mid-meeting");
   const first = doc.querySelectorAll(".r-seg").length;

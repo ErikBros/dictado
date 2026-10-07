@@ -139,7 +139,8 @@ def handler_for(ctl, watch=None, manual_key: str = "_manual"):
             return {"ok": True, "dir": str(ctl.start_meeting(lang, title=args.get("title") or "Meeting", app=app))}
         if cmd == "set_meeting_lang":
             lang = args.get("lang") or ""
-            if lang not in ("sv", "en", "es", "el", "el,es", "auto"):
+            from .languages import valid_meeting_lang
+            if not valid_meeting_lang(lang):
                 return {"ok": False, "error": f"unknown language: {lang}"}
             return {"ok": True} if ctl.set_lang(lang) else {"ok": False, "error": "No meeting is recording"}
         if cmd == "stop_meeting":

@@ -17,6 +17,7 @@ import time
 from pathlib import Path
 
 from . import __version__, commands, config, diarize, hotkeys, export, ipc, meetings, paths, sessions, status, tomlw
+from .languages import ALL as ALL_LANGS, BASE as BASE_LANGS, available, meeting_options, valid_extra, valid_meeting_lang
 from .routing import LANG_NAMES
 
 log = logging.getLogger(__name__)
@@ -25,9 +26,7 @@ HOTKEYS = [("rctrl", "Right Ctrl (recommended)"), ("scrolllock", "Scroll Lock"),
 if sys.platform == "darwin":  # a MacBook has no Right Ctrl (decision D2: Right Command)
     HOTKEYS = [("rcmd", "Right Command (recommended)"), ("fn", "Fn / Globe"),
                ("rctrl", "Right Control (external keyboard)")] + [(f"f{n}", f"F{n}") for n in range(13, 20)]
-LANGUAGES = [("en", "English"), ("es", "Spanish"), ("sv", "Swedish"), ("el", "Greek")]  # tick any mix
 MEET_MODES = [("prompt", "Ask"), ("auto", "Start by itself"), ("off", "Don't detect")]
-MEET_LANGS = [("sv", "Swedish"), ("en", "English"), ("es", "Spanish"), ("el", "Greek"), ("el,es", "Greek + Spanish"), ("auto", "Detect")]
 
 
 def _voice_command_list() -> list[dict]:
@@ -37,22 +36,25 @@ def _voice_command_list() -> list[dict]:
             for _, what, langs in VOICE_COMMANDS]
 
 
-DICT_LANGS = [("en", "English"), ("es", "Spanish"), ("sv", "Swedish"), ("el", "Greek")]
+# Kept for older callers: the built-in dictation languages (dictado-ehs; added ones come from the config).
+LANGUAGES = [("en", "English"), ("sv", "Swedish")]
 
 
-def parse_languages(value) -> list[str]:
-    """'sv,en' -> ['en', 'sv']: any mix of the dictation languages, in a fixed order
-    (dictation-languages; Swedish or Greek in the mix moves dictation to large-v3)."""
+def parse_languages(value, extra=()) -> list[str]:
+    """'sv,en' -> ['en', 'sv']: any mix of the available languages (English, Swedish and the
+    added ones, dictado-ehs), in that order."""
+    from .languages import available
+    avail = available(extra)
     got = {x.strip() for x in str(value).split(",") if x.strip()}
-    if not got or got - {c for c, _ in DICT_LANGS}:
+    if not got or got - set(avail):
         raise ValueError("languages")
-    return [c for c, _ in DICT_LANGS if c in got]
+    return [c for c in avail if c in got]
 
 
 def save_dictation_languages(config_path: Path, value) -> list[str]:
     """The tray's "Dictation language >": save it; the caller then signals the reload."""
     c = config.load(Path(config_path))
-    c.whisper.languages = parse_languages(value)
+    c.whisper.languages = parse_languages(value, c.whisper.extra_languages)
     tomlw.save(c, Path(config_path))
     return c.whisper.languages
 
@@ -177,6 +179,7 @@ class Api:
                 "screen_names": c.text.screen_names,
                 "hold_to_talk": c.hotkey.hold_to_talk, "voice_memory": c.meetings.voice_memory,
                 "calendar_url": c.meetings.calendar_url, "debug_log": c.ui.debug_log,
+                "extra_languages": list(c.whisper.extra_languages),
                 "snippets": [{"trigger": k, "text": v} for k, v in c.text.snippets.items()],
             },
             "speakers_addon": diarize.addon_exe().is_file(),
@@ -184,9 +187,12 @@ class Api:
             "options": {
                 "hotkeys": [{"value": v, "label": l} for v, l in HOTKEYS],
                 "mics": mics,
-                "languages": [{"value": v, "label": l} for v, l in LANGUAGES],
+                "languages": [{"value": v, "label": ALL_LANGS[v]} for v in available(c.whisper.extra_languages)],
+                "all_languages": sorted(({"value": v, "label": l} for v, l in ALL_LANGS.items()
+                                         if v not in available(c.whisper.extra_languages)), key=lambda o: o["label"]),
+                "base_languages": list(BASE_LANGS),
                 "meet_modes": [{"value": v, "label": l} for v, l in MEET_MODES],
-                "meet_langs": [{"value": v, "label": l} for v, l in MEET_LANGS],
+                "meet_langs": [{"value": v, "label": l} for v, l in meeting_options(available(c.whisper.extra_languages))],
             },
             "can_startup": self._startup.app_command() is not None,
         }
@@ -224,8 +230,15 @@ class Api:
                     if k and k not in table and str(row.get("text", "")).strip():
                         table[k] = str(row["text"])[:2000]
                 c.text.snippets = dict(list(table.items())[:50])
+            if "extra_languages" in values:  # dictado-ehs: Add a language / remove one
+                c.whisper.extra_languages = valid_extra(values["extra_languages"])
+                avail = available(c.whisper.extra_languages)
+                c.whisper.languages = [x for x in c.whisper.languages if x in avail] or ["en"]
+                if not valid_meeting_lang(c.meetings.default_lang) or any(
+                        x not in avail for x in c.meetings.default_lang.split(",") if x != "auto"):
+                    c.meetings.default_lang = "sv"
             if "languages" in values:
-                c.whisper.languages = parse_languages(values["languages"])
+                c.whisper.languages = parse_languages(values["languages"], c.whisper.extra_languages)
             if "meet_mode" in values:
                 if values["meet_mode"] not in dict(MEET_MODES):
                     raise ValueError("meet_mode")
@@ -238,7 +251,7 @@ class Api:
                                                   "(it starts with https://)."}
                 c.meetings.calendar_url = url
             if "meet_lang" in values:
-                if values["meet_lang"] not in dict(MEET_LANGS):
+                if not valid_meeting_lang(values["meet_lang"]):
                     raise ValueError("meet_lang")
                 c.meetings.default_lang = values["meet_lang"]
             for key, (section, name) in {"sounds": ("ui", "sounds"), "overlay": ("ui", "overlay"),

@@ -276,6 +276,8 @@ def main(argv=None) -> int:
     except Exception:
         log.exception("bad config, using defaults")
         cfg = config_mod.Config()
+    from . import meetui
+    meetui.set_langs(cfg.whisper.extra_languages)  # dictado-ehs: English + Swedish + the added languages
     if cfg.ui.debug_log:  # Settings > Troubleshooting > Detailed logging (t0u.37)
         logging.getLogger().setLevel(logging.DEBUG)
         log.info("detailed logging on")
@@ -343,7 +345,8 @@ def main(argv=None) -> int:
             meet_kw = dict(meeting_label=lambda: meetui.tray_meeting_label(meet_ctl.state()),
                            on_meeting=toggle_meeting, open_meetings=lambda: ipc.open_ui("reuniones"),
                            meeting_state=meet_ctl.state, last_lang=lambda: watch.lang_for(MANUAL), start_meeting=start_in)
-        from .window import LANGUAGES, save_dictation_languages
+        from .languages import name as lang_name
+        from .window import save_dictation_languages
 
         def set_dict_lang(code):
             """Tray > Dictation language: save, then the same restart as a Settings save."""
@@ -355,7 +358,7 @@ def main(argv=None) -> int:
             log.info("dictation language -> %s from the tray", code)
             ipc.signal_reload(ipc.RELOAD_EVENT + ("-test" if args.test else ""))
         ui.tray = Tray(lambda: app, log_path, quit_app, open_window=lambda: ipc.open_ui(),
-                       dict_langs=[("", "Auto")] + [(c, n) for c, n in LANGUAGES if c in cfg.whisper.languages]
+                       dict_langs=[("", "Auto")] + [(c, lang_name(c)) for c in cfg.whisper.languages]
                        if len(cfg.whisper.languages) > 1 else None,
                        dict_lang=lambda: app.next_lang or "", set_dict_lang=lambda c: app.set_next_language(c),
                        **meet_kw)

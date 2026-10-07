@@ -133,6 +133,7 @@ def test_tk_meeting_pill_and_prompt_box():
         assert ov._drawn is None
         answers = []
         pw = ui.PromptWindow(root, lambda p, c, lang: answers.append((p.kind, c, lang)))
+        meetui.set_langs(["es", "el"])  # Greek and Spanish added (dictado-ehs)
         pw.show(meetui.Prompt("start", "msteams", "el", opened_at=0.0))
         root.update()
         assert pw.top.winfo_exists() and pw._lang_code() == "el"
@@ -161,7 +162,12 @@ def test_a_note_never_hides_a_question():
 
 
 def test_tray_language_submenu():
-    items = meetui.tray_lang_items("el")
-    assert [n for _, n, _ in items] == ["Swedish", "English", "Spanish", "Greek", "Greek + Spanish", "Detect"]
-    assert [c for c, _, ticked in items if ticked] == ["el"]  # the last language used is ticked
+    assert [n for _, n, _ in meetui.tray_lang_items("sv")] == ["English", "Swedish", "English + Swedish", "Detect"]
+    meetui.set_langs(["es", "el"])  # dictado-ehs: the user's added languages join the list
+    try:
+        items = meetui.tray_lang_items("el")
+        assert [n for _, n, _ in items] == ["English", "Swedish", "Spanish", "Greek", "Mixed: EN · SV · ES · EL", "Detect"]
+        assert [c for c, _, ticked in items if ticked] == ["el"]  # the last language used is ticked
+    finally:
+        meetui.set_langs([])
     assert meetui.tray_recording(EMPTY) is False and meetui.tray_recording(st()) is True

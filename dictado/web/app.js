@@ -23,9 +23,11 @@ function demoApi() {
     options: {
       hotkeys: [{ value: "rctrl", label: "Right Ctrl (recommended)" }, { value: "scrolllock", label: "Scroll Lock" }, { value: "pause", label: "Pause" }, { value: "f13", label: "F13" }],
       mics: [{ value: "", label: DEFAULT_MIC }, { value: "Headset (Zone Vibe 100)", label: "Zone Vibe 100" }, { value: "Anker PowerConf", label: "Anker PowerConf C20" }],
-      languages: [{ value: "en", label: "English" }, { value: "es", label: "Spanish" }, { value: "sv", label: "Swedish" }, { value: "el", label: "Greek" }],
+      languages: [{ value: "en", label: "English" }, { value: "sv", label: "Swedish" }],
+      base_languages: ["en", "sv"],
+      all_languages: [{ value: "el", label: "Greek" }, { value: "de", label: "German" }, { value: "es", label: "Spanish" }, { value: "fr", label: "French" }],
       meet_modes: [{ value: "prompt", label: "Ask" }, { value: "auto", label: "Start by itself" }, { value: "off", label: "Don't detect" }],
-      meet_langs: [{ value: "sv", label: "Swedish" }, { value: "en", label: "English" }, { value: "es", label: "Spanish" }, { value: "el", label: "Greek" }, { value: "el,es", label: "Greek + Spanish" }, { value: "auto", label: "Detect" }],
+      meet_langs: [{ value: "en", label: "English" }, { value: "sv", label: "Swedish" }, { value: "en,sv", label: "English + Swedish" }, { value: "auto", label: "Detect" }],
     },
     can_startup: true,
     speakers_addon: params.get("addon") !== "0",
@@ -278,7 +280,8 @@ async function renderInicio() {
 
 /* ---------------------------------------------------------------- reuniones */
 const SPEAKER = { Yo: "Me", Otros: "Others" };
-const R_LANGS = [["sv", "Swedish"], ["en", "English"], ["es", "Spanish"], ["el", "Greek"], ["el,es", "Greek + Spanish"], ["auto", "Detect"]];
+// Meeting / file languages: English + Swedish built in, plus added ones (dictado-ehs); boot() loads the real list.
+let R_LANGS = [["en", "English"], ["sv", "Swedish"], ["en,sv", "English + Swedish"], ["auto", "Detect"]];
 const R_STATUS = {
   recording: "Recording", finalizing: "Saving", stopping: "Saving", queued: "Queued", new: "Queued",
   running: "Transcribing", downloading: "Downloading model", done: "Ready", failed: "Failed",
@@ -516,6 +519,7 @@ function rWire() {
   const sel = $("#r-lang");
   for (const [c, n] of R_LANGS) { const o = document.createElement("option"); o.value = c; o.textContent = n; sel.append(o); }
   sel.value = store("dictado.r-lang") || "sv";
+  if (!sel.value) sel.value = R_LANGS[0][0];  // a stored language that was removed
   sel.onchange = () => store("dictado.r-lang", sel.value);
   $("#r-start").onclick = rStart;
   $("#r-now-stop").onclick = rStop;
@@ -633,6 +637,7 @@ function formValues() {
   return {
     hotkey: $("#f-hotkey").value, mic: $("#f-mic").value,
     languages: $$("#f-languages input:checked").map((i) => i.value).join(",") || "en",
+    extra_languages: [...extraLangs],
     sounds: $("#f-sounds").checked, overlay: $("#f-overlay").checked, unmute: $("#f-unmute").checked, startup: $("#f-startup").checked,
     meet_mode: $("#f-meet-mode").value, meet_lang: $("#f-meet-lang").value, on_demand: $("#f-on-demand").checked,
     speakers: $("#f-speakers").checked, voice_commands: $("#f-voice-commands").checked,
@@ -643,6 +648,42 @@ function formValues() {
                                        text: $(".snip-text", r).value }))
       .filter((x) => x.trigger && x.text.trim()),
   };
+}
+// Languages you dictate in (dictado-ehs): English + Swedish built in; "Add a language" for the rest.
+let extraLangs = [], langNames = {}, baseLangs = ["en", "sv"];
+function langCard(on) {
+  const box = $("#f-languages");
+  box.innerHTML = "";
+  for (const code of [...baseLangs, ...extraLangs]) {
+    const l = document.createElement("label"); l.className = "lang-check";
+    const i = document.createElement("input"); i.type = "checkbox"; i.value = code; i.checked = on.has(code);
+    i.onchange = () => { if (!$$("#f-languages input:checked").length) i.checked = true; dirty(); };  // at least one
+    l.append(i, document.createTextNode(langNames[code] || code));
+    if (!baseLangs.includes(code)) {
+      const x = document.createElement("button"); x.type = "button"; x.className = "lang-x"; x.textContent = "×";
+      x.title = `Remove ${langNames[code] || code}`; x.setAttribute("aria-label", x.title);
+      x.onclick = (e) => { e.preventDefault(); extraLangs = extraLangs.filter((c) => c !== code); on.delete(code);
+        if (![...on].length) on.add("en"); langCard(currentChecks(on)); dirty(); };
+      l.append(x);
+    }
+    box.append(l);
+  }
+  const add = $("#lang-add");
+  add.innerHTML = '<option value="">Add a language…</option>';
+  for (const [code, label] of Object.entries(langNames).sort((a, b) => a[1].localeCompare(b[1]))) {
+    if (baseLangs.includes(code) || extraLangs.includes(code)) continue;
+    const o = document.createElement("option"); o.value = code; o.textContent = label; add.append(o);
+  }
+  add.onchange = () => {
+    if (!add.value) return;
+    extraLangs.push(add.value);
+    const checks = currentChecks(on); checks.add(add.value);  // a new language is ticked right away
+    langCard(checks); dirty();
+  };
+}
+function currentChecks(fallback) {
+  const boxes = $$("#f-languages input");
+  return boxes.length ? new Set(boxes.filter((i) => i.checked).map((i) => i.value)) : fallback;
 }
 function snipRow(trigger = "", text = "") {
   const row = document.createElement("div");
@@ -701,14 +742,10 @@ async function renderSettings() {
   $("#f-speakers-help").textContent = s.speakers_addon
     ? "After a call, the other side is split into Speaker 1, 2, 3… Click a name in a transcript to rename that person."
     : "Needs the speaker add-on (Dictado-Speakers-Setup), which isn't installed.";
-  const box = $("#f-languages"), on = new Set(String(s.values.languages || "en").split(","));
-  box.innerHTML = "";
-  for (const o of s.options.languages) {
-    const l = document.createElement("label"); l.className = "lang-check";
-    const i = document.createElement("input"); i.type = "checkbox"; i.value = o.value; i.checked = on.has(o.value);
-    i.onchange = () => { if (!$$("#f-languages input:checked").length) i.checked = true; dirty(); };  // at least one
-    l.append(i, document.createTextNode(o.label)); box.append(l);
-  }
+  extraLangs = [...(s.values.extra_languages || [])];
+  langNames = Object.fromEntries([...s.options.languages, ...(s.options.all_languages || [])].map((o) => [o.value, o.label]));
+  baseLangs = s.options.base_languages || ["en", "sv"];
+  langCard(new Set(String(s.values.languages || "en").split(",")));
   $("#lang-key").textContent = hotkeyLabel(s.values.hotkey || "rctrl");
   $("#f-sounds").checked = s.values.sounds; $("#f-overlay").checked = s.values.overlay;
   $("#f-unmute").checked = s.values.unmute; $("#f-startup").checked = s.values.startup;
@@ -911,6 +948,7 @@ async function closeWelcome() {
 async function boot() {
   api = getApi();
   if (MAC) macify();
+  try { R_LANGS = (await api.get_settings()).options.meet_langs.map((o) => [o.value, o.label]); } catch {}
   for (const b of $$(".nav-item")) b.onclick = () => { if (b.dataset.page === "reuniones") r.open = null; show(b.dataset.page); };
   rWire();
   notesWire();

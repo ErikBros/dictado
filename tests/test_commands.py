@@ -107,5 +107,5 @@ def test_set_meeting_lang_command():
     c = C()
     h = commands.handler_for(c, None)
     assert h("set_meeting_lang", {"lang": "en"}) == {"ok": True} and c.langs == ["en"]
-    assert not h("set_meeting_lang", {"lang": "fr"})["ok"]
+    assert not h("set_meeting_lang", {"lang": "xx"})["ok"]  # unknown code (any Whisper language is fine)
     assert h("set_meeting_lang", {"lang": "el"})["error"] == "No meeting is recording"

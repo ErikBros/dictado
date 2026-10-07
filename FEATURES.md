@@ -18,7 +18,7 @@ Built once for both. "Check on Mac" = works in tests, still to be tried for real
 | Dictation: tap or hold, paste, cancel with key + Esc | done | done |
 | Pill with timer, level and cancel hint | done | done |
 | Window: Home, History, Meetings, Settings | done | done |
-| Dictation languages: any mix of English, Spanish, Swedish, Greek, auto-detected among them | done | check on Mac (shared code; key: dictado-982) |
+| Languages: English + Swedish built in, "Add a language" for any of Whisper's 100; dictation auto-detects among the ticked ones | done | check on Mac (shared code; key: dictado-982) |
 | Pill shows the language it heard, tray "Next dictation in" | done | check on Mac |
 | Your words (spelling list) | done | done |
 | Snippets | done | done |
