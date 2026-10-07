@@ -5,7 +5,7 @@ mic, taps Right Command with tagged synthetic events, and checks what lands in t
 Never while the user works: waits for 45 s of idle (HIDIdleTime) and aborts (exit 3) on any real key or
 click during the run (a listen-only tap counts events without Ecoscribe's tag).
 
-    .venv/bin/python tools/mac_e2e.py [--scenario basic|voice|recover|langkey|added|live|all]
+    .venv/bin/python tools/mac_e2e.py [--scenario basic|voice|recover|langkey|added|live|nobox|all]
 
 voice: a clip made with macOS `say` ("... new line ... send it"): a real line break in the middle and
 Enter pressed at the end. recover: the app is crashed (SIGSEGV) mid-dictation and started again on
@@ -300,6 +300,37 @@ def scenario_live(r: Run) -> dict:
             "clip_s": round(secs, 1)}
 
 
+def scenario_nobox(r: Run, clip="en_fox.wav") -> dict:
+    """dictado-cd2: the stop lands with a Finder window in front (no text box): nothing is pasted anywhere,
+    the text stays on the clipboard and the log says no_text_box. Finder is opened with `open` (no AppleScript,
+    no Automation prompt) and closed again with Cmd+W."""
+    import os
+    import Quartz as Q
+    from AppKit import NSWorkspace
+    from ecoscribe.platform.macos import deliver, keys
+    ws = NSWorkspace.sharedWorkspace()
+    r.use(clip)
+    before, seen = r.text(), r._log().count("delivered")
+    tap_rcmd()
+    subprocess.run(["open", os.path.expanduser("~/Downloads")], timeout=10)
+    end = time.monotonic() + 5
+    while time.monotonic() < end and ws.frontmostApplication().localizedName() != "Finder":
+        time.sleep(0.1)
+    time.sleep(len((FIX / clip).read_bytes()) / 32000)
+    tap_rcmd()
+    end = time.monotonic() + 15
+    while time.monotonic() < end and r._log().count("delivered") <= seen:
+        time.sleep(0.1)
+    time.sleep(0.3)
+    line = [l for l in r._log().splitlines() if "delivered" in l][-1:] or [""]
+    clip_text = deliver.get_clipboard_text() or ""
+    keys._post(13, True, Q.kCGEventFlagMaskCommand)  # Cmd+W: close the Downloads window
+    keys._post(13, False, Q.kCGEventFlagMaskCommand)
+    time.sleep(0.5)
+    return {"log": line[0][-160:], "no_text_box": "reason=no_text_box" in line[0],
+            "nothing_typed": r.text() == before, "on_clipboard": round(recall(clip_text, EXPECTED[clip]), 2)}
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--scenario", default="basic")
@@ -331,6 +362,8 @@ def main() -> int:
                 results["langkey"] = scenario_langkey(r)
             elif sc == "live":
                 results["live"] = scenario_live(r)
+            elif sc == "nobox":
+                results["nobox"] = scenario_nobox(r)
             elif sc == "added":
                 results["added"] = scenario_added(r)
             time.sleep(1.5)
@@ -351,6 +384,9 @@ def main() -> int:
         ok = ok and v["picks"] == ["en", "es"] and v["no_l_typed"]
     if "live" in results:
         ok = ok and results["live"]["recall"] >= 0.85
+    if "nobox" in results:
+        v = results["nobox"]
+        ok = ok and v["no_text_box"] and v["nothing_typed"] and v["on_clipboard"] >= 0.85
     if "added" in results:
         v = results["added"]
         ok = ok and v["de"]["recall"] >= 0.85 and v["fi"]["recall"] >= 0.85 and "large-v3" in (v["dictation_model"] or "") \
