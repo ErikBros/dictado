@@ -1,5 +1,6 @@
 """Dictation in your languages (dictado-bvf): any mix of en/es/sv/el, auto-detected among them,
 sticky to the last one on close calls, forced per dictation with the dictation key + L."""
+import sys
 import time
 
 import numpy as np
@@ -10,7 +11,6 @@ from dictado.choose import pick_language
 from dictado.config import Config, WhisperCfg
 from dictado.deliver import DeliveryResult
 from dictado.engine import Result, dictation_model
-from dictado.hook import VK_LANG, HookThread
 from dictado.window import parse_languages
 from tests.test_app import FakeGate, FakeRecorder, FakeUi, wait
 
@@ -92,7 +92,12 @@ def test_one_language_set_says_so():
     assert not any(str(e).startswith("('flash', '✓") for e in ui.events)
 
 
+windows_only = pytest.mark.skipif(sys.platform != "win32", reason="the Windows keyboard hook (macOS: dictado-982)")
+
+
+@windows_only
 def test_hook_swallows_L_only_with_the_dictation_key_held():
+    from dictado.hook import VK_LANG, HookThread
     events = []
     h = HookThread(lambda a: None, RCTRL, 0.3, emit=events.append, consume=False)
     assert not h.lang_key(VK_LANG, True)  # a normal L: typed as usual
@@ -104,7 +109,9 @@ def test_hook_swallows_L_only_with_the_dictation_key_held():
     assert not h.lang_key(0x43, True)  # Right Ctrl + C is untouched
 
 
+@windows_only
 def test_combo_hotkeys_keep_L():
+    from dictado.hook import VK_LANG, HookThread
     from dictado.hotkeys import ComboMatcher
     h = HookThread(lambda a: None, RCTRL, 0.3, emit=lambda e: None, consume=False, combo=ComboMatcher("ctrl+shift+d"))
     h._toggle_down = True
