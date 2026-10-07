@@ -15,6 +15,8 @@ Everything is worked out here, on this computer, from the dictation history (his
 - Pace and pauses (9jc.4): words per minute of speech (after the voice detector) and the share of the
   recording that was pauses, to people vs to AI apps. Listeners follow best at about 130-160 words a
   minute: shown as information, not as a goal.
+- Meetings (9jc.5): from recorded meetings (Me / Others), how much of the talking was yours, turns of
+  yours over 90 s, the questions you asked and your hedges.
 """
 from __future__ import annotations
 
@@ -304,3 +306,65 @@ def pace_summary(rows: list[dict]) -> dict:
         counts = Counter(min(max(int(60 * n / s // width * width), start), end) for n, s, _ in groups["people"])
         hist = [{"from": b, "dictations": counts.get(b, 0)} for b in range(start, end + width, width)]
     return {"people": summary(groups["people"]), "ai": summary(groups["ai"]), "range": [lo, hi], "histogram": hist}
+
+
+MONOLOGUE_S = 90.0  # one turn of yours longer than this
+TURN_GAP_S = 2.0  # a longer pause, or someone else, ends a turn
+
+
+def _questions(text: str, lang: str | None) -> int:
+    n = text.count("?")  # Spanish opens with ¿ and closes with ?: the close counts once
+    if "el" in str(lang or "").split("+"):
+        n += text.count(";") + text.count("\u037e")  # the Greek question mark
+    return n
+
+
+def meeting_stats(segments: list[dict], lang: str | None = None) -> dict | None:
+    """One meeting, from its labelled segments ("Me" is you; "Others" / "Speaker N" the rest; unlabelled
+    ones are left out). None when nothing of yours was heard."""
+    me = [x for x in segments if x.get("speaker") == "Me" and str(x.get("text", "")).strip()]
+    if not me:
+        return None
+    others_s = sum(x["t1"] - x["t0"] for x in segments if x.get("speaker") not in (None, "Me"))
+    me_s = sum(x["t1"] - x["t0"] for x in me)
+    turns: list[list[float]] = []
+    for x in sorted(segments, key=lambda x: x["t0"]):
+        if x.get("speaker") is None:
+            continue
+        if x.get("speaker") == "Me" and turns and turns[-1][2] and x["t0"] - turns[-1][1] < TURN_GAP_S:
+            turns[-1][1] = x["t1"]
+        else:
+            turns.append([x["t0"], x["t1"], x.get("speaker") == "Me"])
+    mine = [b - a for a, b, is_me in turns if is_me]
+    text = " ".join(x["text"].strip() for x in me)
+    return {"me_s": round(me_s), "others_s": round(others_s),
+            "talk_share": round(100 * me_s / (me_s + others_s)) if me_s + others_s else 100,
+            "monologues": sum(t > MONOLOGUE_S for t in mine), "longest_s": round(max(mine)),
+            "questions": _questions(text, lang),
+            "words": len(WORD.findall(text)), "hedges": markers(text, lang)["hedges"]}
+
+
+def meetings_summary(meetings: list[dict], now: datetime | None = None, days: int | None = None) -> dict:
+    """[{created, title, lang, segments}] -> totals over the meetings with you in them (within `days`),
+    and one line per meeting, newest first."""
+    now = now or datetime.now()
+    since = now - timedelta(days=days) if days else None
+    rows = []
+    for m in meetings:
+        t = _ts({"ts": m.get("created")})
+        if since and (t is None or t < since):
+            continue
+        st = meeting_stats(m.get("segments") or [], m.get("lang"))
+        if st:
+            rows.append({"created": str(m.get("created", ""))[:16], "title": m.get("title") or "Meeting", **st})
+    if not rows:
+        return {"meetings": 0}
+    rows.sort(key=lambda r: r["created"], reverse=True)
+    me, others, words = (sum(r[k] for r in rows) for k in ("me_s", "others_s", "words"))
+    hedges = Counter()
+    for r in rows:
+        hedges.update(r["hedges"])
+    return {"meetings": len(rows), "talk_share": round(100 * me / (me + others)) if me + others else 100,
+            "monologues": sum(r["monologues"] for r in rows), "questions": sum(r["questions"] for r in rows),
+            "hedges_per_100": round(100 * sum(hedges.values()) / words, 1) if words else 0,
+            "top_hedges": [{"word": w, "count": k} for w, k in hedges.most_common(5)], "list": rows[:10]}

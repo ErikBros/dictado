@@ -46,6 +46,10 @@ function demoInsights(days) {  // invented numbers and text for the demo and scr
       }),
       top_fillers: [{ word: "like", count: 22 }, { word: "basically", count: 9 }],
       top_hedges: [{ word: "maybe", count: 31 }, { word: "i think", count: 24 }, { word: "kind of", count: 12 }] },
+    meetings: { meetings: 4, talk_share: 41, monologues: 2, questions: 17, hedges_per_100: 1.9, top_hedges: [{ word: "i think", count: 14 }],
+      list: [{ created: "2026-10-06T10:00", title: "Weekly planning", talk_share: 38, monologues: 0, questions: 6, longest_s: 70 },
+        { created: "2026-10-03T14:30", title: "Design review", talk_share: 57, monologues: 2, questions: 3, longest_s: 140 },
+        { created: "2026-10-01T09:00", title: "Intro call", talk_share: 29, monologues: 0, questions: 8, longest_s: 45 }] },
     pace: { people: { dictations: Math.round(64 * k), wpm: 148, pauses: 22, in_range: 58 }, ai: { dictations: Math.round(150 * k), wpm: 163, pauses: 31, in_range: 35 },
       range: [130, 160], histogram: [0, 1, 1, 3, 5, 8, 12, 14, 9, 5, 3, 2, 1, 0, 0].map((n, i) => ({ from: 80 + 10 * i, dictations: n })) },
   };
@@ -282,10 +286,10 @@ function columns(el, data, tickEvery) {
   svg.append(svgEl("line", { x1: 0, x2: W, y1: base + 0.5, y2: base + 0.5, class: "base" }));
   el.append(svg);
 }
-function hbars(el, items) {
+function hbars(el, items, scale) {  // scale: the full bar's value (100 for a share); default the biggest
   el.textContent = "";
   const box = document.createElement("div"); box.className = "i-hbars";
-  const max = Math.max(1, ...items.map((x) => x.value));
+  const max = scale || Math.max(1, ...items.map((x) => x.value));
   for (const it of items) {
     const row = document.createElement("div"); row.className = "i-hbar";
     const name = document.createElement("span"); name.className = "i-hbar-name"; name.textContent = it.name; name.title = it.name;
@@ -321,6 +325,20 @@ function renderMarkers(m) {  // dictado-9jc.3: fillers and hedges in messages to
   const chips = $("#i-top-hedges"); chips.textContent = "";
   for (const h of m.top_hedges) chips.append(iChip(h.word, h.count));
   if (!m.top_hedges.length) chips.append(iChip("None so far"));
+}
+function renderMeetings(m) {  // dictado-9jc.5
+  const has = !!(m && m.meetings);
+  $("#i-meet-empty").hidden = has; $("#i-meet-body").hidden = !has;
+  if (!has) return;
+  $("#i-meet-share").textContent = `${m.talk_share}%`;
+  $("#i-meet-mono").textContent = fmtNum(m.monologues);
+  $("#i-meet-q").textContent = fmtNum(m.questions);
+  $("#i-meet-hedges").textContent = String(m.hedges_per_100);
+  hbars($("#i-meet-list"), m.list.map((x) => {
+    const extra = [x.monologues ? `${x.monologues} long ${x.monologues === 1 ? "turn" : "turns"}` : "",
+      x.questions ? `${x.questions} ${x.questions === 1 ? "question" : "questions"}` : ""].filter(Boolean);
+    return { name: x.title, value: x.talk_share, label: [`${x.talk_share}%`, ...extra].join(" · ") };
+  }), 100);
 }
 function renderPace(p) {  // dictado-9jc.4
   const has = !!(p && (p.people || p.ai));
@@ -408,6 +426,7 @@ async function renderInsights() {
   renderClarity(d.clarity);
   renderMarkers(d.markers);
   renderPace(d.pace);
+  renderMeetings(d.meetings);
   const people = d.coach ? d.coach.people : 0;  // dictado-9jc.2
   $("#i-coach").disabled = !people;
   $("#i-coach").title = people ? `${people} ${people === 1 ? "message" : "messages"} to people in the last ${d.coach.days} days`
