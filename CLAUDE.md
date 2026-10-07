@@ -1,6 +1,44 @@
-# Project Instructions for AI Agents
+# Dictado: instructions for every Claude session (Windows and Mac)
 
-This file provides instructions and context for AI coding agents working on this project.
+Dictado is one codebase for Windows and macOS. Two Claude sessions work on it: one on Windows
+(merges and runs the Windows desktop/GPU tests), one on the Mac. Erik isn't a programmer: he gets
+outcomes in plain words and only real choices (money, publishing, his desktop, what the app does).
+
+## How we work: STANDARD PROCESS (enforced, not optional)
+
+1. **One ticket = one branch = one pull request.** Branch from the *latest* `origin/main`
+   (`git fetch && git switch -c <short-name> origin/main`). Name the ticket in commits:
+   `(ticket: dictado-xxx)`.
+2. **Never stack.** Never branch from another open branch. A follow-up waits until the first PR
+   is merged, then starts from the updated main. The `pr-shape` check fails stacked PRs.
+3. **Open the PR as soon as the branch is pushed** (`gh pr create --base main`), even if small.
+4. **Merge only when green:** `unit (windows-latest)`, `unit (macos-14)` and `pr-shape` must pass
+   (GitHub enforces it on `main`, for everyone). The Windows session also runs the local desktop
+   and GPU suites when a PR touches shared code. Merge commits, no squash.
+5. **Short-lived branches:** merge within the day; branches are deleted on merge. If main moves,
+   rebase your one branch, never a pile.
+6. **Nothing goes straight to main**, ticket/beads updates included: they ride in the PR.
+7. **Public repo:** before every push, `tests/test_no_secrets.py` and `tests/test_repo_hygiene.py`
+   pass and the diff has no names, personal paths, keys or calendar links.
+8. **Parity:** OS-specific work updates `dictado/platform/base.py` + `FEATURES.md` in the same PR
+   (`tests/test_platform_contract.py` checks it); the other platform gets done, a ticket, or
+   "not needed" with a reason.
+9. **gh account:** the repo belongs to ErikBros. Use `GH_TOKEN=$(gh auth token --user ErikBros) gh ...`
+   per command; never leave `gh auth switch` on the personal account (other sessions are work).
+
+## Build & test
+
+```bash
+. tools/winpy.sh                                   # Windows (from WSL): WINPY + APP_W
+wtest "$APP_W\\tests" -q -m "not gpu and not win"   # unit
+wtest "$APP_W\\tests" -q -m gpu                     # GPU (NVIDIA)
+wtest "$APP_W\\tests" -q -m win                     # real desktop, waits for 45 s idle
+npm install && npm run smoke                       # the window's JavaScript (jsdom)
+wpy "$APP_W\\tools\\build.py" --installer          # Windows installer
+python tools/build_mac.py                          # macOS .app + .dmg (on the Mac)
+tools/mac_check.sh                                 # macOS test suite (on the Mac)
+```
+
 
 <!-- BEGIN BEADS INTEGRATION v:1 profile:minimal hash:7510c1e2 -->
 ## Beads Issue Tracker
@@ -33,11 +71,11 @@ bd close <id>         # Complete work
 1. **File issues for remaining work** - Create issues for anything that needs follow-up
 2. **Run quality gates** (if code changed) - Tests, linters, builds
 3. **Update issue status** - Close finished work, update in-progress items
-4. **PUSH TO REMOTE** - This is MANDATORY:
+4. **PUSH YOUR BRANCH AND OPEN/UPDATE ITS PR** (see STANDARD PROCESS above; main is protected):
    ```bash
-   git pull --rebase
-   git push
-   git status  # MUST show "up to date with origin"
+   git fetch && git rebase origin/main   # your one branch only
+   git push -u origin HEAD
+   gh pr create --base main              # if it has no PR yet
    ```
 5. **Clean up** - Clear stashes, prune remote branches
 6. **Verify** - All changes committed AND pushed
@@ -49,22 +87,3 @@ bd close <id>         # Complete work
 - NEVER say "ready to push when you are" - YOU must push
 - If push fails, resolve and retry until it succeeds
 <!-- END BEADS INTEGRATION -->
-
-
-## Build & Test
-
-_Add your build and test commands here_
-
-```bash
-# Example:
-# npm install
-# npm test
-```
-
-## Architecture Overview
-
-_Add a brief overview of your project architecture_
-
-## Conventions & Patterns
-
-_Add your project-specific conventions here_
