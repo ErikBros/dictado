@@ -741,7 +741,7 @@ async function renderSettings() {
   $("#f-speakers").disabled = !s.speakers_addon;
   $("#f-speakers-help").textContent = s.speakers_addon
     ? "After a call, the other side is split into Speaker 1, 2, 3… Click a name in a transcript to rename that person."
-    : MAC ? "Needs the speaker add-on (Dictado Speakers, drag it to Applications), which isn't installed." : "Needs the speaker add-on (Dictado-Speakers-Setup), which isn't installed.";
+    : MAC ? "Needs the speaker add-on (Ecoscribe Speakers, drag it to Applications), which isn't installed." : "Needs the speaker add-on (Ecoscribe-Speakers-Setup), which isn't installed.";
   extraLangs = [...(s.values.extra_languages || [])];
   langNames = Object.fromEntries([...s.options.languages, ...(s.options.all_languages || [])].map((o) => [o.value, o.label]));
   baseLangs = s.options.base_languages || ["en", "sv"];

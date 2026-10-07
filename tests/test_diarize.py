@@ -101,9 +101,24 @@ def test_a_failing_addon_leaves_the_transcript_alone(tmp_path):
 
 def test_available_needs_the_setting_and_the_addon(tmp_path):
     cfg = Config()
-    exe = tmp_path / "DictadoSpeakers.exe"
+    exe = tmp_path / "EcoscribeSpeakers.exe"
     assert not diarize.available(cfg, exe)
     exe.write_bytes(b"x")
     assert diarize.available(cfg, exe)
     cfg.meetings.speakers = False
     assert not diarize.available(cfg, exe)
+
+
+def test_windows_addon_new_name_first_then_the_old_one(tmp_path):
+    """dictado-jtv: Ecoscribe Speakers\\EcoscribeSpeakers.exe, else the 1.1.0 Dictado Speakers install."""
+    from ecoscribe.platform.windows.speakers import addon_exe
+    progs = tmp_path / "Programs"
+    assert addon_exe(tmp_path) == progs / "Ecoscribe Speakers" / "EcoscribeSpeakers.exe"  # where it will be
+    old = progs / "Dictado Speakers" / "DictadoSpeakers.exe"
+    old.parent.mkdir(parents=True)
+    old.write_bytes(b"x")
+    assert addon_exe(tmp_path) == old
+    new = progs / "Ecoscribe Speakers" / "EcoscribeSpeakers.exe"
+    new.parent.mkdir(parents=True)
+    new.write_bytes(b"x")
+    assert addon_exe(tmp_path) == new

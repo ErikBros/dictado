@@ -1,7 +1,7 @@
 """Where the speaker add-on lives on macOS (diarize.addon_exe for the Mac).
 
 "Ecoscribe Speakers.app" (PyTorch + pyannote, a separate download like on Windows), dragged to
-/Applications or ~/Applications. Its binary takes the same arguments as DictadoSpeakers.exe:
+/Applications or ~/Applications. Its binary takes the same arguments as EcoscribeSpeakers.exe:
 <audio> <out.json>, plus the <out>.voices.json sidecar. Before the rename (dictado-c9u) it was
 "Dictado Speakers.app": still found when the new one isn't there.
 """

@@ -1,4 +1,4 @@
-# PyInstaller spec for DictadoSpeakers.exe (the speaker add-on, t0u.22). Built by build_speakers.py
+# PyInstaller spec for EcoscribeSpeakers.exe (the speaker add-on, t0u.22). Built by build_speakers.py
 # with the speakers venv (torch CUDA + pyannote.audio); DICTADO_SPEAKERS_MODEL = the model folder.
 import os
 import sys
@@ -24,7 +24,7 @@ datas.append((os.environ["DICTADO_SPEAKERS_MODEL"], "model"))
 a = Analysis(["speakers_main.py"], pathex=[], binaries=binaries, datas=datas, hiddenimports=hiddenimports,
              excludes=["tkinter", "matplotlib.tests", "IPython"], noarchive=False)
 pyz = PYZ(a.pure)
-NAME = "EcoscribeSpeakers" if sys.platform == "darwin" else "DictadoSpeakers"  # the Mac add-on is renamed (dictado-c9u)
+NAME = "EcoscribeSpeakers"  # DictadoSpeakers before the rename (dictado-c9u Mac, dictado-jtv Windows)
 exe = EXE(pyz, a.scripts, [], exclude_binaries=True, name=NAME, console=True, upx=False)
 coll = COLLECT(exe, a.binaries, a.datas, strip=False, upx=False, name=NAME)
 

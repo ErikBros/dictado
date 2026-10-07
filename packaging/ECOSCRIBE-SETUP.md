@@ -16,7 +16,7 @@ Version 1.8.0 (October 2026). The interface is in English.
 | File | What it is | Needed? |
 |---|---|---|
 | `Ecoscribe-Setup-1.8.0.exe` | The app (0.54 GB) | Yes |
-| `Dictado-Speakers-Setup-1.1.0.exe` | Speaker add-on: tells the people on a call apart (2.1 GB download, 4.6 GB installed) | Optional |
+| `Ecoscribe-Speakers-Setup-1.2.0.exe` | Speaker add-on: tells the people on a call apart (2.1 GB download, 4.6 GB installed) | Optional |
 | `ECOSCRIBE-SETUP.md` | This guide | |
 
 ## 2. Requirements
@@ -37,7 +37,7 @@ Version 1.8.0 (October 2026). The interface is in English.
 
 **Updating?** Install the new Setup over the old one; your settings, history and transcripts stay. If you have the speaker add-on 1.0.0, install 1.1.0 to get "Remember voices".
 
-**Optional, the speaker add-on:** run **`Dictado-Speakers-Setup-1.1.0.exe`** the same way (same SmartScreen steps). It installs separately in `%LOCALAPPDATA%\Programs\Dictado Speakers` and Ecoscribe picks it up on its own. Updating Ecoscribe later never touches it.
+**Optional, the speaker add-on:** run **`Ecoscribe-Speakers-Setup-1.2.0.exe`** the same way (same SmartScreen steps). It installs separately in `%LOCALAPPDATA%\Programs\Ecoscribe Speakers` and Ecoscribe picks it up on its own. Updating Ecoscribe later never touches it.
 
 ## 4. First things to set (Ecoscribe > Settings)
 
@@ -85,7 +85,7 @@ Drag an mp3, m4a, wav, ogg, opus, flac, mp4 or webm onto the window, or use **Im
 | What | Where |
 |---|---|
 | The app | `%LOCALAPPDATA%\Programs\Ecoscribe` |
-| Speaker add-on | `%LOCALAPPDATA%\Programs\Dictado Speakers` |
+| Speaker add-on | `%LOCALAPPDATA%\Programs\Ecoscribe Speakers` |
 | Settings | `%APPDATA%\ecoscribe\config.toml` |
 | History, transcripts, models, logs | `%LOCALAPPDATA%\ecoscribe\` |
 | Meeting transcripts | `%LOCALAPPDATA%\ecoscribe\transcripts\<date>_<title>\` (audio FLACs, transcript .txt/.md/.srt) |
@@ -110,7 +110,7 @@ Windows Settings > Apps > **Ecoscribe** > Uninstall (and **Ecoscribe speaker add
 
 ## 9. For your Claude (paste this section when asking for help)
 
-Ecoscribe is a Windows app (PyInstaller-frozen Python 3.12, faster-whisper/CTranslate2 on CUDA, pywebview window, pystray tray, low-level keyboard hook). One background process owns the hook, the tray and the meetings controller. It starts workers for the dictation model (`--engine-worker`, on demand), meetings (`--meeting DIR`), file jobs (`--transcribe DIR`) and the speakers pass (`--speakers DIR`, runs `DictadoSpeakers.exe <audio> <out.json>`, pyannote).
+Ecoscribe is a Windows app (PyInstaller-frozen Python 3.12, faster-whisper/CTranslate2 on CUDA, pywebview window, pystray tray, low-level keyboard hook). One background process owns the hook, the tray and the meetings controller. It starts workers for the dictation model (`--engine-worker`, on demand), meetings (`--meeting DIR`), file jobs (`--transcribe DIR`) and the speakers pass (`--speakers DIR`, runs `EcoscribeSpeakers.exe <audio> <out.json>`, pyannote).
 
 Files to read when something fails:
 - `%LOCALAPPDATA%\ecoscribe\ecoscribe.log`: background app (startup, ready line, meetings controller, reloads)
