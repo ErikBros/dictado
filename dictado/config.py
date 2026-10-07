@@ -53,6 +53,7 @@ class WhisperCfg:
     device: str = "mlx" if MAC else "cuda"  # mlx = Apple GPU (Metal), spike/report-mac.md
     compute_type: str = "float16"
     beam_size: int = 5
+    extra_languages: list = field(default_factory=list)  # dictado-ehs: added beyond English + Swedish
     languages: list = field(default_factory=lambda: ["en"])  # English by default; add "es" to allow Spanish
     # Swedish dictation (t0u.24) runs on its own model: turbo got 8.4 % WER on Swedish, large-v3 3.4 %
     # (spike 2026-10-05); int8_float16 = same WER, ~2.3 GB instead of 3.5. Only for languages == ["sv"].

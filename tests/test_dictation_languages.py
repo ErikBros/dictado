@@ -18,12 +18,13 @@ RCTRL = 0xA3
 SR = 16000
 
 
-def test_any_mix_of_the_four_languages():
-    assert parse_languages("en,es,sv,el") == ["en", "es", "sv", "el"]
-    assert parse_languages("el") == ["el"] and parse_languages("sv,en") == ["en", "sv"]  # canonical order
-    for bad in ("", "fr", "en,xx"):
+def test_any_mix_of_your_languages():
+    extra = ["es", "el"]  # added on top of English + Swedish (dictado-ehs)
+    assert parse_languages("en,es,sv,el", extra) == ["en", "sv", "es", "el"]
+    assert parse_languages("el", extra) == ["el"] and parse_languages("sv,en") == ["en", "sv"]
+    for bad in ("", "fr", "en,xx", "el"):  # "el" without Greek added
         with pytest.raises(ValueError):
-            parse_languages(bad)
+            parse_languages(bad, extra if bad != "el" else [])
 
 
 def test_swedish_or_greek_in_the_mix_runs_on_large_v3():

@@ -68,7 +68,7 @@ def test_current_mic_kept_even_if_unplugged(api):
 
 
 def test_save_settings_writes_config_toggles_startup_and_reloads(api):
-    r = api.save_settings({"hotkey": "f13", "mic": "Headset (Zone Vibe 100)", "languages": "en,es",
+    r = api.save_settings({"hotkey": "f13", "mic": "Headset (Zone Vibe 100)", "extra_languages": ["es"], "languages": "en,es",
                            "sounds": False, "overlay": True, "unmute": False, "startup": True})
     assert r["ok"] and r["restarting"]
     c = config.load(api._config_path)
@@ -233,7 +233,7 @@ def test_meeting_settings_and_on_demand_round_trip(api):
     c = config.load(api._config_path)
     assert c.meetings.mode == "auto" and c.meetings.default_lang == "el" and c.whisper.on_demand is False
     assert not api.save_settings({"meet_mode": "siempre"})["ok"]
-    assert not api.save_settings({"meet_lang": "fr"})["ok"]
+    assert not api.save_settings({"meet_lang": "xx"})["ok"]  # any Whisper language is fine; nonsense isn't
 
 
 
@@ -251,12 +251,23 @@ def test_combo_shortcuts(api):
     assert api.get_settings()["values"]["hotkey_label"] == "Ctrl+Shift+D"
 
 
-def test_any_mix_of_dictation_languages(tmp_path):
-    """dictado-bvf: tick any mix of English, Spanish, Swedish, Greek (was: Swedish only alone)."""
-    from dictado.window import Api, LANGUAGES
+def test_languages_are_add_ons(tmp_path):
+    """dictado-ehs: English + Swedish built in; added languages can be ticked, removed ones drop out."""
+    from dictado import config
+    from dictado.window import Api
     cfg = tmp_path / "config.toml"
     api = Api(data_dir=tmp_path, config_path=cfg, signal_reload=lambda: True)
-    assert [c for c, _ in LANGUAGES] == ["en", "es", "sv", "el"]
-    assert api.save_settings({"languages": "el,sv,en,es"})["ok"]
-    assert api.get_settings()["values"]["languages"] == "en,es,sv,el"
-    assert not api.save_settings({"languages": "fr"})["ok"]
+    s = api.get_settings()
+    assert [o["value"] for o in s["options"]["languages"]] == ["en", "sv"] and s["values"]["extra_languages"] == []
+    assert [o["value"] for o in s["options"]["meet_langs"]] == ["en", "sv", "en,sv", "auto"]
+    assert any(o["value"] == "el" for o in s["options"]["all_languages"]) and len(s["options"]["all_languages"]) == 98
+    assert not api.save_settings({"languages": "en,es"})["ok"]  # Spanish isn't added yet
+    assert api.save_settings({"extra_languages": ["es", "el"], "languages": "el,sv,en,es"})["ok"]
+    s = api.get_settings()
+    assert s["values"]["languages"] == "en,sv,es,el" and s["values"]["extra_languages"] == ["es", "el"]
+    assert [o["value"] for o in s["options"]["meet_langs"]] == ["en", "sv", "es", "el", "en,sv,es,el", "auto"]
+    assert api.save_settings({"meet_lang": "el"})["ok"]
+    assert api.save_settings({"extra_languages": ["es"]})["ok"]  # remove Greek
+    c = config.load(cfg)
+    assert c.whisper.languages == ["en", "sv", "es"] and c.meetings.default_lang == "sv"  # Greek dropped everywhere
+    assert not api.save_settings({"extra_languages": ["xx"]})["ok"]

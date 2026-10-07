@@ -16,7 +16,7 @@ from pathlib import Path
 from .deliver import set_clipboard_text
 
 log = logging.getLogger(__name__)
-LANG_NAMES = {"en": "English", "es": "Spanish", "sv": "Swedish", "el": "Greek"}
+from .routing import LANG_NAMES  # any language or mix (dictado-ehs)
 SR = 16000
 
 

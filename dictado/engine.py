@@ -44,13 +44,14 @@ if sys.platform == "darwin":  # mlx on the Apple GPU behind the same interface (
     from .platform.macos.mlx_engine import factory as _default_factory  # noqa: F811
 
 
-BIG_MODEL_LANGS = {"sv", "el"}  # turbo is clearly worse on these (measured 2026-10-05)
+from .languages import needs_big_model
 
 
 def dictation_model(cfg: WhisperCfg) -> tuple[str, str]:
-    """(model, compute_type) for the dictation languages: any Swedish or Greek in the mix runs
-    everything on large-v3 (still well under a second, about twice turbo's time)."""
-    if BIG_MODEL_LANGS & set(cfg.languages):
+    """(model, compute_type) for the dictation languages: any language turbo handles poorly
+    (Swedish, Greek, most added ones) runs everything on large-v3 (well under a second, about
+    twice turbo's time)."""
+    if needs_big_model(cfg.languages):
         return cfg.sv_model, cfg.sv_compute_type
     return cfg.model, cfg.compute_type
 

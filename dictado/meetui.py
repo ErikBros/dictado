@@ -22,7 +22,18 @@ APP_NAMES = {"msteams": "Teams", "ms-teams": "Teams", "teams": "Teams", "slack":
              "discord": "Discord", "signal": "Signal", "telegram": "Telegram", "webex": "Webex",
              "whatsapp": "WhatsApp", "chrome": "Chrome", "msedge": "Edge", "firefox": "Firefox",
              "brave": "Brave", "opera": "Opera"}
-LANGS = [("sv", "Swedish"), ("en", "English"), ("es", "Spanish"), ("el", "Greek"), ("el,es", "Greek + Spanish"), ("auto", "Detect")]
+# Meeting / file language choices: English + Swedish built in, plus the user's added languages
+# (dictado-ehs). The background app refills it from the config at start (set_langs).
+LANGS: list[tuple[str, str]] = []
+
+
+def set_langs(extra) -> list[tuple[str, str]]:
+    from .languages import available, meeting_options
+    LANGS[:] = meeting_options(available(extra))
+    return LANGS
+
+
+set_langs([])
 
 
 def app_name(app: str | None) -> str:
