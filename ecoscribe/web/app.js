@@ -39,6 +39,13 @@ function demoInsights(days) {  // invented numbers and text for the demo and scr
       words: [{ lang: "en", words: [{ word: "particularly", unsure: 4, said: 6 }, { word: "Kristineberg", unsure: 3, said: 3 }, { word: "rural", unsure: 2, said: 5 }] },
         { lang: "sv", words: [{ word: "sjuksköterska", unsure: 2, said: 2 }] }] },
     coach: { people: Math.round(64 * k), days: 14 },
+    markers: { words: Math.round(3100 * k), dictations: Math.round(64 * k), fillers_per_100: 1.2, hedges_per_100: 2.4,
+      weeks: [null, null, 3.6, 3.1, 2.9, null, 2.2, 1.8].map((h, i) => {
+        const d = new Date(today); d.setDate(today.getDate() - today.getDay() + 1 - 7 * (7 - i));
+        return { week: d.toISOString().slice(0, 10), words: h ? 400 : 20, hedges_per_100: h, fillers_per_100: h ? 1.1 : null };
+      }),
+      top_fillers: [{ word: "like", count: 22 }, { word: "basically", count: 9 }],
+      top_hedges: [{ word: "maybe", count: 31 }, { word: "i think", count: 24 }, { word: "kind of", count: 12 }] },
   };
 }
 
@@ -46,7 +53,7 @@ function demoApi() {
   const now = new Date();
   const iso = (mins) => new Date(now - mins * 60000).toISOString().slice(0, 19);
   let settings = {
-    values: { hotkey: "rctrl", mic: "Anker PowerConf", languages: "en", sounds: true, overlay: true, live_text: true, insights: params.get("insights") === "1", unmute: true, startup: true,
+    values: { hotkey: "rctrl", mic: "Anker PowerConf", languages: "en", sounds: true, overlay: true, live_text: true, insights: params.get("insights") === "1", speech_feedback: false, unmute: true, startup: true,
       meet_mode: "prompt", meet_lang: "sv", on_demand: true, speakers: true, vocabulary: "Göteborg\npyannote", voice_commands: false, screen_names: true, hold_to_talk: false, numpad_enter: false, voice_memory: true,
       snippets: [{ trigger: "my email", text: "alex@example.com" }] },
     options: {
@@ -295,6 +302,24 @@ function iChip(text, count, title) {
   if (title) c.title = title;
   return c;
 }
+function renderMarkers(m) {  // dictado-9jc.3: fillers and hedges in messages to people
+  const has = !!(m && m.words);
+  $("#i-markers-empty").hidden = has; $("#i-markers-body").hidden = !has;
+  if (!has) return;
+  $("#i-hedges").textContent = String(m.hedges_per_100);
+  $("#i-fillers").textContent = String(m.fillers_per_100);
+  const day = (iso) => new Date(iso + "T12:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+  const n = m.weeks.length;
+  columns($("#i-markers-weeks"), m.weeks.map((w, i) => {
+    const v = w.hedges_per_100 == null ? 0 : w.hedges_per_100 + w.fillers_per_100;
+    return { value: v, dim: i !== n - 1, label: i === n - 1 ? "This week" : day(w.week),
+      tipValue: w.hedges_per_100 == null ? "Too few words to say" : `${w.hedges_per_100} hedges · ${w.fillers_per_100} fillers per 100`,
+      tipLabel: `week of ${day(w.week)}` };
+  }), (i) => i === 0 || i === n - 1);
+  const chips = $("#i-top-hedges"); chips.textContent = "";
+  for (const h of m.top_hedges) chips.append(iChip(h.word, h.count));
+  if (!m.top_hedges.length) chips.append(iChip("None so far"));
+}
 function renderClarity(c) {  // dictado-9jc.1
   const has = !!(c && c.dictations);
   $("#i-clarity-empty").hidden = has; $("#i-clarity-body").hidden = !has;
@@ -358,6 +383,7 @@ async function renderInsights() {
   }
   if (!d.habits.length) hab.textContent = "A few more dictations and your filler words show up here.";
   renderClarity(d.clarity);
+  renderMarkers(d.markers);
   const people = d.coach ? d.coach.people : 0;  // dictado-9jc.2
   $("#i-coach").disabled = !people;
   $("#i-coach").title = people ? `${people} ${people === 1 ? "message" : "messages"} to people in the last ${d.coach.days} days`
@@ -833,7 +859,7 @@ function formValues() {
     hotkey: $("#f-hotkey").value, mic: $("#f-mic").value,
     languages: $$("#f-languages input:checked").map((i) => i.value).join(",") || "en",
     extra_languages: [...extraLangs],
-    sounds: $("#f-sounds").checked, overlay: $("#f-overlay").checked, live_text: $("#f-live-text").checked, insights: $("#f-insights").checked, unmute: $("#f-unmute").checked, startup: $("#f-startup").checked,
+    sounds: $("#f-sounds").checked, overlay: $("#f-overlay").checked, live_text: $("#f-live-text").checked, insights: $("#f-insights").checked, speech_feedback: $("#f-speech-feedback").checked, unmute: $("#f-unmute").checked, startup: $("#f-startup").checked,
     meet_mode: $("#f-meet-mode").value, meet_lang: $("#f-meet-lang").value, on_demand: $("#f-on-demand").checked,
     speakers: $("#f-speakers").checked, voice_commands: $("#f-voice-commands").checked,
     screen_names: $("#f-screen-names").checked, hold_to_talk: $("#f-hold").checked, numpad_enter: $("#f-numpad-enter").checked,
@@ -942,7 +968,7 @@ async function renderSettings() {
   baseLangs = s.options.base_languages || ["en", "sv"];
   langCard(new Set(String(s.values.languages || "en").split(",")));
   $("#lang-key").textContent = hotkeyLabel(s.values.hotkey || "rctrl");
-  $("#f-sounds").checked = s.values.sounds; $("#f-overlay").checked = s.values.overlay; $("#f-live-text").checked = s.values.live_text !== false; $("#f-insights").checked = !!s.values.insights;
+  $("#f-sounds").checked = s.values.sounds; $("#f-overlay").checked = s.values.overlay; $("#f-live-text").checked = s.values.live_text !== false; $("#f-insights").checked = !!s.values.insights; $("#f-speech-feedback").checked = !!s.values.speech_feedback;
   $("#nav-insights").hidden = !s.values.insights;
   $("#f-unmute").checked = s.values.unmute; $("#f-startup").checked = s.values.startup;
   $("#f-startup").disabled = !s.can_startup;

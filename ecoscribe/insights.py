@@ -13,6 +13,7 @@ from collections import Counter
 from datetime import datetime, timedelta
 
 from . import coach
+from .coach import FILLERS, LIKE  # noqa: F401  (shared with the pill's note, dictado-9jc.3)
 
 TYPING_WPM = 40  # an average typist; what the time saved is measured against
 WORD = re.compile(r"[^\W\d_][\w'’-]*", re.UNICODE)
@@ -43,17 +44,6 @@ STOP = {
         είμαστε έχω έχει αυτό αυτή αυτός εγώ εσύ εμείς μου σου μας σας τους στο στη στην στον στα αλλά ή πολύ
         πώς τι ποιος εδώ εκεί τώρα όταν αν επίσης""".split()),
 }
-# "like" only as a filler: not "I'd like", "would like", "looks like", "I like it"
-LIKE = r"(?<!would )(?<!'d )(?<!’d )(?<!i )(?<!you )(?<!we )(?<!they )(?<!looks )(?<!look )(?<!feels )(?<!don't )(?<!to )like"
-FILLERS = {
-    "en": [LIKE, "actually", "basically", "you know", "i mean", "kind of", "sort of", "i don't know", "literally",
-           "right?", "yeah yeah"],
-    "es": ["o sea", "bueno", "pues", "en plan", "vale", "sabes", "¿vale?", "tipo", "digamos"],
-    "sv": ["typ", "liksom", "alltså", "asså", "ju", "liksom", "ba", "va"],
-    "el": ["λοιπόν", "δηλαδή", "ας πούμε", "ξέρεις", "καλά", "βασικά"],
-}
-
-
 def words(text: str) -> list[str]:
     return WORD.findall(text or "")
 
@@ -128,8 +118,7 @@ def habits(rows: list[dict], min_words: int = 150) -> list[dict]:
         n = len(words(text))
         if n < min_words:
             continue
-        counts = {("like" if f == LIKE else f): len(re.findall(r"(?<!\w)" + (f if f == LIKE else re.escape(f)) + r"(?!\w)",
-                                                              text)) for f in dict.fromkeys(fillers)}
+        counts = coach.count(text, fillers)
         top = sorted(((f, k) for f, k in counts.items() if k), key=lambda x: -x[1])[:5]
         total = sum(counts.values())
         out.append({"lang": lang, "words": n, "per_100": round(100 * total / n, 1),
@@ -202,5 +191,6 @@ def compute(rows: list[dict], vocabulary: list[str], days: int | None = None, no
     return {"days": days, "totals": totals(sel), "rhythm": rh, "languages": by_language(sel),
             "apps": by_app(sel), "habits": habits(sel), "phrases": phrases(sel),
             "suggestions": name_suggestions(sel, vocabulary), "clarity": coach.clarity_summary(sel, now),
+            "markers": coach.markers_summary(sel, now),
             "coach": {"people": coach.people_count(rows, now), "days": coach.COACH_DAYS},
             "first": str(rows[0].get("ts", ""))[:10] if rows else None}

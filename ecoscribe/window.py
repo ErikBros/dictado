@@ -150,7 +150,7 @@ class Api:
         return {
             "values": {
                 "hotkey": c.hotkey.key, "hotkey_label": hotkeys.label(c.hotkey.key), "mic": cur, "languages": ",".join(c.whisper.languages),
-                "sounds": c.ui.sounds, "overlay": c.ui.overlay, "live_text": c.ui.live_text, "insights": c.ui.insights, "unmute": c.audio.unmute_while_recording,
+                "sounds": c.ui.sounds, "overlay": c.ui.overlay, "live_text": c.ui.live_text, "insights": c.ui.insights, "speech_feedback": c.ui.speech_feedback, "unmute": c.audio.unmute_while_recording,
                 "startup": self._startup.is_enabled(),
                 "meet_mode": c.meetings.mode, "meet_lang": c.meetings.default_lang, "on_demand": c.whisper.on_demand,
                 "speakers": c.meetings.speakers, "vocabulary": "\n".join(c.text.vocabulary),
@@ -233,7 +233,7 @@ class Api:
                 if not valid_meeting_lang(values["meet_lang"]):
                     raise ValueError("meet_lang")
                 c.meetings.default_lang = values["meet_lang"]
-            for key, (section, name) in {"sounds": ("ui", "sounds"), "overlay": ("ui", "overlay"), "live_text": ("ui", "live_text"), "insights": ("ui", "insights"),
+            for key, (section, name) in {"sounds": ("ui", "sounds"), "overlay": ("ui", "overlay"), "live_text": ("ui", "live_text"), "insights": ("ui", "insights"), "speech_feedback": ("ui", "speech_feedback"),
                                          "unmute": ("audio", "unmute_while_recording"),
                                          "on_demand": ("whisper", "on_demand"),
                                          "speakers": ("meetings", "speakers"),
