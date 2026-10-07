@@ -5,7 +5,7 @@ mic, taps Right Command with tagged synthetic events, and checks what lands in t
 Never while the user works: waits for 45 s of idle (HIDIdleTime) and aborts (exit 3) on any real key or
 click during the run (a listen-only tap counts events without Ecoscribe's tag).
 
-    .venv/bin/python tools/mac_e2e.py [--scenario basic|voice|recover|langkey|added|live|nobox|all]
+    .venv/bin/python tools/mac_e2e.py [--scenario basic|voice|recover|langkey|added|live|nobox|numpad|all]
 
 voice: a clip made with macOS `say` ("... new line ... send it"): a real line break in the middle and
 Enter pressed at the end. recover: the app is crashed (SIGSEGV) mid-dictation and started again on
@@ -105,7 +105,7 @@ class Run:
         env = {**__import__("os").environ, "ECOSCRIBE_DATA_DIR": str(self.data)}
         self.env = env
         self.data.mkdir(parents=True, exist_ok=True)  # voice commands are a setting (off by default): on here
-        (self.data / "config.toml").write_text("[text]\nvoice_commands = true\n[whisper]\nlanguages = [\"en\", \"es\"]\nextra_languages = [\"es\"]\n", encoding="utf-8")
+        (self.data / "config.toml").write_text("[text]\nvoice_commands = true\n[hotkey]\nnumpad_enter = true\n[whisper]\nlanguages = [\"en\", \"es\"]\nextra_languages = [\"es\"]\n", encoding="utf-8")
         self.log = self.data / "ecoscribe-test.log"
         self.start_app()
 
@@ -329,6 +329,26 @@ def scenario_nobox(r: Run, clip="en_fox.wav") -> dict:
     time.sleep(0.5)
     return {"log": line[0][-160:], "no_text_box": "reason=no_text_box" in line[0],
             "nothing_typed": r.text() == before, "on_clipboard": round(recall(clip_text, EXPECTED[clip]), 2)}
+def tap_numpad_enter():
+    from ecoscribe.platform.macos import keys
+    keys._post(76, True, 0)
+    time.sleep(0.08)
+    keys._post(76, False, 0)
+
+
+def scenario_numpad(r: Run, clip="en_fox.wav") -> dict:
+    """dictado-1k7: the numpad's Enter starts and stops a dictation like the key, and types no Enter."""
+    r.use(clip)
+    before = r.text()
+    tap_numpad_enter()
+    time.sleep(len((FIX / clip).read_bytes()) / 32000 + 0.6)
+    tap_numpad_enter()
+    end = time.monotonic() + 15
+    while time.monotonic() < end and r.text() == before:
+        time.sleep(0.1)
+    time.sleep(0.5)
+    got = r.text()[len(before):]
+    return {"got": got, "recall": round(recall(got, EXPECTED[clip]), 2), "no_enter_typed": "\n" not in got}
 
 
 def main() -> int:
@@ -364,6 +384,8 @@ def main() -> int:
                 results["live"] = scenario_live(r)
             elif sc == "nobox":
                 results["nobox"] = scenario_nobox(r)
+            elif sc == "numpad":
+                results["numpad"] = scenario_numpad(r)
             elif sc == "added":
                 results["added"] = scenario_added(r)
             time.sleep(1.5)
@@ -387,6 +409,8 @@ def main() -> int:
     if "nobox" in results:
         v = results["nobox"]
         ok = ok and v["no_text_box"] and v["nothing_typed"] and v["on_clipboard"] >= 0.85
+    if "numpad" in results:
+        ok = ok and results["numpad"]["recall"] >= 0.85 and results["numpad"]["no_enter_typed"]
     if "added" in results:
         v = results["added"]
         ok = ok and v["de"]["recall"] >= 0.85 and v["fi"]["recall"] >= 0.85 and "large-v3" in (v["dictation_model"] or "") \

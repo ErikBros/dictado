@@ -992,7 +992,6 @@ function macify() {
   for (const el of $$(".tip .keys kbd.key")) if (el.textContent === "Ctrl") el.textContent = "⌘";
   const startup = $("#row-startup .row-label"); if (startup) startup.textContent = "Open at login";
   const unmute = $("#f-unmute"); if (unmute) unmute.closest("label").hidden = true;  // a PC fix (mics muted at 0)
-  const numEnter = $("#f-numpad-enter"); if (numEnter) numEnter.closest("label").hidden = true;  // Windows for now (dictado-1k7)
   for (const el of $$("#page-ajustes .muted")) {  // dictado-p7c: Mac words in Settings
     el.innerHTML = el.innerHTML.replaceAll("this PC", "this Mac")
       .replace("(or the tray icon: Next dictation in)", "(or the menu bar icon: Dictation language)");

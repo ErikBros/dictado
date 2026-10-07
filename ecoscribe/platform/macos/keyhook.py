@@ -27,13 +27,14 @@ from . import keymap
 
 log = logging.getLogger(__name__)
 KC_LANG = 37  # the L key (a key position: the same key on Swedish, Spanish and US layouts)
+KC_KEYPAD_ENTER = 76  # the numpad's Enter (the main Return is 36)
 
 
 class HookThread(threading.Thread):
     def __init__(self, on_action: Callable[[str], None], toggle_vk: int, max_tap_s: float,
                  accept_injected: bool = False, reinstall_s: float = 30.0,
                  swallow_cancel: Callable[[], bool] = lambda: False, combo=None,
-                 hold: bool = False, hold_s: float = 0.5):
+                 hold: bool = False, hold_s: float = 0.5, numpad_enter: bool = False):
         super().__init__(name="ecoscribe-hook", daemon=True)
         self.on_action = on_action
         self.toggle_kc = toggle_vk  # a Mac keycode (config.KEYS on darwin)
@@ -49,6 +50,8 @@ class HookThread(threading.Thread):
         self._toggle_down = False
         self._eat_esc_up = False
         self._lang_held = False  # L went down with the dictation key held: swallowed until it's up
+        self.numpad_enter = numpad_enter  # the numpad's Enter is a second dictation key (dictado-1k7, swallowed)
+        self._alias_down = False  # the numpad's Enter is down as the dictation key
         self._q: queue.SimpleQueue = queue.SimpleQueue()
         self._tap = None
         self._loop = None
@@ -66,6 +69,12 @@ class HookThread(threading.Thread):
         elif not down:
             self._lang_held = False
         return True
+
+    def numpad_alias(self, kind: str, keycode: int) -> bool:
+        """[hotkey] numpad_enter: the numpad's Enter acts as the dictation key and never reaches the app
+        (a tap would also send the chat message). The main Return key is untouched. Same as Windows."""
+        return (self.numpad_enter and kind in ("down", "up") and keycode == KC_KEYPAD_ENTER
+                and (bool(self.toggle_vk) or self.combo is not None))
 
     def would_swallow(self, vk: int, down: bool) -> bool:
         if vk != keymap.VK_ESCAPE:
@@ -94,6 +103,15 @@ class HookThread(threading.Thread):
                 return False
         else:
             down = kind == "down"
+        if self.numpad_alias(kind, keycode):
+            self._alias_down = down
+            if self.combo is not None:  # a combo shortcut: the numpad Enter fires it too
+                if down:
+                    self._q.put(("combo", self.toggle_vk, t))
+                return True
+            self._toggle_down = down
+            self._q.put(("down" if down else "up", self.toggle_vk, t))
+            return True
         vk = keymap.to_vk(keycode)
         if self.combo is not None:
             fire, eat = self.combo.key(vk, down)
@@ -168,12 +186,14 @@ class HookThread(threading.Thread):
         if self._tap is not None and not Q.CGEventTapIsEnabled(self._tap):
             log.warning("key tap found disabled; re-enabling")
             Q.CGEventTapEnable(self._tap, True)
-        if (self.keys.held or self._toggle_down) and self.toggle_kc and \
-                not Q.CGEventSourceKeyState(Q.kCGEventSourceStateHIDSystemState, self.toggle_kc):
+        held_kc = KC_KEYPAD_ENTER if self._alias_down else self.toggle_kc
+        if (self.keys.held or self._toggle_down) and held_kc and \
+                not Q.CGEventSourceKeyState(Q.kCGEventSourceStateHIDSystemState, held_kc):
             log.warning("toggle key looked held but is up; resetting")  # a missed key-up
             self.keys.held = False
             self._toggle_down = False
             self._eat_esc_up = False
+            self._alias_down = False
 
     def stop(self) -> None:
         import Quartz as Q

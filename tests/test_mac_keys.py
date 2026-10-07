@@ -154,3 +154,45 @@ def test_no_language_key_with_a_combo_shortcut():
     h.handle("flags", RCMD, CMD_BITS, False, t=0.0)
     assert not h.handle("down", L, CMD_BITS, False, t=0.05)
     assert "lang" not in settle(acts, 1, 0.3)
+
+
+KP_ENTER, RETURN = 76, 36
+
+
+def test_numpad_enter_taps_like_the_dictation_key_and_is_swallowed():
+    """dictado-1k7: [hotkey] numpad_enter, like Windows' numpad_alias."""
+    h, acts = hook(numpad_enter=True)
+    assert h.handle("down", KP_ENTER, 0, False, t=0.0) is True
+    assert h.handle("down", KP_ENTER, 0, False, t=0.05) is True  # auto-repeat: still swallowed
+    assert h.handle("up", KP_ENTER, 0, False, t=0.15) is True
+    assert settle(acts, 1) == ["toggle"]
+
+
+def test_return_and_numpad_enter_when_off_pass_through():
+    h, acts = hook(numpad_enter=True)
+    assert h.handle("down", RETURN, 0, False, t=0.0) is False  # the main Return still types
+    assert h.handle("up", RETURN, 0, False, t=0.1) is False
+    h2, acts2 = hook()
+    assert h2.handle("down", KP_ENTER, 0, False, t=0.0) is False  # off by default
+    assert h2.handle("up", KP_ENTER, 0, False, t=0.1) is False
+    assert settle(acts, 1, 0.2) == [] and settle(acts2, 1, 0.2) == []
+
+
+def test_numpad_enter_hold_and_escape_cancel_like_the_key():
+    h, acts = hook(numpad_enter=True, swallow_cancel=lambda: True)
+    h.handle("down", KP_ENTER, 0, False, t=0.0)
+    h.handle("up", KP_ENTER, 0, False, t=0.1)
+    assert settle(acts, 1) == ["toggle"]
+    h.handle("down", KP_ENTER, 0, False, t=1.0)
+    assert h.handle("down", ESC, 0, False, t=1.1) is True  # numpad Enter + Esc cancels, the Esc swallowed
+    h.handle("up", ESC, 0, False, t=1.15)
+    h.handle("up", KP_ENTER, 0, False, t=1.2)
+    assert "cancel" in settle(acts, 2)
+
+
+def test_numpad_enter_fires_a_combo_shortcut_too():
+    from ecoscribe.hotkeys import ComboMatcher
+    h, acts = hook(combo=ComboMatcher("cmd+shift+d"), numpad_enter=True)
+    assert h.handle("down", KP_ENTER, 0, False) is True
+    assert h.handle("up", KP_ENTER, 0, False) is True
+    assert settle(acts, 1) == ["toggle"]

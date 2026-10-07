@@ -27,7 +27,7 @@ CAPABILITIES: dict[str, dict] = {
     },
     "Numpad Enter as a second dictation key": {
         "windows": "ecoscribe.platform.windows.hook:HookThread",  # HookThread.numpad_alias
-        "macos": ("ticket", "dictado-1k7"),
+        "macos": "ecoscribe.platform.macos.keyhook:HookThread",  # HookThread.numpad_alias (keycode 76)
     },
     "No text box at the stop: keep it on the clipboard, say so": {
         "windows": "ecoscribe.platform.windows.context:focus_kind,classify_focus",

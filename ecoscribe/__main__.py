@@ -418,8 +418,7 @@ def main(argv=None) -> int:
     if use_proc:
         from .platform.windows.hook import HookClient, spawn_hook_process
         hook_cls, hook_kw = HookClient, {"spawn": spawn_hook_process}
-    if sys.platform != "darwin":  # the numpad's Enter as a second dictation key (Windows; macOS: dictado-1k7)
-        hook_kw["numpad_enter"] = cfg.hotkey.numpad_enter
+    hook_kw["numpad_enter"] = cfg.hotkey.numpad_enter  # the numpad's Enter as a second dictation key (5ph; Mac: 1k7)
     hook = hook_cls(app.on_action, cfg.hotkey.vk, cfg.hotkey.max_tap_s, **hook_kw,
                       combo=ComboMatcher(cfg.hotkey.key) if combo_vks(cfg.hotkey.key) else None,
                       accept_injected=args.test, reinstall_s=cfg.limits.hook_reinstall_s,
