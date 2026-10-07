@@ -15,6 +15,7 @@ import json
 import logging
 import os
 import subprocess
+import sys
 from pathlib import Path
 
 from . import export, sessions
@@ -26,6 +27,10 @@ TIMEOUT_S = 3 * 3600
 
 def addon_exe() -> Path:
     return Path(os.environ.get("LOCALAPPDATA", "")) / "Programs" / "Dictado Speakers" / "DictadoSpeakers.exe"
+
+
+if sys.platform == "darwin":  # /Applications/Dictado Speakers.app (dictado/platform/macos/speakers.py)
+    from .platform.macos.speakers import addon_exe  # noqa: F811
 
 
 def available(cfg, exe: Path | None = None) -> bool:

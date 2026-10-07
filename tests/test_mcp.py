@@ -8,7 +8,11 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
+import pytest
+
 from dictado import mcp_server, sessions
+
+_windows_layout = pytest.mark.skipif(sys.platform == "darwin", reason="Claude's Windows folders; macOS: test_mac_claude_config")
 
 SEGS = [{"t0": 1.0, "t1": 3.0, "text": "Vi flyttar releasen till fredag.", "speaker": "Speaker 1"},
         {"t0": 4.0, "t1": 6.0, "text": "Okej, jag fixar budgeten.", "speaker": "Me"}]
@@ -102,6 +106,7 @@ def test_runs_as_a_real_process(tmp_path):
     assert "Retro" in lines[1]["result"]["content"][0]["text"]
 
 
+@_windows_layout
 def test_connect_to_claude_desktop_keeps_the_rest(tmp_path):
     from dictado import claude_link
     store = tmp_path / "local" / "Packages" / "Claude_pzs8sxrjxfjjc" / "LocalCache" / "Roaming" / "Claude"
@@ -117,6 +122,7 @@ def test_connect_to_claude_desktop_keeps_the_rest(tmp_path):
     assert (store / "claude_desktop_config.json.bak").exists() and claude_link.is_connected(files)
 
 
+@_windows_layout
 def test_connect_without_any_claude_creates_the_classic_file(tmp_path):
     from dictado import claude_link
     files = claude_link.config_files(tmp_path / "roaming", tmp_path / "local")
@@ -145,3 +151,18 @@ def test_window_api_connect(tmp_path, monkeypatch):
     assert api.claude_app()["connected"] is False
     monkeypatch.setattr(sys, "frozen", True, raising=False)
     assert api.connect_claude_app()["ok"] and api.claude_app()["connected"] is True
+
+
+@pytest.mark.skipif(sys.platform != "darwin", reason="macOS")
+def test_mac_claude_config(tmp_path):
+    from dictado import claude_link
+    files = claude_link.config_files(tmp_path)
+    assert files == [tmp_path / "Library" / "Application Support" / "Claude" / "claude_desktop_config.json"]
+    files[0].parent.mkdir(parents=True)
+    files[0].write_text(json.dumps({"mcpServers": {"other": {"command": "a"}}}))
+    claude_link.connect(files, claude_link.server_entry("/Applications/Dictado.app/Contents/MacOS/Dictado"))
+    data = json.loads(files[0].read_text())
+    assert data["mcpServers"]["other"] == {"command": "a"}
+    assert data["mcpServers"]["dictado"] == {"command": "/Applications/Dictado.app/Contents/MacOS/Dictado",
+                                             "args": ["--mcp"]}
+    assert claude_link.is_connected(files)

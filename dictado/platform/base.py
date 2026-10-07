@@ -23,7 +23,7 @@ CAPABILITIES: dict[str, dict] = {
     },
     "Language key (dictation key + L picks the next language)": {
         "windows": "dictado.hook:VK_LANG",
-        "macos": ("ticket", "dictado-982"),
+        "macos": "dictado.platform.macos.keyhook:KC_LANG,HookThread",  # Right Command + L
     },
     "Paste text where the cursor is": {
         "windows": "dictado.deliver:deliver,set_clipboard_text",
@@ -47,7 +47,7 @@ CAPABILITIES: dict[str, dict] = {
     },
     "System audio for meetings (the other side of a call)": {
         "windows": "dictado.loopback:Loopback",
-        "macos": ("ticket", "dictado-qkg"),
+        "macos": "dictado.platform.macos.systap:Loopback",  # Core Audio process tap (dictado-systap helper)
     },
     "Call detection (who uses the mic, call windows)": {
         "windows": "dictado.detect:read_consent,window_titles,running_apps",
@@ -83,14 +83,14 @@ CAPABILITIES: dict[str, dict] = {
     },
     "Speakers + Remember voices (add-on)": {
         "windows": "file:packaging/speakers/speakers_main.py",
-        "macos": ("ticket", "dictado-4yu"),
+        "macos": "dictado.platform.macos.speakers:addon_exe",  # Dictado Speakers.app, pyannote on MPS
     },
     "Claude app connection (MCP)": {
         "windows": "dictado.claude_link:config_files,connect",
-        "macos": ("ticket", "dictado-iej"),
+        "macos": "dictado.platform.macos.claude_link:config_files",  # connect() is shared
     },
     "Installer": {
         "windows": "file:packaging/dictado.iss",
-        "macos": ("ticket", "dictado-ccs"),
+        "macos": "file:tools/build_mac.py",  # Dictado.app + .dmg, signed so permissions survive updates
     },
 }
