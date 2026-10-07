@@ -1,7 +1,7 @@
-"""Dictado's own copy of the Whisper model, as plain files.
+"""Ecoscribe's own copy of the Whisper model, as plain files.
 
 The Hugging Face cache stores model files as symlinks into a blobs folder. The
-copy of Dictado started by the installer could not open them ("Unable to open
+copy of Ecoscribe started by the installer could not open them ("Unable to open
 file 'model.bin'", 2026-10-02) while the same exe launched otherwise could. So
 the model is mirrored into %LOCALAPPDATA%\\dictado\\models\\<name> with hard links
 to the real blobs (no extra disk space, nothing to resolve at load time); copies

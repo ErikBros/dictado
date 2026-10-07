@@ -111,7 +111,7 @@ async function load(query) {
 }
 { // stopped
   const { doc } = await load("page=inicio&state=stopped");
-  check(doc.querySelector("#hero-actions button")?.textContent === "Start Dictado", "stopped offers start button");
+  check(doc.querySelector("#hero-actions button")?.textContent === "Start Ecoscribe", "stopped offers start button");
   check(doc.querySelector("#fact-engine").textContent === "—", "stopped shows no stale facts");
 }
 { // historial + search

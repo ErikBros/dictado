@@ -1,6 +1,6 @@
 """Languages as add-ons (dictado-ehs).
 
-Dictado comes with English and Swedish. Any other language Whisper knows can be added in
+Ecoscribe comes with English and Swedish. Any other language Whisper knows can be added in
 Settings ("Add a language"); nothing is downloaded, the speech models already know them all.
 Every language list in the app (dictation, meetings, files, tray, the call prompt) is built
 from the built-in two plus what the user added.

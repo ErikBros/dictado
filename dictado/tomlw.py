@@ -24,7 +24,7 @@ def _value(v) -> str:
 
 
 def dumps(cfg: Config) -> str:
-    out = ["# Dictado settings. Written by the Dictado window; safe to edit by hand.", ""]
+    out = ["# Ecoscribe settings. Written by the Ecoscribe window; safe to edit by hand.", ""]
     for section in fields(cfg):
         obj = getattr(cfg, section.name)
         out.append(f"[{section.name}]")

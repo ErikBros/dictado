@@ -375,7 +375,7 @@ class Tray:
                                         checked=lambda _i: dict_lang() == code, radio=True)
             dict_items = [pystray.MenuItem("Next dictation in", pystray.Menu(*[dict_item(c, n) for c, n in dict_langs]))]
         menu = pystray.Menu(
-            pystray.MenuItem("Open Dictado", lambda: open_window and open_window(), default=True),
+            pystray.MenuItem("Open Ecoscribe", lambda: open_window and open_window(), default=True),
             pystray.Menu.SEPARATOR,
             *dict_items,
             *meeting_items,
@@ -384,7 +384,7 @@ class Tray:
             pystray.MenuItem("Open log", lambda: os.startfile(str(log_path))),
             pystray.MenuItem("Quit", lambda: on_quit()),
         )
-        self.icon = pystray.Icon("dictado", self._images["idle"], "Dictado", menu)
+        self.icon = pystray.Icon("dictado", self._images["idle"], "Ecoscribe", menu)
         threading.Thread(target=self.icon.run, name="dictado-tray", daemon=True).start()
 
     def set_state(self, state: str) -> None:

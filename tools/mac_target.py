@@ -10,7 +10,7 @@ def main():
     ap.add_argument("--out", required=True)
     a = ap.parse_args()
     root = tk.Tk()
-    root.title("DictadoTarget")
+    root.title("EcoscribeTarget")
     root.geometry("520x200+200+200")
     text = tk.Text(root, font=("Helvetica", 13))
     text.pack(fill="both", expand=True)

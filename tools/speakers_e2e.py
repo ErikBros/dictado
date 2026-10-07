@@ -1,4 +1,4 @@
-"""Speakers pass E2E against the RUNNING (installed) Dictado + add-on (t0u.22): import files over
+"""Speakers pass E2E against the RUNNING (installed) Ecoscribe + add-on (t0u.22): import files over
 the command channel, wait for transcript + speakers pass, report speaker counts. No sound, no input.
 
     python tools/speakers_e2e.py FILE[:expected_speakers] ... [--keep]

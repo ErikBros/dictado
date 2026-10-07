@@ -74,7 +74,7 @@ class PidProc:
 
 
 def attach_pid(pid: int):
-    """A PidProc if `pid` is still a Dictado (or dev Python) process, else None: after a
+    """A PidProc if `pid` is still a Ecoscribe (or dev Python) process, else None: after a
     reboot the pid in meetings.json may belong to anything."""
     import ctypes
     from . import detect
@@ -140,13 +140,13 @@ class Controller:
                                 "started": m.get("started"), "proc": proc, "stopping": m.get("status") == "stopping"}
                 log.info("adopted meeting worker pid=%s %s", proc.pid, m["dir"])
             else:  # killed mid-call (an install, a crash): transcribe what was recorded
-                self._recover_or_fail(Path(m["dir"]), "Dictado closed during the call")
+                self._recover_or_fail(Path(m["dir"]), "Ecoscribe closed during the call")
         nm = st.get("next_meeting")
         if nm and Path(nm["dir"]).is_dir():
             if self.meeting is not None and self.meeting["stopping"]:  # still waiting its turn
                 self.next_meeting = {"dir": Path(nm["dir"]), "app": nm.get("app"), "lang": nm.get("lang")}
             else:  # the old worker is gone and the call may be over: don't record a stale call
-                self._mark_failed(Path(nm["dir"]), "Dictado restarted before recording started")
+                self._mark_failed(Path(nm["dir"]), "Ecoscribe restarted before recording started")
         j = st.get("job")
         if j and Path(j["dir"]).is_dir():
             proc = attach(j.get("pid"))

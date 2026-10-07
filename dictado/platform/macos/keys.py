@@ -1,4 +1,4 @@
-"""Synthesized keys on macOS (CGEvent), tagged so Dictado's own key tap can tell them from real ones."""
+"""Synthesized keys on macOS (CGEvent), tagged so Ecoscribe's own key tap can tell them from real ones."""
 from __future__ import annotations
 
 import Quartz as Q

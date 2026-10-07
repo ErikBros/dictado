@@ -21,7 +21,7 @@ def parse(argv):
     ap.add_argument("--config", help="config.toml path")
     ap.add_argument("--no-tray", action="store_true")
     ap.add_argument("--no-sounds", action="store_true")
-    ap.add_argument("--ui", action="store_true", help="open the Dictado window")
+    ap.add_argument("--ui", action="store_true", help="open the Ecoscribe window")
     ap.add_argument("--page", default=None, help="window page: inicio, historial, ajustes, bienvenida")
     ap.add_argument("--restarted", action="store_true", help=argparse.SUPPRESS)
     ap.add_argument("--selftest", metavar="WAV", help="load the engine, transcribe WAV, write a JSON result, exit")
@@ -377,7 +377,7 @@ def main(argv=None) -> int:
             release=winutil.release_instance,
             exit_fn=winutil.hard_exit,
             on_spawn_fail=lambda: (status.write(status_path, state="ready" if app.ready else "loading"),
-                                   ui.flash("Couldn't restart: settings apply the next time Dictado starts")))
+                                   ui.flash("Couldn't restart: settings apply the next time Ecoscribe starts")))
 
     from .hotkeys import ComboMatcher, combo_vks
     # macOS: the event tap stays in-process (macOS times out a slow tap instead of lagging the keyboard)
@@ -401,7 +401,7 @@ def main(argv=None) -> int:
             status.write(status_path, permissions=st, key_tap=bool(hook.ok))
             if missing:
                 log.warning("missing macOS permissions: %s (key tap ok=%s)", ", ".join(missing), hook.ok)
-                ui.flash("Dictado needs " + " + ".join(missing) + ": see Settings", )
+                ui.flash("Ecoscribe needs " + " + ".join(missing) + ": see Settings", )
         threading.Thread(target=_permissions, name="dictado-permissions", daemon=True).start()
 
     # only now: restart() needs the hook to exist
@@ -449,9 +449,9 @@ def main(argv=None) -> int:
     def after_ready():
         if args.after_crash:  # t0u.37: never a silent restart
             log.warning("restarted after a crash: %s", args.after_crash)
-            ui.flash("Dictado crashed and restarted. Report saved.", 8.0)
+            ui.flash("Ecoscribe crashed and restarted. Report saved.", 8.0)
         else:
-            ui.flash(f"Dictado ready: {hotkeys.how(cfg.hotkey.key)}")
+            ui.flash(f"Ecoscribe ready: {hotkeys.how(cfg.hotkey.key)}")
         recover_spool()
 
     threading.Thread(target=load_model, name="dictado-load", daemon=True).start()

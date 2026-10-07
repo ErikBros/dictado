@@ -56,7 +56,7 @@ def on_main(fn, *args) -> None:
 
 # ---------------------------------------------------------------------------------------------------------------
 class Root:
-    """The tk calls Dictado's background app makes, on the AppKit run loop."""
+    """The tk calls Ecoscribe's background app makes, on the AppKit run loop."""
 
     def __init__(self):
         self.app = NSApplication.sharedApplication()
@@ -71,7 +71,7 @@ class Root:
         except ImportError:
             opts = 0x00EFFFFF
         self._activity = NSProcessInfo.processInfo().beginActivityWithOptions_reason_(
-            opts, "Dictado waits for the dictation key")
+            opts, "Ecoscribe waits for the dictation key")
 
     def after(self, ms: int, fn, *args) -> None:
         if ms <= 0:
@@ -195,7 +195,7 @@ class Overlay:
     def _place_and_show(self) -> None:
         x, y = _bottom_center(self.w, self.h)
         self.panel.setFrameOrigin_((x, y))
-        self.panel.orderFrontRegardless()  # shown without activating Dictado
+        self.panel.orderFrontRegardless()  # shown without activating Ecoscribe
         self.visible = True
 
     def _hide(self) -> None:
@@ -514,7 +514,7 @@ class Tray:
         self._targets: list = []
         self.item = NSStatusBar.systemStatusBar().statusItemWithLength_(NSVariableStatusItemLength)
         self.item.button().setImage_(self._images["idle"])
-        self.item.button().setToolTip_("Dictado")
+        self.item.button().setToolTip_("Ecoscribe")
         self.menu = NSMenu.alloc().init()
         self.menu.setAutoenablesItems_(False)
         self._delegate = _MenuDelegate.alloc().initWithBuild_(self._build)
@@ -526,7 +526,7 @@ class Tray:
         """The menu as data: (title, action | None, checked, submenu entries | None); None = separator.
         Same items and order as the Windows tray (ui.Tray)."""
         a = self.a
-        out = [("Open Dictado", a["open_window"], False, None), None]
+        out = [("Open Ecoscribe", a["open_window"], False, None), None]
         if a["dict_langs"] and a["dict_lang"] and a["set_dict_lang"]:
             cur = a["dict_lang"]()
             out.append(("Dictation language", None, False,
@@ -544,7 +544,7 @@ class Tray:
         out += [("Copy last", lambda: a["app_ref"]().copy_last(), False, None),
                 ("Cancel recording", lambda: a["app_ref"]().on_action("cancel"), False, None),
                 ("Open log", lambda: _open(a["log_path"]), False, None),
-                ("Quit Dictado", a["on_quit"], False, None)]
+                ("Quit Ecoscribe", a["on_quit"], False, None)]
         return out
 
     def _fill(self, menu, entries) -> None:

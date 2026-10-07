@@ -1,4 +1,4 @@
-"""Screenshots of the Dictado window pages on the Mac, rendered offscreen by WKWebView (the engine the real
+"""Screenshots of the Ecoscribe window pages on the Mac, rendered offscreen by WKWebView (the engine the real
 window uses). Nothing appears on screen, no permission needed. Demo data (?demo=1), Mac wording (?mac=1).
 
     .venv/bin/python tools/mac_shoot.py [page ...]     -> spike/shots/win-<page>.png

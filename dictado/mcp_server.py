@@ -20,7 +20,7 @@ VERSIONS = ("2025-06-18", "2025-03-26", "2024-11-05")
 RO = {"readOnlyHint": True, "openWorldHint": False}
 TOOLS = [
     {"name": "list_meetings", "annotations": RO,
-     "description": "List your recorded meetings, calls and transcribed files from Dictado, newest first: "
+     "description": "List your recorded meetings, calls and transcribed files from Ecoscribe, newest first: "
                     "id, title, date, app (signal, msteams, slack...), duration, language, status, speaker names.",
      "inputSchema": {"type": "object", "properties": {
          "query": {"type": "string", "description": "Only titles containing this text"},
@@ -41,7 +41,7 @@ TOOLS = [
 
 
 def _visible(m: dict) -> bool:
-    return not str(m.get("title", "")).lower().startswith("prueba")  # Dictado's own test sessions
+    return not str(m.get("title", "")).lower().startswith("prueba")  # Ecoscribe's own test sessions
 
 
 def _segments(d: Path) -> list[dict]:
@@ -137,7 +137,7 @@ def handle(root: Path, msg: dict) -> dict | None:
         asked = params.get("protocolVersion")
         result = {"protocolVersion": asked if asked in VERSIONS else VERSIONS[0],
                   "capabilities": {"tools": {}}, "serverInfo": {"name": "dictado", "version": __version__},
-                  "instructions": "The user's meetings and calls, transcribed locally by Dictado. Read-only."}
+                  "instructions": "The user's meetings and calls, transcribed locally by Ecoscribe. Read-only."}
     elif method == "ping":
         result = {}
     elif method == "tools/list":

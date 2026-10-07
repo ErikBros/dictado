@@ -73,7 +73,7 @@ def run_pyaudiowpatch(seconds: float, tally: Tally, stop: threading.Event) -> tu
 
 
 def open_mic(tally: Tally, stop: threading.Event):
-    """Dictado's mic, opened read-only alongside the loopback. Never unmuted here."""
+    """Ecoscribe's mic, opened read-only alongside the loopback. Never unmuted here."""
     import sounddevice as sd
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
     from dictado.choose import pick_device

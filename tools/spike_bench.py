@@ -1,7 +1,7 @@
 """Stage 1 spike bench: WER, real-time factor, VRAM per model and precision.
 
 Each (model, compute_type) runs in its own child process (`--one`), so VRAM is
-measured cleanly and no model is ever destroyed in-process (runbook §10). Dictado
+measured cleanly and no model is ever destroyed in-process (runbook §10). Ecoscribe
 1.1's resident turbo is part of the baseline: "total" VRAM is what the card would
 hold during a meeting with dictation running.
 

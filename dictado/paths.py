@@ -1,4 +1,4 @@
-"""Where Dictado keeps its files: %LOCALAPPDATA%/%APPDATA% on Windows, Application Support on macOS."""
+"""Where Ecoscribe keeps its files: %LOCALAPPDATA%/%APPDATA% on Windows, Application Support on macOS."""
 import os
 import sys
 from pathlib import Path

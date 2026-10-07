@@ -1,6 +1,6 @@
-# Dictado: instructions for every Claude session (Windows and Mac)
+# Ecoscribe: instructions for every Claude session (Windows and Mac)
 
-Dictado is one codebase for Windows and macOS. Two Claude sessions work on it: one on Windows
+Ecoscribe is one codebase for Windows and macOS. Two Claude sessions work on it: one on Windows
 (merges and runs the Windows desktop/GPU tests), one on the Mac. Erik isn't a programmer: he gets
 outcomes in plain words and only real choices (money, publishing, his desktop, what the app does).
 

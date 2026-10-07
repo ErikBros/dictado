@@ -1,5 +1,5 @@
 """Manual check: open the configured mic by name (unmuting it for the probe like
-Dictado does), print its level for 3 s, then restore the mute state."""
+Ecoscribe does), print its level for 3 s, then restore the mute state."""
 import sys
 import time
 from pathlib import Path

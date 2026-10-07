@@ -1,11 +1,11 @@
-# Dictado
+# Ecoscribe
 
 Local voice dictation and meeting transcription for Windows. Tap a key, talk, and the text appears wherever your cursor is. Record calls and get a transcript with who said what. Everything runs on your own PC with Whisper on the GPU: no account, no subscription, and no audio or text leaves the computer.
 
 ## What it does
 
 - **Dictation anywhere.** Tap Right Ctrl, talk, tap again: about half a second later the text is pasted where your cursor is, in any app. Keep using the computer while you talk; switching windows or using shortcuts never cuts the recording. Hold Right Ctrl and press Esc to cancel. Optional hold-to-talk.
-- **Meetings.** When Teams, Slack, Zoom, Meet, Discord, Signal, Telegram or Webex starts using the mic, Dictado offers to take notes. It records your mic and the computer's audio, shows a live transcript, and after the call writes a full-quality transcript labelled **Me** / **Others**. Swedish, English, Spanish, Greek, Greek + Spanish mixed, or detected.
+- **Meetings.** When Teams, Slack, Zoom, Meet, Discord, Signal, Telegram or Webex starts using the mic, Ecoscribe offers to take notes. It records your mic and the computer's audio, shows a live transcript, and after the call writes a full-quality transcript labelled **Me** / **Others**. Swedish, English, Spanish, Greek, Greek + Spanish mixed, or detected.
 - **Who said what** (optional add-on): splits the other side into Speaker 1, 2, 3 with pyannote; name a speaker once and later calls recognise that voice.
 - **Files.** Drag audio or video onto the window to transcribe it.
 - **Your words.** A list of names and terms to spell your way, plus names read from the window you're typing into (Windows UI Automation, never stored).
@@ -23,13 +23,13 @@ Local voice dictation and meeting transcription for Windows. Tap a key, talk, an
 
 ## Install
 
-Download `Dictado-Setup-<version>.exe` from [Releases](../../releases) and run it. It installs for your user only (no admin), adds Dictado to the Start menu and, if you keep the box ticked, starts it with Windows. The installer isn't signed, so Windows SmartScreen will warn: **More info > Run anyway**.
+Download `Ecoscribe-Setup-<version>.exe` from [Releases](../../releases) and run it. It installs for your user only (no admin), adds Ecoscribe to the Start menu and, if you keep the box ticked, starts it with Windows. The installer isn't signed, so Windows SmartScreen will warn: **More info > Run anyway**.
 
 The full guide (settings, meetings, troubleshooting, where files live) is in [`packaging/DICTADO-SETUP.md`](packaging/DICTADO-SETUP.md).
 
 ## Build from source
 
-Dictado is Python 3.12 (faster-whisper / CTranslate2 on CUDA, pywebview window, pystray tray, low-level keyboard hook in its own process). It is developed from WSL against a Windows Python install:
+Ecoscribe is Python 3.12 (faster-whisper / CTranslate2 on CUDA, pywebview window, pystray tray, low-level keyboard hook in its own process). It is developed from WSL against a Windows Python install:
 
 ```bash
 . tools/winpy.sh                                # WINPY (Windows python.exe) and APP_W (this folder, Windows path)
@@ -37,7 +37,7 @@ wtest "$APP_W\\tests" -q -m "not gpu and not win"  # unit tests (~500)
 wtest "$APP_W\\tests" -q -m gpu                  # needs an NVIDIA GPU and the models
 wtest "$APP_W\\tests" -q -m win                  # real desktop: waits until nobody has touched the PC for 45 s
 npm install && npm run smoke                     # the window's JavaScript in jsdom
-wpy "$APP_W\\tools\\build.py" --installer         # Dictado.exe + Dictado-Setup-<version>.exe (needs Inno Setup 6)
+wpy "$APP_W\\tools\\build.py" --installer         # Dictado.exe + Ecoscribe-Setup-<version>.exe (needs Inno Setup 6)
 ```
 
 Windows Python needs the packages in the build spec (`packaging/dictado.spec`): faster-whisper, numpy, sounddevice, pyaudiowpatch, pywin32, comtypes, pycaw, pystray, Pillow, pywebview, python-dateutil, tzdata, pyinstaller. The speaker add-on builds separately (`packaging/speakers/`) and needs the gated `pyannote/speaker-diarization-community-1` weights from Hugging Face.
@@ -69,4 +69,4 @@ Audio, transcripts, voices and settings stay on your PC. The only network traffi
 
 Speech recognition: OpenAI Whisper models via [faster-whisper](https://github.com/SYSTRAN/faster-whisper) and CTranslate2 (MIT). Speakers: [pyannote.audio](https://github.com/pyannote/pyannote-audio) (MIT) with `pyannote/speaker-diarization-community-1` (CC BY 4.0).
 
-Dictado is released under the [MIT license](LICENSE). Built by ErikBros with Claude.
+Ecoscribe is released under the [MIT license](LICENSE). Built by ErikBros with Claude.

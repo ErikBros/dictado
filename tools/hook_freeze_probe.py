@@ -1,8 +1,8 @@
-"""t0u.37: does a frozen Dictado still stall the PC's keyboard? Windows Python, idle desktop only.
+"""t0u.37: does a frozen Ecoscribe still stall the PC's keyboard? Windows Python, idle desktop only.
 
     python hook_freeze_probe.py inprocess|process
 
-Installs Dictado's hooks (in this process, or in the --hook process), then freezes this
+Installs Ecoscribe's hooks (in this process, or in the --hook process), then freezes this
 process's Python on purpose (a regex that holds the GIL for seconds, like a stuck app) while a
 separate injector process presses F24 (no app uses it) and measures how long Windows takes to
 deliver each press: the time until GetAsyncKeyState sees it, which happens only after every

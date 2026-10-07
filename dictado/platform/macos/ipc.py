@@ -13,7 +13,7 @@ from . import signals
 log = logging.getLogger(__name__)
 RELOAD_EVENT = "Local\\DictadoReload"
 UI_MUTEX = "Local\\DictadoUI"
-UI_TITLE = "Dictado"
+UI_TITLE = "Ecoscribe"
 UI_FOCUS = "Local\\DictadoUIFocus"  # the window process listens here (macOS has no FindWindow)
 
 
@@ -61,7 +61,7 @@ def spawn(args: list[str]) -> subprocess.Popen:
 
 
 def focus_ui() -> bool:
-    """Bring an already open Dictado window to the front. True if there was one."""
+    """Bring an already open Ecoscribe window to the front. True if there was one."""
     return signals.signal(UI_FOCUS, b"focus")
 
 

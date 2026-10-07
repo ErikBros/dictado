@@ -1,6 +1,6 @@
 # Features by platform
 
-Dictado is one codebase. Most features live in shared code and work on Windows and macOS alike;
+Ecoscribe is one codebase. Most features live in shared code and work on Windows and macOS alike;
 only the OS-specific pieces differ. Rules:
 
 - A pull request that adds or changes a feature updates this file.

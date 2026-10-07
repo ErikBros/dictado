@@ -1,7 +1,7 @@
 """Unmute the dictation mic only while recording, then put it back.
 
 Both of the user's mics were found muted at volume 0 in Windows. Rather than
-silently undo a mute he may want, Dictado opens the mic for the recording and
+silently undo a mute he may want, Ecoscribe opens the mic for the recording and
 restores the previous mute/volume afterwards (unless he changed it meanwhile).
 """
 from __future__ import annotations

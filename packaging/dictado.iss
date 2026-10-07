@@ -1,17 +1,17 @@
-; Dictado installer (Inno Setup 6). Built by tools/build.py --installer, which passes
-; /DAppVersion=x.y.z and /DDistDir=<PyInstaller dist\Dictado>.
+; Ecoscribe installer (Inno Setup 6). Built by tools/build.py --installer, which passes
+; /DAppVersion=x.y.z and /DDistDir=<PyInstaller dist\Ecoscribe>.
 #ifndef AppVersion
   #define AppVersion "0.0.0"
 #endif
 #ifndef DistDir
-  #define DistDir "dist\Dictado"
+  #define DistDir "dist\Ecoscribe"
 #endif
 
 [Setup]
 AppId={{7C1B3F2E-5D4A-4E8B-9A61-D1C7A0D1C7A0}
-AppName=Dictado
+AppName=Ecoscribe
 AppVersion={#AppVersion}
-AppVerName=Dictado {#AppVersion}
+AppVerName=Ecoscribe {#AppVersion}
 AppPublisher=ErikBros
 VersionInfoVersion={#AppVersion}
 DefaultDirName={localappdata}\Programs\Dictado
@@ -21,10 +21,10 @@ DisableReadyPage=yes
 PrivilegesRequired=lowest
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
-OutputBaseFilename=Dictado-Setup-{#AppVersion}
+OutputBaseFilename=Ecoscribe-Setup-{#AppVersion}
 SetupIconFile=dictado.ico
 UninstallDisplayIcon={app}\Dictado.exe
-UninstallDisplayName=Dictado
+UninstallDisplayName=Ecoscribe
 WizardStyle=modern
 Compression=lzma2/normal
 SolidCompression=yes
@@ -34,30 +34,32 @@ CloseApplications=no
 Name: "en"; MessagesFile: "compiler:Default.isl"
 
 [Tasks]
-Name: "startup"; Description: "Start Dictado with Windows"; GroupDescription: "Options:"
+Name: "startup"; Description: "Start Ecoscribe with Windows"; GroupDescription: "Options:"
 
 [Files]
 Source: "{#DistDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
-Name: "{userprograms}\Dictado"; Filename: "{app}\Dictado.exe"; Comment: "Voice dictation: tap Right Ctrl"
+Name: "{userprograms}\Ecoscribe"; Filename: "{app}\Dictado.exe"; Comment: "Voice dictation: tap Right Ctrl"
 
 [Registry]
-Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "Dictado"; \
+Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: string; ValueName: "Ecoscribe"; \
   ValueData: """{app}\Dictado.exe"""; Tasks: startup; Flags: uninsdeletevalue
 
 [Run]
-Filename: "{app}\Dictado.exe"; Description: "Open Dictado"; Flags: nowait postinstall
+Filename: "{app}\Dictado.exe"; Description: "Open Ecoscribe"; Flags: nowait postinstall
 
 [InstallDelete]
 ; the 1.0 script deploy started itself from here; the installed app uses the Run key
 Type: files; Name: "{userstartup}\Dictado.lnk"
+; renamed to Ecoscribe (dictado-c9u): the old Start menu shortcut goes
+Type: files; Name: "{userprograms}\Dictado.lnk"
 
 [UninstallDelete]
 Type: filesandordirs; Name: "{app}"
 
 [Code]
-procedure StopDictado();
+procedure StopEcoscribe();
 var
   Code: Integer;
   Pid: AnsiString;
@@ -122,8 +124,8 @@ function MeetingDone(): Boolean;
 begin
   Result := True;
   while MeetingRecording() do
-    if SuppressibleMsgBox('Dictado is recording a meeting right now. Closing it would cut the recording.' + #13#10#13#10 +
-         'Stop the meeting in Dictado (it saves the transcript first), wait for "Ready", then click Retry.',
+    if SuppressibleMsgBox('Ecoscribe is recording a meeting right now. Closing it would cut the recording.' + #13#10#13#10 +
+         'Stop the meeting in Ecoscribe (it saves the transcript first), wait for "Ready", then click Retry.',
          mbError, MB_RETRYCANCEL, IDCANCEL) <> IDRETRY then begin
       Result := False;
       Exit;
@@ -133,10 +135,10 @@ end;
 function PrepareToInstall(var NeedsRestart: Boolean): String;
 begin
   if not MeetingDone() then begin
-    Result := 'Dictado is recording a meeting, so nothing was changed. Run Setup again when the meeting is over.';
+    Result := 'Ecoscribe is recording a meeting, so nothing was changed. Run Setup again when the meeting is over.';
     Exit;
   end;
-  StopDictado();
+  StopEcoscribe();
   Result := '';
 end;
 
@@ -144,11 +146,11 @@ function InitializeUninstall(): Boolean;
 begin
   Result := MeetingDone();
   if Result then
-    StopDictado();
+    StopEcoscribe();
 end;
 
 procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
 begin
   if CurUninstallStep = usPostUninstall then
-    RegDeleteValue(HKEY_CURRENT_USER, 'Software\Microsoft\Windows\CurrentVersion\Run', 'Dictado');
+    RegDeleteValue(HKEY_CURRENT_USER, 'Software\Microsoft\Windows\CurrentVersion\Run', 'Ecoscribe');
 end;
