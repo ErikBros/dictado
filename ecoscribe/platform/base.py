@@ -31,7 +31,7 @@ CAPABILITIES: dict[str, dict] = {
     },
     "No text box at the stop: keep it on the clipboard, say so": {
         "windows": "ecoscribe.platform.windows.context:focus_kind,classify_focus",
-        "macos": ("ticket", "dictado-cd2"),
+        "macos": "ecoscribe.platform.macos.context:focus_kind,classify_focus",  # Accessibility: the focused element's role
     },
     "Paste text where the cursor is": {
         "windows": "ecoscribe.platform.windows.deliver:deliver,set_clipboard_text",
