@@ -19,3 +19,4 @@ package-lock.json
 # macOS: the local self-signed signing keychain (tools/build_mac.py)
 .signing/
 packaging/macos/Dictado.icns
+.claude/next-session.md
