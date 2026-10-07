@@ -1,4 +1,4 @@
-"""Write packaging/ecoscribe.ico (+ a preview PNG) from ecoscribe/icon.py."""
+"""Write packaging/windows/ecoscribe.ico (+ a preview PNG) from ecoscribe/icon.py."""
 import sys
 from pathlib import Path
 
@@ -6,7 +6,7 @@ APP = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(APP))
 from ecoscribe.icon import mic_image, save_ico, tray_image  # noqa: E402
 
-save_ico(APP / "packaging" / "ecoscribe.ico")
+save_ico(APP / "packaging" / "windows" / "ecoscribe.ico")
 sheet = mic_image(256)
 from PIL import Image  # noqa: E402
 canvas = Image.new("RGBA", (256 + 3 * 80 + 40, 256), (251, 250, 246, 255))

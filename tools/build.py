@@ -14,7 +14,7 @@ import sys
 from pathlib import Path
 
 APP = Path(__file__).resolve().parent.parent
-PKG = APP / "packaging"
+PKG = APP / "packaging" / "windows"
 OUT = Path(os.environ["USERPROFILE"]) / "ecoscribe-build"
 ISCC = Path(os.environ["LOCALAPPDATA"]) / "Programs" / "Inno Setup 6" / "ISCC.exe"
 

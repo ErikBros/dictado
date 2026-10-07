@@ -1,72 +1,84 @@
 # Ecoscribe
 
-Local voice dictation and meeting transcription for Windows. Tap a key, talk, and the text appears wherever your cursor is. Record calls and get a transcript with who said what. Everything runs on your own PC with Whisper on the GPU: no account, no subscription, and no audio or text leaves the computer.
+Local voice dictation and meeting transcription for **Windows and macOS**. Tap a key, talk, and the text appears wherever your cursor is. Record calls and get a transcript with who said what. Everything runs on your own computer with Whisper on the GPU: no account, no subscription, and no audio or text leaves the computer.
+
+## Download
+
+Get the latest version from **[Releases](https://github.com/ErikBros/ecoscribe/releases/latest)**:
+
+| | Windows | Mac |
+|---|---|---|
+| File | `Ecoscribe-Setup-<version>.exe` | `Ecoscribe-<version>.dmg` |
+| Needs | Windows 10 or 11, 64-bit; an NVIDIA GPU with 6 GB+ strongly recommended | Apple Silicon (M1 or newer), macOS 14.4 or newer |
+| Dictation key | Right Ctrl | Right Command |
+| First open | SmartScreen: **More info > Run anyway** | System Settings > Privacy & Security: **Open Anyway**, then allow the permissions it asks for |
+| Full guide | [docs/windows.md](docs/windows.md) | [docs/mac.md](docs/mac.md) |
+
+Neither installer is signed with a paid certificate yet, which is why each OS warns once the first time.
 
 ## What it does
 
-- **Dictation anywhere.** Tap Right Ctrl, talk, tap again: about half a second later the text is pasted where your cursor is, in any app. Keep using the computer while you talk; switching windows or using shortcuts never cuts the recording. Hold Right Ctrl and press Esc to cancel. Optional hold-to-talk.
-- **Meetings.** When Teams, Slack, Zoom, Meet, Discord, Signal, Telegram or Webex starts using the mic, Ecoscribe offers to take notes. It records your mic and the computer's audio, shows a live transcript, and after the call writes a full-quality transcript labelled **Me** / **Others**. Swedish, English, Spanish, Greek, Greek + Spanish mixed, or detected.
+- **Dictation anywhere.** Tap the dictation key, talk, tap again: the text is pasted where your cursor is, in any app. Keep using the computer while you talk. Hold the key and press Esc to cancel; optional hold-to-talk. The pill shows the text live while you speak.
+- **Your languages, even mixed.** English and Swedish built in; add any of Whisper's ~100. Dictation detects which one you're speaking, and a dictation that switches language (Spanish, then Greek) gets each part in its own language.
+- **Meetings.** When Teams, Slack, Zoom, Meet, Discord, Signal, Telegram or Webex starts using the mic, Ecoscribe offers to take notes. It records your mic and the computer's audio, shows a live transcript, and after the call writes a full transcript labelled **Me** / **Others**.
 - **Who said what** (optional add-on): splits the other side into Speaker 1, 2, 3 with pyannote; name a speaker once and later calls recognise that voice.
 - **Files.** Drag audio or video onto the window to transcribe it.
-- **Your words.** A list of names and terms to spell your way, plus names read from the window you're typing into (Windows UI Automation, never stored).
-- **Snippets and voice commands.** Say "my email." and get the saved text; "new line", "new paragraph", "send it" (English, Spanish, Swedish).
-- **Calendar names.** Paste a calendar's secret iCal link and recorded calls take the name of the event happening then.
-- **Claude.** "Copy for Claude" on every transcript, and a read-only MCP server (`Ecoscribe.exe --mcp`) so the Claude desktop app can search and read your meetings.
-- **Never silent when it breaks.** A watchdog restarts the app after a crash, keeps the dictation you were in the middle of, and writes a crash report with every thread's stack (Settings > Troubleshooting > Copy debug info).
+- **Your words, snippets, voice commands.** Names spelled your way (also the names on the window you're typing into), "my email." types the saved text, "new line" / "send it".
+- **Claude.** "Copy for Claude" on every transcript, and a read-only MCP server so the Claude desktop app can search your meetings.
+- **Never silent when it breaks.** A watchdog restarts the app after a crash or a freeze, keeps the dictation you were in the middle of, and writes a crash report.
 
-## Requirements
+What each platform has, feature by feature: **[FEATURES.md](FEATURES.md)**.
 
-- Windows 10 or 11, 64-bit.
-- An NVIDIA GPU with 6 GB or more is strongly recommended (tested on an RTX 3070 Ti, 8 GB). Without one it runs on the CPU with a smaller model: slower and less accurate.
-- About 1 GB for the app plus the speech models it downloads the first time each is needed (about 1.6 GB for English/Spanish, 3 GB more for Swedish/Greek). The speaker add-on needs 4.6 GB.
-- A microphone. A headset works best for meetings.
+## How the code is organised
 
-## Install
-
-Download `Ecoscribe-Setup-<version>.exe` from [Releases](../../releases) and run it. It installs for your user only (no admin), adds Ecoscribe to the Start menu and, if you keep the box ticked, starts it with Windows. The installer isn't signed, so Windows SmartScreen will warn: **More info > Run anyway**.
-
-The full guide (settings, meetings, troubleshooting, where files live) is in [`packaging/ECOSCRIBE-SETUP.md`](packaging/ECOSCRIBE-SETUP.md).
-
-## Build from source
-
-Ecoscribe is Python 3.12 (faster-whisper / CTranslate2 on CUDA, pywebview window, pystray tray, low-level keyboard hook in its own process). It is developed from WSL against a Windows Python install:
-
-```bash
-. tools/winpy.sh                                # WINPY (Windows python.exe) and APP_W (this folder, Windows path)
-wtest "$APP_W\\tests" -q -m "not gpu and not win"  # unit tests (~500)
-wtest "$APP_W\\tests" -q -m gpu                  # needs an NVIDIA GPU and the models
-wtest "$APP_W\\tests" -q -m win                  # real desktop: waits until nobody has touched the PC for 45 s
-npm install && npm run smoke                     # the window's JavaScript in jsdom
-wpy "$APP_W\\tools\\build.py" --installer         # Ecoscribe.exe + Ecoscribe-Setup-<version>.exe (needs Inno Setup 6)
-```
-
-Windows Python needs the packages in the build spec (`packaging/ecoscribe.spec`): faster-whisper, numpy, sounddevice, pyaudiowpatch, pywin32, comtypes, pycaw, pystray, Pillow, pywebview, python-dateutil, tzdata, pyinstaller. The speaker add-on builds separately (`packaging/speakers/`) and needs the gated `pyannote/speaker-diarization-community-1` weights from Hugging Face.
-
-## Windows and macOS stay in step
-
-One codebase; OS-specific code is listed in [`ecoscribe/platform/base.py`](ecoscribe/platform/base.py) and
-[`FEATURES.md`](FEATURES.md). A capability added on one platform needs the other one done, a ticket,
-or a "not needed" reason, or `tests/test_platform_contract.py` fails. GitHub Actions runs the unit
-tests on Windows and macOS for every push and pull request.
-
-## Layout
+One codebase for both systems. Most of Ecoscribe (speech engine, meetings, the window, history, settings) is shared; only the pieces that talk to the operating system differ, and those live in one folder per OS.
 
 | Path | What |
 |---|---|
-| `ecoscribe/` | The app. `__main__.py` starts the background app and every worker (`--engine-worker`, `--meeting`, `--transcribe`, `--speakers`, `--hook`, `--supervise`, `--mcp`) |
-| `ecoscribe/web/` | The window (HTML/CSS/JS, served to pywebview) |
-| `tests/` | pytest suite; `tests/e2e/` real-desktop scenarios; `tests/ui/` jsdom smoke test |
-| `tools/` | Build, screenshots, benchmarks, crash/freeze probes |
-| `packaging/` | PyInstaller spec, Inno Setup scripts, the user guide |
+| `ecoscribe/` | **Shared** app code. `__main__.py` starts the background app and its workers |
+| `ecoscribe/web/` | **Shared** window (HTML/CSS/JS, shown with pywebview) |
+| `ecoscribe/platform/windows/` | **Windows only**: keyboard hook, paste, tray and pill, UI Automation, Run key, named mutex |
+| `ecoscribe/platform/macos/` | **Mac only**: event tap, paste, menu bar and pill, Accessibility, LaunchAgent, mlx engine, system-audio tap |
+| `ecoscribe/platform/base.py` | The list of every OS-specific capability and where each platform has it |
+| `packaging/windows/`, `packaging/macos/` | Installer builds per OS (Inno Setup `.exe`, PyInstaller `.app` + `.dmg`); `packaging/speakers/` the speaker add-on |
+| `docs/` | User guides per OS |
+| `tests/` | pytest suite (`e2e/` real-desktop scenarios, `ui/` the window in jsdom) |
+| `tools/` | Builds, screenshots, benchmarks (`tools/mac_*` and `build_mac.py` are the Mac ones) |
 
-Settings live in `%APPDATA%\ecoscribe\config.toml`; logs, history, transcripts and crash reports in `%LOCALAPPDATA%\ecoscribe\`.
+A capability added on one OS needs the other one done, a ticket, or a "not needed" reason; `tests/test_platform_contract.py` checks that against `platform/base.py` and FEATURES.md. GitHub Actions runs the unit tests on Windows and macOS for every pull request.
+
+## Build from source
+
+Python 3.12.
+
+**Windows** (developed from WSL against a Windows Python):
+
+```bash
+. tools/winpy.sh                                   # WINPY (Windows python.exe) and APP_W (this folder)
+wtest "$APP_W\\tests" -q -m "not gpu and not win"   # unit tests
+wtest "$APP_W\\tests" -q -m gpu                     # needs an NVIDIA GPU and the models
+wtest "$APP_W\\tests" -q -m win                     # real desktop: waits for 45 s of nobody touching the PC
+wpy "$APP_W\\tools\\build.py" --installer            # Ecoscribe-Setup-<version>.exe (needs Inno Setup 6)
+```
+
+Packages: `requirements-win.txt`.
+
+**Mac** (Apple Silicon):
+
+```bash
+pip install -r requirements-mac.txt
+tools/mac_check.sh            # the test suite
+python tools/build_mac.py     # Ecoscribe.app + Ecoscribe-<version>.dmg
+```
+
+**Both:** `npm install && npm run smoke` tests the window's JavaScript. The speaker add-on builds separately (`packaging/speakers/`) and needs the gated `pyannote/speaker-diarization-community-1` weights from Hugging Face.
 
 ## Privacy
 
-Audio, transcripts, voices and settings stay on your PC. The only network traffic is the first download of each speech model from Hugging Face and, if you set one, your calendar link. pyannote's usage telemetry is switched off.
+Audio, transcripts, voices and settings stay on your computer. The only network traffic is the first download of each speech model from Hugging Face and, if you set one, your calendar link. pyannote's usage telemetry is switched off.
 
 ## Credits and license
 
-Speech recognition: OpenAI Whisper models via [faster-whisper](https://github.com/SYSTRAN/faster-whisper) and CTranslate2 (MIT). Speakers: [pyannote.audio](https://github.com/pyannote/pyannote-audio) (MIT) with `pyannote/speaker-diarization-community-1` (CC BY 4.0).
+Speech recognition: OpenAI Whisper models via [faster-whisper](https://github.com/SYSTRAN/faster-whisper) / CTranslate2 (Windows) and [mlx-whisper](https://github.com/ml-explore/mlx-examples) (Mac), all MIT. Speakers: [pyannote.audio](https://github.com/pyannote/pyannote-audio) (MIT) with `pyannote/speaker-diarization-community-1` (CC BY 4.0).
 
 Ecoscribe is released under the [MIT license](LICENSE). Built by ErikBros with Claude.
