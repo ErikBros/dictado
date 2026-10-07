@@ -136,3 +136,52 @@ def window_texts(max_elems: int = 1500, hwnd: int | None = None, timeout: float 
     user32.GetWindowTextW(hwnd, buf, n + 1)
     title = buf.value
     return [title] + com_thread().call(lambda: _read(hwnd, max_elems), timeout)
+
+
+# ---------- is there a text box under the cursor? (dictado-bhe) ----------
+# UIA control type ids
+_TEXTY = {50004, 50030, 50020}  # Edit, Document, Text (Windows Terminal's TermControl)
+# Clearly not somewhere to type: Button, CheckBox, Hyperlink, Image, List, ListItem, Menu, MenuItem,
+# RadioButton, TabItem, Tree, TreeItem, Tab, MenuBar, SplitButton, DataItem, ToolBar, TitleBar
+_NOT_TEXT = {50000, 50002, 50005, 50006, 50008, 50007, 50009, 50011, 50013, 50019, 50023, 50024, 50018,
+             50010, 50031, 50029, 50021, 50037}
+
+
+def classify_focus(control_type: int, value_editable: bool | None, has_text_pattern: bool) -> str:
+    """"text", "other" (positively not a text box) or "unknown". Unknown pastes as before: a remote
+    desktop (WSLg, mstsc), a game or an app without accessibility shows up as a plain pane."""
+    if value_editable or has_text_pattern or control_type in _TEXTY:
+        return "text"
+    if control_type in _NOT_TEXT:
+        return "other"
+    return "unknown"
+
+
+def _focus() -> str:
+    """Runs on the UIA thread; only plain values leave it."""
+    import comtypes
+    from comtypes.gen.UIAutomationClient import IUIAutomationValuePattern, UIA_TextPatternId, UIA_ValuePatternId
+    el = vp = None
+    try:
+        el = _automation().GetFocusedElement()
+        if el is None:
+            return "unknown"
+        ct = int(el.CurrentControlType)
+        editable = None
+        vp = el.GetCurrentPattern(UIA_ValuePatternId)
+        if vp:
+            editable = not vp.QueryInterface(IUIAutomationValuePattern).CurrentIsReadOnly
+        has_text = bool(el.GetCurrentPattern(UIA_TextPatternId))
+        return classify_focus(ct, editable, has_text)
+    except (comtypes.COMError, ValueError, OSError, AttributeError):
+        return "unknown"
+    finally:
+        el = vp = None
+
+
+def focus_kind(timeout: float = 0.3) -> str:
+    """What has keyboard focus now: "text", "other" or "unknown" (also on any error or timeout)."""
+    try:
+        return com_thread().call(_focus, timeout)
+    except Exception:
+        return "unknown"
