@@ -7,7 +7,7 @@
 - **Who said what** (optional add-on): splits the other side of a call into Speaker 1, 2, 3, and you can name them.
 - **Files:** drag an audio or video file onto the window to transcribe it.
 
-Version 1.10.0 (October 2026). The interface is in English.
+Version 1.11.0 (October 2026). The interface is in English.
 
 ---
 
@@ -15,7 +15,7 @@ Version 1.10.0 (October 2026). The interface is in English.
 
 | File | What it is | Needed? |
 |---|---|---|
-| `Ecoscribe-Setup-1.10.0.exe` | The app (0.54 GB) | Yes |
+| `Ecoscribe-Setup-1.11.0.exe` | The app (0.54 GB) | Yes |
 | `Ecoscribe-Speakers-Setup-1.2.0.exe` | Speaker add-on: tells the people on a call apart (2.1 GB download, 4.6 GB installed) | Optional |
 
 ## 2. Requirements
@@ -28,7 +28,7 @@ Version 1.10.0 (October 2026). The interface is in English.
 
 ## 3. Install
 
-1. Double-click **`Ecoscribe-Setup-1.10.0.exe`**.
+1. Double-click **`Ecoscribe-Setup-1.11.0.exe`**.
 2. Windows will probably show **"Windows protected your PC"**. That's because the app isn't signed with a paid certificate, not because something is wrong. Click **More info**, then **Run anyway**.
 3. No admin password needed. It installs for your user only, in `%LOCALAPPDATA%\Programs\Ecoscribe`.
 4. Keep **"Start Ecoscribe with Windows"** ticked if you want it always ready.
