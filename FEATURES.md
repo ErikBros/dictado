@@ -36,7 +36,7 @@ Built once for both. "Check on Mac" = works in tests, still to be tried for real
 | Insights: pace (words a minute of speech) and pauses, to people vs to AI apps, with the 130-160 range as information | done | done (people / AI split: dictado-9jc.7) |
 | Insights: filler words and hedges in messages to people (per 100 words, weekly), optional note on the pill after such a message | done | done (pill note: check on Mac, dictado-9jc.7) |
 | Insights: Coach me (recent messages and emails to people, not AI prompts, as one prompt for Claude) | done | done (people / AI split: check on Mac, dictado-9jc.7) |
-| Insights: how clearly you speak (share of words heard clearly per week, words it wasn't sure of per language) | done | needs word confidence (dictado-9jc.6) |
+| Insights: how clearly you speak (share of words heard clearly per week, words it wasn't sure of per language) | done | done (word confidence from mlx) |
 
 ## Platform-specific
 
@@ -63,6 +63,6 @@ Built once for both. "Check on Mac" = works in tests, still to be tried for real
 | A frozen app can't lag the computer's input | done (hooks in their own process) | not needed: macOS times out a stuck event tap by itself |
 | Speakers + Remember voices (add-on) | done (Ecoscribe Speakers; the old Dictado Speakers still found) | done (Ecoscribe Speakers.app, the old Dictado Speakers.app still found; pyannote on the Apple GPU, same results as CPU, 2x faster) |
 | Claude app connection (MCP) | done | done (~/Library/Application Support/Claude) |
-| Word confidence for Insights (clarity, words it wasn't sure of) | done (a second pass with word timestamps after the paste, ~0.3 s on the GPU, only with Insights on and nothing waiting) | to do: dictado-9jc.6 (mlx word timestamps) |
+| Word confidence for Insights (clarity, words it wasn't sure of) | done (a second pass with word timestamps after the paste, ~0.3 s on the GPU, only with Insights on and nothing waiting) | done (the dictation's own tokens aligned to the audio, ~0.56 s on large-v3-turbo; the first after a load ~1 s) |
 | Window title at the paste (who a dictation was for: people / AI app) | done (GetWindowText; only the label is saved) | done (Accessibility: the focused window's title; desktop check: dictado-9jc.7) |
 | Installer | done (.exe, Inno Setup) | done (Ecoscribe.app + .dmg, com.erikbros.ecoscribe, self-signed: this Mac only; a public build needs a Developer ID) |

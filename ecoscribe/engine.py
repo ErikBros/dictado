@@ -244,7 +244,7 @@ class Engine:
         """dictado-9jc.1: [(word, probability)], how sure Whisper was of each word. A second pass with word
         timestamps, asked for after the paste: inline it would add ~80 ms to every dictation. `lang` is
         what the dictation came out in (a mix like "es+en" is split again). None when the model can't
-        say (the Mac's mlx model until dictado-9jc.6)."""
+        say."""
         out: list[tuple[str, float]] = []
         with self._busy:
             if self.model is None:

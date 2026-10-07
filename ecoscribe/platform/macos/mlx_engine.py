@@ -83,6 +83,15 @@ class Segment:
 
 
 @dataclass
+class Word:
+    """faster-whisper's Word shape: what Engine.word_confidence reads (dictado-9jc.6)."""
+    start: float
+    end: float
+    word: str
+    probability: float
+
+
+@dataclass
 class Info:
     language: str
     language_probability: float
@@ -150,7 +159,7 @@ class MlxWhisperModel:
 
     def transcribe(self, audio, language: str | None = None, beam_size: int = 5, vad_filter: bool = False,
                    vad_parameters=None, condition_on_previous_text: bool = True, without_timestamps: bool = False,
-                   initial_prompt: str | None = None, **_ignored):
+                   initial_prompt: str | None = None, word_timestamps: bool = False, **_ignored):
         audio = np.asarray(audio, np.float32)
         duration = len(audio) / SR
         chunks = None
@@ -162,14 +171,20 @@ class MlxWhisperModel:
         lang, prob = language, 1.0
         if lang is None:
             lang, prob, _ = self.detect_language(audio)
+        if word_timestamps and len(audio) <= 30 * SR:  # dictado-9jc.6: the dictation's own tokens, aligned
+            seg = self._aligned(audio, lang, initial_prompt)
+            if seg is not None:
+                return iter([seg]), Info(lang, prob, duration, after)
         if without_timestamps and len(audio) <= 30 * SR:  # a dictation: one encoder pass, shared with detection
             seg = self._short(audio, lang, initial_prompt)
             self._fkey = None  # shared by this dictation's detection only, never by the next clip
             if seg is not None:
                 return iter([seg]), Info(lang, prob, duration, after)
-        raw = self._run(audio, lang, condition_on_previous_text, initial_prompt, without_timestamps)
+        raw = self._run(audio, lang, condition_on_previous_text, initial_prompt, without_timestamps, word_timestamps)
         segs = [Segment(start=float(s["start"]), end=float(s["end"]), text=s["text"],
-                        no_speech_prob=float(s.get("no_speech_prob", 0.0)), avg_logprob=float(s.get("avg_logprob", 0.0)))
+                        no_speech_prob=float(s.get("no_speech_prob", 0.0)), avg_logprob=float(s.get("avg_logprob", 0.0)),
+                        words=[Word(float(w["start"]), float(w["end"]), w["word"], float(w.get("probability", 0.0)))
+                               for w in s.get("words") or []] if word_timestamps else None)
                 for s in raw["segments"]]
         if chunks:
             from faster_whisper.vad import SpeechTimestampsMap
@@ -177,6 +192,9 @@ class MlxWhisperModel:
             for s in segs:
                 s.start = ts.get_original_time(s.start)
                 s.end = ts.get_original_time(s.end, is_end=True)
+                for w in s.words or ():
+                    w.start = ts.get_original_time(w.start)
+                    w.end = ts.get_original_time(w.end, is_end=True)
         return iter(segs), Info(lang, prob, duration, after)
 
     def _features(self, audio: np.ndarray):
@@ -205,17 +223,50 @@ class MlxWhisperModel:
                                                     temperature=0.0, prompt=prompt or None)))
         if res.compression_ratio > 2.4 or res.avg_logprob < -1.0:
             return None
+        self._last_tokens = (self._clip_key(audio, lang, prompt), list(res.tokens))  # for the word pass after the paste
         return Segment(start=0.0, end=round(len(audio) / SR, 2), text=res.text, no_speech_prob=float(res.no_speech_prob),
                        avg_logprob=float(res.avg_logprob))
 
-    def _run(self, audio, lang, condition, prompt, without_timestamps):
+    @staticmethod
+    def _clip_key(audio: np.ndarray, lang, prompt):
+        import hashlib
+        return (len(audio), lang, prompt or None, hashlib.blake2b(audio.tobytes(), digest_size=16).digest())
+
+    def _aligned(self, audio: np.ndarray, lang: str, prompt: str | None):
+        """Word timings + probabilities for the clip the last dictation decoded (dictado-9jc.6): its tokens
+        are aligned to the audio in one forward pass instead of a second full transcription (~1.2-1.8 s).
+        None when the clip isn't the one decoded last (the caller then transcribes with word timestamps)."""
+        last = getattr(self, "_last_tokens", None)
+        if not last or last[0] != self._clip_key(audio, lang, prompt):
+            return None
+        tokens = last[1]
+
+        def run():
+            from mlx_whisper.audio import N_FRAMES, N_SAMPLES, log_mel_spectrogram, pad_or_trim
+            from mlx_whisper.timing import find_alignment
+            from mlx_whisper.tokenizer import get_tokenizer
+            m = self.model
+            tok = get_tokenizer(m.is_multilingual, num_languages=m.num_languages, language=lang, task="transcribe")
+            mel = log_mel_spectrogram(audio, n_mels=m.dims.n_mels, padding=N_SAMPLES)
+            mel = pad_or_trim(mel, N_FRAMES, axis=-2).astype(self.dtype)
+            return find_alignment(m, tok, [t for t in tokens if t < tok.eot], mel, len(audio) // 160)
+        timings = on_mlx(run)
+        if not timings:
+            return None
+        from mlx_whisper.timing import merge_punctuations
+        merge_punctuations(timings, "\"'“¿([{-", "\"'.。,，!！?？:：”)]}、")  # like the full path: "dog," is one word
+        words = [Word(float(w.start), float(w.end), w.word, float(w.probability)) for w in timings if w.word]
+        return Segment(start=0.0, end=round(len(audio) / SR, 2), text="".join(w.word for w in words), words=words)
+
+    def _run(self, audio, lang, condition, prompt, without_timestamps, word_timestamps=False):
         import mlx_whisper
         from mlx_whisper.transcribe import ModelHolder
         def run():
             ModelHolder.model, ModelHolder.model_path = self.model, self.path  # use OUR loaded model
             return mlx_whisper.transcribe(audio, path_or_hf_repo=self.path, language=lang, verbose=None,
                                           condition_on_previous_text=condition, initial_prompt=prompt or None,
-                                          without_timestamps=without_timestamps, fp16=self.fp16)
+                                          without_timestamps=without_timestamps, word_timestamps=word_timestamps,
+                                          fp16=self.fp16)
         return on_mlx(run)
 
 

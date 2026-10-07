@@ -103,7 +103,7 @@ CAPABILITIES: dict[str, dict] = {
     },
     "Word confidence for Insights (clarity, words it wasn't sure of)": {
         "windows": "ecoscribe.engine:Engine",  # Engine.word_confidence: faster-whisper word timestamps, after the paste
-        "macos": ("ticket", "dictado-9jc.6"),  # mlx ignores word_timestamps today: no clarity saved
+        "macos": "ecoscribe.platform.macos.mlx_engine:MlxWhisperModel",  # the dictation's tokens aligned (find_alignment), ~0.56 s
     },
     "Window title at the paste (who a dictation was for: people / AI app)": {
         "windows": "ecoscribe.platform.windows.context:foreground_title",  # GetWindowText of the foreground window

@@ -126,6 +126,9 @@ def test_word_confidence_after_the_paste(engine):
     import time
     from ecoscribe.coach import clarity
     a = read_wav(FIX / "en_fox.wav")
+    engine.transcribe(a)  # as in the app: the clarity pass follows this dictation (mlx reuses its tokens)
+    engine.word_confidence(a, "en")  # the first pass after a model load also compiles (~+0.45 s on mlx): not timed
+    engine.transcribe(a)
     t0 = time.perf_counter()
     wp = engine.word_confidence(a, "en")
     ms = (time.perf_counter() - t0) * 1000
