@@ -19,6 +19,12 @@ from .config import TextCfg, WhisperCfg
 from .text import clean, is_hallucination, vocab_prompt
 
 log = logging.getLogger(__name__)
+SR = 16000
+# dictado-1tw: a dictation in more than one of your languages. Cut at short pauses, detect each piece
+# (the quick way, then the full way for a piece that disagrees), transcribe each run in its language.
+MIX_PAUSE_MS = 200  # a breath can switch language
+MIX_MIN_S = 1.5  # a shorter piece joins the next one: too little to tell the language
+MIX_FROM_S = 3.0  # shorter dictations are one language
 _GPU_ERRORS = ("cuda", "cublas", "cudnn", "out of memory", "metal")  # metal: the Mac GPU
 
 
@@ -94,6 +100,78 @@ class Engine:
                 self.device = "cpu"
                 self._warmup()
 
+    def _detect(self, chunk: np.ndarray, langs: list[str], full: bool = False) -> str:
+        """The language of one piece among `langs`. The quick way feeds the encoder only the piece
+        (faster-whisper: ~45 ms instead of ~150 ms for the 30 s window); full=True pads to 30 s."""
+        m = self.model
+        if not full and hasattr(m, "feature_extractor") and hasattr(m, "model"):
+            from faster_whisper.transcribe import get_ctranslate2_storage
+            n_max = m.feature_extractor.nb_max_frames
+            f = m.feature_extractor(chunk)[..., :n_max]
+            n = min(n_max, max(200, f.shape[-1] + f.shape[-1] % 2))
+            f = np.pad(f, ((0, 0), (0, n - f.shape[-1])))
+            res = m.model.detect_language(get_ctranslate2_storage(f[None].astype(np.float32)))[0]
+            probs = [(tok[2:-2], pr) for tok, pr in res]
+        else:
+            _, _, probs = m.detect_language(chunk)
+        p = {k: v for k, v in probs if k in langs}
+        return max(p, key=p.get) if p else langs[0]
+
+    @staticmethod
+    def _pieces(audio: np.ndarray) -> list[tuple[float, float]]:
+        """Speech cut at pauses of MIX_PAUSE_MS, pieces of at least MIX_MIN_S (Silero VAD)."""
+        from faster_whisper.vad import VadOptions, get_speech_timestamps
+
+        from .transcribe import pieces
+        ts = get_speech_timestamps(audio, VadOptions(min_silence_duration_ms=MIX_PAUSE_MS))
+        return pieces([(t["start"] / SR, t["end"] / SR) for t in ts], gap_s=MIX_PAUSE_MS / 1000, min_s=MIX_MIN_S)
+
+    def language_runs(self, audio: np.ndarray, langs: list[str]) -> list[tuple[float, float, str]] | None:
+        """[(start_s, end_s, lang)] runs of one language each, or None when there is one piece.
+        A piece that disagrees with the main language is checked again the full way first: the quick
+        way once heard a Swedish piece as English (2026-10-07)."""
+        ps = self._pieces(audio)
+        if len(ps) < 2:
+            return None
+        got = [(a, b, self._detect(audio[int(a * SR):int(b * SR)], langs)) for a, b in ps]
+        dur: dict[str, float] = {}
+        for a, b, lang in got:
+            dur[lang] = dur.get(lang, 0.0) + b - a
+        main = max(dur, key=dur.get)
+        runs: list[tuple[float, float, str]] = []
+        for a, b, lang in got:
+            if lang != main:
+                lang = self._detect(audio[int(a * SR):int(b * SR)], langs, full=True)
+            if runs and runs[-1][2] == lang:
+                runs[-1] = (runs[-1][0], b, lang)
+            else:
+                runs.append((a, b, lang))
+        return runs
+
+    def _run_mixed(self, audio: np.ndarray, runs, words=None, beam_size: int | None = None):
+        """Each run in its own language; the text in order. Result lang "es+el" (first seen first)."""
+        prompt = vocab_prompt([*self.text_cfg.vocabulary, *(words or [])])
+        texts, speech_s, order = [], 0.0, []
+        for a, b, lang in runs:
+            chunk = audio[max(0, int((a - 0.1) * SR)):int((b + 0.1) * SR)]
+            segments, info = self.model.transcribe(
+                chunk, language=lang, beam_size=beam_size or self.cfg.beam_size, vad_filter=True,
+                vad_parameters={"min_silence_duration_ms": 500}, condition_on_previous_text=False,
+                without_timestamps=True, initial_prompt=prompt)
+            segments = list(segments)
+            raw = "".join(s.text for s in segments).strip()
+            run_s = float(getattr(info, "duration_after_vad", info.duration))
+            no_speech = max((getattr(s, "no_speech_prob", 0.0) for s in segments), default=1.0)
+            speech_s += run_s
+            if raw and not is_hallucination(raw, run_s, no_speech):
+                texts.append(raw)
+                if lang not in order:
+                    order.append(lang)
+        log.info("mixed dictation: %s", ", ".join(f"{lang} {b - a:.1f}s" for a, b, lang in runs))
+        if not texts:
+            return "", runs[0][2], speech_s
+        return clean(" ".join(texts), self.text_cfg.strip_fillers, self.text_cfg.append_space), "+".join(order), speech_s
+
     def _make(self, name, device, compute_type):
         path = str(self.resolve(name))  # local plain-file copy; downloads only if never fetched
         return self.factory(path, device, compute_type, local_files_only=True)
@@ -130,7 +208,8 @@ class Engine:
             return None
         t0 = time.perf_counter()
         try:
-            text, lang, speech_s = self._run(np.asarray(audio, dtype=np.float32), None, lang, prefer, beam_size=1)
+            text, lang, speech_s = self._run(np.asarray(audio, dtype=np.float32), None, lang, prefer, beam_size=1,
+                                             mix=False)
         except Exception:
             log.debug("preview pass failed", exc_info=True)
             return None
@@ -139,7 +218,18 @@ class Engine:
         return Result(text=text, lang=lang, speech_s=speech_s, ms=int((time.perf_counter() - t0) * 1000))
 
     def _run(self, audio: np.ndarray, words=None, forced: str | None = None, prefer: str | None = None,
-             beam_size: int | None = None):
+             beam_size: int | None = None, mix: bool = True):
+        langs = list(self.cfg.languages)
+        if mix and not forced and len(langs) > 1 and len(audio) >= MIX_FROM_S * SR:
+            try:
+                runs = self.language_runs(audio, langs)
+            except Exception as e:
+                if _is_gpu_error(e):
+                    raise
+                log.warning("per-piece language check failed (%s): one language for all", e)
+                runs = None
+            if runs and len(runs) > 1:
+                return self._run_mixed(audio, runs, words, beam_size)
         if forced:
             lang = forced  # the user chose this dictation's language (dictation key + L)
         elif len(self.cfg.languages) == 1:
