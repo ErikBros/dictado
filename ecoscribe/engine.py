@@ -24,6 +24,7 @@ SR = 16000
 # (the quick way, then the full way for a piece that disagrees), transcribe each run in its language.
 MIX_PAUSE_MS = 200  # a breath can switch language
 MIX_PAD_MS = 30  # Silero pads 400 ms each side by default: a pause under ~1 s vanished, so a switch after a breath never split (Mac, 2026-10-07: 0/6 at 400 ms, 6/6 at 30 ms for 0.3 s pauses; runs keep a 0.1 s margin)
+QUICK_SURE = 0.95  # a quick answer less sure than this is checked the full way: turbo heard a clean 3 s Spanish piece as English at 0.87 (Windows GPU, 2026-10-07; every wrong quick answer in 967 fixture pieces was under 0.95)
 MIX_MIN_S = 1.5  # a shorter piece joins the next one: too little to tell the language
 MIX_FROM_S = 3.0  # shorter dictations are one language
 _GPU_ERRORS = ("cuda", "cublas", "cudnn", "out of memory", "metal")  # metal: the Mac GPU
@@ -103,7 +104,7 @@ class Engine:
 
     def _detect(self, chunk: np.ndarray, langs: list[str], full: bool = False) -> str:
         """The language of one piece among `langs`. The quick way feeds the encoder only the piece
-        (faster-whisper: ~45 ms instead of ~150 ms for the 30 s window); full=True pads to 30 s."""
+        (faster-whisper: ~25 ms instead of ~160 ms for the 30 s window), used only when sure; full=True pads to 30 s."""
         m = self.model
         if not full and hasattr(m, "feature_extractor") and hasattr(m, "model"):
             from faster_whisper.transcribe import get_ctranslate2_storage
@@ -116,9 +117,15 @@ class Engine:
         elif not full and hasattr(m, "detect_language_piece"):  # mlx (macOS): the same quick way
             _, _, probs = m.detect_language_piece(chunk)
         else:
+            full = True
             _, _, probs = m.detect_language(chunk)
         p = {k: v for k, v in probs if k in langs}
-        return max(p, key=p.get) if p else langs[0]
+        if not p:
+            return langs[0]
+        best = max(p, key=p.get)
+        if not full and p[best] < QUICK_SURE:
+            return self._detect(chunk, langs, full=True)
+        return best
 
     @staticmethod
     def _pieces(audio: np.ndarray) -> list[tuple[float, float]]:

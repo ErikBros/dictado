@@ -120,3 +120,32 @@ def test_a_short_pause_between_languages_still_splits():
         audio = np.concatenate([es, np.zeros(int(gap_s * SR), np.float32), en])
         ps = Engine._pieces(audio)
         assert len(ps) >= 2, (gap_s, ps)
+
+
+def test_an_unsure_quick_check_is_checked_the_full_way():
+    """dictado-l2x: turbo's quick check heard a clean 3 s Spanish piece as English (0.87) and both pieces
+    agreed, so nothing was re-checked and the English half vanished. Every wrong quick answer measured
+    (967 pieces, turbo and large-v3) was under QUICK_SURE; a sure one is still used as is."""
+    from ecoscribe.engine import QUICK_SURE
+    seen = []
+
+    class Unsure(FakeModel):
+        def __init__(self, p):
+            super().__init__()
+            self.p = p
+
+        def detect_language_piece(self, audio):
+            seen.append("quick")
+            return "en", self.p, [("en", self.p), ("es", 1 - self.p)]
+
+        def detect_language(self, audio, **kw):
+            seen.append("full")
+            return FakeModel.detect_language(self, audio, **kw)
+
+    e = engine(("en", "es"))
+    a = recording((("es", 3),))
+    e.model = Unsure(0.87)
+    assert e._detect(a, ["en", "es"]) == "es" and seen == ["quick", "full"]
+    seen.clear()
+    e.model = Unsure(QUICK_SURE)
+    assert e._detect(a, ["en", "es"]) == "en" and seen == ["quick"]
