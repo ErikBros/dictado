@@ -97,6 +97,12 @@ def can_post() -> bool:
         return False
 
 
+def focus_kind() -> str:
+    """"text" / "other" / "unknown" for whatever has keyboard focus (Accessibility, a few ms)."""
+    from .context import focus_kind as _kind
+    return _kind()
+
+
 def _wait_modifiers_released(max_s: float = 1.5) -> int:
     t0 = time.monotonic()
     while time.monotonic() - t0 < max_s and keys.modifiers_down():
@@ -123,6 +129,10 @@ def deliver(text: str, restore_delay_s: float = 0.8) -> DeliveryResult:
         return DeliveryResult(False, exe, "secure_input", waited)  # like "elevated" on Windows
     if not can_post():
         return DeliveryResult(False, exe, "no_accessibility", waited)
+    if focus_kind() == "other":
+        # dictado-cd2: no text box under the cursor (the desktop, a file list, a button): Cmd+V would
+        # fire a shortcut there. The text stays on the clipboard and the pill says so.
+        return DeliveryResult(False, exe, "no_text_box", waited)
     keys.paste()
     if not had_non_text:
         threading.Timer(restore_delay_s, _restore, args=(prior, seq)).start()

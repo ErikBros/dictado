@@ -61,3 +61,42 @@ def window_texts(max_elems: int = 1500, budget_s: float = 0.25) -> list[str]:
         if isinstance(v, str) and v:
             texts.append(v[-4000:])  # what you are writing in, the end nearest the cursor
     return texts
+
+
+# dictado-cd2: is the cursor in a text box at the stop? Like Windows platform/windows/context.focus_kind.
+EDIT_ROLES = {"AXTextField", "AXTextArea", "AXComboBox", "AXSearchField"}
+NOT_TEXT_ROLES = {"AXButton", "AXCheckBox", "AXRadioButton", "AXList", "AXOutline", "AXTable", "AXRow", "AXCell",
+                  "AXImage", "AXMenuItem", "AXMenuBarItem", "AXPopUpButton", "AXMenuButton", "AXSlider",
+                  "AXTabGroup", "AXToolbar", "AXDisclosureTriangle", "AXBrowser", "AXGrid", "AXColumn"}
+
+
+def classify_focus(role: str | None, editable_ancestor: bool, range_settable: bool) -> str:
+    """"text", "other" (positively not a text box) or "unknown". Unknown pastes as before: an app with
+    little accessibility (Tk, games, a remote desktop) shows nothing useful, and a paste there is
+    better than a lost dictation."""
+    if role in EDIT_ROLES or editable_ancestor or range_settable:
+        return "text"
+    if role in NOT_TEXT_ROLES:
+        return "other"
+    return "unknown"
+
+
+def focus_kind() -> str:
+    """"text" / "other" / "unknown" for whatever has keyboard focus (Accessibility, a few ms)."""
+    try:
+        from ApplicationServices import (AXUIElementCreateSystemWide, AXUIElementIsAttributeSettable,
+                                         AXUIElementSetMessagingTimeout)
+        sysw = AXUIElementCreateSystemWide()
+        AXUIElementSetMessagingTimeout(sysw, 0.1)
+        el = _attr(sysw, "AXFocusedUIElement")
+        if el is None:
+            return "unknown"
+        role = _attr(el, "AXRole")
+        err, settable = AXUIElementIsAttributeSettable(el, "AXSelectedTextRange", None)
+        kind = classify_focus(str(role) if role else None, _attr(el, "AXEditableAncestor") is not None,
+                              err == 0 and bool(settable))
+        log.debug("focus role=%s -> %s", role, kind)
+        return kind
+    except Exception:
+        log.debug("focus check failed", exc_info=True)
+        return "unknown"

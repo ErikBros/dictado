@@ -8,6 +8,7 @@ from __future__ import annotations
 import json
 import logging
 import queue
+import sys
 import threading
 import time
 from dataclasses import replace
@@ -21,8 +22,9 @@ from .quality import dropout_seconds, too_short
 log = logging.getLogger(__name__)
 from .routing import LANG_NAMES  # any language or mix (dictado-ehs)
 SR = 16000
+PASTE_KEYS = "⌘V" if sys.platform == "darwin" else "Ctrl+V"  # dictado-cd2: the Mac's own words
 NOT_PASTED = {"clipboard_busy": "Couldn't paste",
-              "no_text_box": "No text box here: copied, paste with Ctrl+V"}  # dictado-bhe
+              "no_text_box": f"No text box here: copied, paste with {PASTE_KEYS}"}  # dictado-bhe
 
 
 class App:
@@ -363,7 +365,7 @@ class App:
             self._keep_suspect(audio, res, dropout_s)
         self._history(res, audio, dr)
         if not dr.pasted:
-            self.ui.flash(NOT_PASTED.get(dr.reason, "Copied: paste with Ctrl+V"), 4.0 if dr.reason == "no_text_box" else 2.0)
+            self.ui.flash(NOT_PASTED.get(dr.reason, f"Copied: paste with {PASTE_KEYS}"), 4.0 if dr.reason == "no_text_box" else 2.0)
 
     def _keep_suspect(self, audio, res, dropout_s: float) -> None:
         """Much less text than talking (50 s -> one sentence, 2026-10-07): keep the audio on this
