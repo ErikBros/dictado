@@ -117,3 +117,17 @@ def test_combo_hotkeys_keep_L():
     h = HookThread(lambda a: None, RCTRL, 0.3, emit=lambda e: None, consume=False, combo=ComboMatcher("ctrl+shift+d"))
     h._toggle_down = True
     assert not h.lang_key(VK_LANG, True)
+
+
+@windows_only
+def test_numpad_enter_is_the_dictation_key_when_on():
+    """Settings > Numpad Enter dictates too: the numpad's Enter (extended flag) acts as the key and
+    is swallowed; the main Enter (no flag) and the option off are untouched."""
+    from ecoscribe.platform.windows.hook import HookThread
+    from ecoscribe.platform.windows.win32types import LLKHF_EXTENDED, VK_RETURN
+    off = HookThread(lambda a: None, RCTRL, 0.3, emit=lambda e: None, consume=False)
+    assert off.numpad_alias(VK_RETURN, LLKHF_EXTENDED, True) == (VK_RETURN, False)
+    h = HookThread(lambda a: None, RCTRL, 0.3, emit=lambda e: None, consume=False, numpad_enter=True)
+    assert h.numpad_alias(VK_RETURN, 0, True) == (VK_RETURN, False)  # the main Enter types as usual
+    assert h.numpad_alias(VK_RETURN, LLKHF_EXTENDED, True) == (RCTRL, True) and h._alias_down
+    assert h.numpad_alias(VK_RETURN, LLKHF_EXTENDED, False) == (RCTRL, True) and not h._alias_down

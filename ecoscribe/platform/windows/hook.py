@@ -18,10 +18,9 @@ from ctypes import wintypes as w
 from typing import Callable
 
 from ...keystate import VK_ESCAPE, KeyState
-from .win32types import (HOOKPROC, KBDLLHOOKSTRUCT, LLKHF_INJECTED, LLMHF_INJECTED,
-                         MOUSE_PRESS_MSGS, MSLLHOOKSTRUCT, WH_KEYBOARD_LL, WH_MOUSE_LL,
-                         WM_KEYDOWN, WM_KEYUP, WM_QUIT, WM_SYSKEYDOWN, WM_SYSKEYUP, WM_TIMER,
-                         kernel32, user32)
+from .win32types import (HOOKPROC, KBDLLHOOKSTRUCT, LLKHF_EXTENDED, LLKHF_INJECTED, LLMHF_INJECTED, MOUSE_PRESS_MSGS,
+                         MSLLHOOKSTRUCT, VK_RETURN, WH_KEYBOARD_LL, WH_MOUSE_LL, WM_KEYDOWN, WM_KEYUP, WM_QUIT,
+                         WM_SYSKEYDOWN, WM_SYSKEYUP, WM_TIMER, kernel32, user32)
 
 log = logging.getLogger(__name__)
 VK_LANG = 0x4C  # L: dictation key + L picks the next dictation's language (dictation-languages)
@@ -33,7 +32,8 @@ class HookThread(threading.Thread):
     def __init__(self, on_action: Callable[[str], None], toggle_vk: int, max_tap_s: float,
                  accept_injected: bool = False, reinstall_s: float = 30.0,
                  swallow_cancel: Callable[[], bool] = lambda: False, combo=None,
-                 hold: bool = False, hold_s: float = 0.5, emit=None, consume: bool = True):
+                 hold: bool = False, hold_s: float = 0.5, emit=None, consume: bool = True,
+                 numpad_enter: bool = False):
         super().__init__(name="ecoscribe-hook", daemon=True)
         self.on_action = on_action
         self.keys = KeyState(toggle_vk, max_tap_s, hold=hold, hold_s=hold_s)
@@ -46,6 +46,8 @@ class HookThread(threading.Thread):
         self._toggle_down = False  # tracked inside the hook callback itself
         self._eat_esc_up = False
         self._lang_held = False  # L went down with the dictation key held: swallowed until it's up
+        self.numpad_enter = numpad_enter  # the numpad's Enter is a second dictation key (swallowed)
+        self._alias_down = False  # the numpad's Enter is down as the dictation key
         self._q: queue.SimpleQueue = queue.SimpleQueue()
         self._emit = emit or self._q.put  # the hook process sends events over a pipe instead (t0u.37)
         self._consume_events = consume
@@ -65,6 +67,15 @@ class HookThread(threading.Thread):
         elif not down:
             self._lang_held = False
         return True
+
+    def numpad_alias(self, vk: int, flags: int, down: bool) -> tuple[int, bool]:
+        """[hotkey] numpad_enter: the numpad's Enter (Enter with the extended flag) acts as the
+        dictation key and never reaches the app (a tap would also send the chat message).
+        Returns (the vk to treat it as, swallow it). The main Enter key is untouched."""
+        if not (self.numpad_enter and vk == VK_RETURN and flags & LLKHF_EXTENDED):
+            return vk, False
+        self._alias_down = down
+        return self.toggle_vk, True
 
     def would_swallow(self, vk: int, down: bool) -> bool:
         if vk != VK_ESCAPE:
@@ -86,18 +97,25 @@ class HookThread(threading.Thread):
             if self.accept_injected or not (k.flags & LLKHF_INJECTED):
                 down = wparam in _DOWN
                 if down or wparam in _UP:
+                    vk, alias = self.numpad_alias(k.vkCode, k.flags, down)
+                    if alias and self.combo is not None:  # a combo shortcut: the numpad Enter fires it too
+                        if down:
+                            self._emit(("combo", vk, time.monotonic()))
+                        return 1
                     if self.combo is not None:
-                        fire, eat = self.combo.key(k.vkCode, down)
+                        fire, eat = self.combo.key(vk, down)
                         if fire:
-                            self._emit(("combo", k.vkCode, time.monotonic()))
+                            self._emit(("combo", vk, time.monotonic()))
                         if eat:
                             return 1  # the app under the cursor never sees the shortcut
-                    if k.vkCode == self.toggle_vk:
+                    if vk == self.toggle_vk:
                         self._toggle_down = down
-                    self._emit(("down" if down else "up", k.vkCode, time.monotonic()))
-                    if self.lang_key(k.vkCode, down):
+                    self._emit(("down" if down else "up", vk, time.monotonic()))
+                    if alias:
+                        return 1
+                    if self.lang_key(vk, down):
                         return 1  # the app under the cursor never sees this L (no Ctrl+L)
-                    if self.would_swallow(k.vkCode, down):
+                    if self.would_swallow(vk, down):
                         return 1
         return user32.CallNextHookEx(None, code, wparam, lparam)
 
@@ -137,12 +155,14 @@ class HookThread(threading.Thread):
         while user32.GetMessageW(ctypes.byref(msg), None, 0, 0) > 0:
             if msg.message != WM_TIMER:
                 continue
-            if (self.keys.held or self._toggle_down) and not (user32.GetAsyncKeyState(self.toggle_vk) & 0x8000):
+            held_vk = VK_RETURN if self._alias_down else self.toggle_vk
+            if (self.keys.held or self._toggle_down) and not (user32.GetAsyncKeyState(held_vk) & 0x8000):
                 # we missed the key-up (hook dropped mid-press): unstick so taps and Esc work again
                 log.warning("toggle key looked held but is up; resetting")
                 self.keys.held = False
                 self._toggle_down = False
                 self._eat_esc_up = False
+                self._alias_down = False
                 if not self._consume_events:  # in the hook process: tell the app the key is up
                     self._emit(("up", self.toggle_vk, time.monotonic()))
             if not self.keys.held:
@@ -205,6 +225,8 @@ class HookClient(HookThread):
             a.append("--hook-injected")
         if self.combo is not None:
             a += ["--hook-combo", self.combo.spec]
+        if self.numpad_enter:
+            a.append("--hook-numenter")
         return a
 
     def _push_state(self) -> None:
@@ -287,7 +309,7 @@ def spawn_hook_process(args: list[str]):
 
 
 def hook_process_main(argv: list[str]) -> int:
-    """`Ecoscribe.exe --hook <vk> <max_tap_s> <reinstall_s> [--hook-injected] [--hook-combo SPEC]`:
+    """`Ecoscribe.exe --hook <vk> <max_tap_s> <reinstall_s> [--hook-injected] [--hook-combo SPEC] [--hook-numenter]`:
     hooks only; events as lines "down 163 1234.5678" on stdout; "rec 1|0" on stdin."""
     import sys
     vk, max_tap, reinstall = int(argv[0]), float(argv[1]), float(argv[2])
@@ -318,7 +340,8 @@ def hook_process_main(argv: list[str]) -> int:
         import os
         os._exit(code)
     h = HookThread(None, vk, max_tap, accept_injected="--hook-injected" in argv, reinstall_s=reinstall,
-                   swallow_cancel=lambda: state["rec"], combo=combo, emit=out_q.put, consume=False)
+                   swallow_cancel=lambda: state["rec"], combo=combo, emit=out_q.put, consume=False,
+                   numpad_enter="--hook-numenter" in argv)
     threading.Thread(target=writer, name="hook-writer", daemon=True).start()
     threading.Thread(target=reader, name="hook-reader", daemon=True).start()
     out.write(b"ready\n")

@@ -130,3 +130,10 @@ def test_language_key_from_the_hook_process():
     assert actions == ["lang"]
     c._stopping = True
     hold.set()
+
+
+def test_numpad_enter_reaches_the_hook_process_args():
+    from ecoscribe.platform.windows.hook import HookClient
+    c = HookClient(lambda a: None, 0xA3, 1.0, spawn=lambda a: None, numpad_enter=True)
+    assert c._hook_args()[-1] == "--hook-numenter"
+    assert "--hook-numenter" not in HookClient(lambda a: None, 0xA3, 1.0, spawn=lambda a: None)._hook_args()

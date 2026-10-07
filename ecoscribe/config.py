@@ -26,6 +26,7 @@ class HotkeyCfg:
     # t0u.28: hold the key to talk, let go to stop (a tap still toggles). Lone keys only.
     hold_to_talk: bool = False
     hold_s: float = 0.5  # held this long with nothing else pressed = hold-to-talk
+    numpad_enter: bool = False  # Windows: the numpad's Enter is a second dictation key (it no longer types Enter)
 
     @property
     def vk(self) -> int:

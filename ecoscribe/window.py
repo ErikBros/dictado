@@ -156,7 +156,7 @@ class Api:
                 "speakers": c.meetings.speakers, "vocabulary": "\n".join(c.text.vocabulary),
                 "voice_commands": c.text.voice_commands,
                 "screen_names": c.text.screen_names,
-                "hold_to_talk": c.hotkey.hold_to_talk, "voice_memory": c.meetings.voice_memory,
+                "hold_to_talk": c.hotkey.hold_to_talk, "numpad_enter": c.hotkey.numpad_enter, "voice_memory": c.meetings.voice_memory,
                 "calendar_url": c.meetings.calendar_url, "debug_log": c.ui.debug_log,
                 "extra_languages": list(c.whisper.extra_languages),
                 "snippets": [{"trigger": k, "text": v} for k, v in c.text.snippets.items()],
@@ -239,7 +239,7 @@ class Api:
                                          "speakers": ("meetings", "speakers"),
                                          "voice_commands": ("text", "voice_commands"),
                                          "screen_names": ("text", "screen_names"),
-                                         "hold_to_talk": ("hotkey", "hold_to_talk"),
+                                         "hold_to_talk": ("hotkey", "hold_to_talk"), "numpad_enter": ("hotkey", "numpad_enter"),
                                          "voice_memory": ("meetings", "voice_memory"),
                                          "debug_log": ("ui", "debug_log")}.items():
                 if key in values:

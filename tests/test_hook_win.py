@@ -175,3 +175,16 @@ def test_hold_mode_on_the_real_hook(hold_hook):
     got.clear()
     send_keys([(R, True), (0x43, True), (0x43, False), (R, False)])
     assert wait_for(lambda: got == ["press", "abort"])
+
+
+def test_numpad_enter_taps_toggle_on_the_real_hook():
+    """The numpad's Enter (VK_RETURN with the extended flag) toggles like the dictation key."""
+    got = []
+    h = HookThread(got.append, R, 1.0, accept_injected=True, reinstall_s=0.5, numpad_enter=True)
+    h.start()
+    try:
+        assert wait_for(lambda: h.installs >= 1)
+        send_keys([(0x0D, True), (0x0D, False)], extended={0x0D})
+        assert wait_for(lambda: got == ["toggle"])
+    finally:
+        h.stop()

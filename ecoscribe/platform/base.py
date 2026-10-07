@@ -25,6 +25,10 @@ CAPABILITIES: dict[str, dict] = {
         "windows": "ecoscribe.platform.windows.hook:VK_LANG",
         "macos": "ecoscribe.platform.macos.keyhook:KC_LANG,HookThread",  # Right Command + L
     },
+    "Numpad Enter as a second dictation key": {
+        "windows": "ecoscribe.platform.windows.hook:HookThread",  # HookThread.numpad_alias
+        "macos": ("ticket", "dictado-1k7"),
+    },
     "Paste text where the cursor is": {
         "windows": "ecoscribe.platform.windows.deliver:deliver,set_clipboard_text",
         "macos": "ecoscribe.platform.macos.deliver:deliver,set_clipboard_text",
