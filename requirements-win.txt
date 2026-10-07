@@ -1,0 +1,18 @@
+# Windows runtime + test dependencies (pinned to the 1.4.3 build). CUDA libraries come with the build, not here.
+PyAudioWPatch==0.2.12.8
+av==17.1.0
+comtypes==1.4.17
+ctranslate2==4.7.1
+faster-whisper==1.2.1
+numpy==2.4.3
+onnxruntime==1.27.0
+pillow==12.2.0
+pycaw==20260927
+pystray==0.19.5
+python-dateutil==2.9.0.post0
+pywebview==6.2.1
+pywin32==312
+sounddevice==0.5.5
+tokenizers==0.23.1
+tzdata==2025.3
+huggingface_hub

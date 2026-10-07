@@ -1,0 +1,53 @@
+# PyInstaller spec for Ecoscribe.app (macOS, Apple Silicon). Build with: python tools/build_mac.py
+import os
+from pathlib import Path
+
+from PyInstaller.utils.hooks import collect_data_files, collect_dynamic_libs, collect_submodules
+
+HERE = Path(SPECPATH)
+APP = HERE.parent.parent
+VERSION = os.environ.get("ECOSCRIBE_VERSION", "0.0.0")
+
+binaries = collect_dynamic_libs("mlx")  # ecoscribe-systap goes into Contents/MacOS after the build
+datas = (collect_data_files("mlx") + collect_data_files("mlx_whisper") + collect_data_files("faster_whisper")
+         + collect_data_files("webview") + [(str(APP / "ecoscribe" / "web"), "ecoscribe/web"),
+                                             (str(APP / "ecoscribe" / "platform" / "macos" / "systap.swift"),
+                                              "ecoscribe/platform/macos")])
+
+a = Analysis(
+    [str(APP / "packaging" / "entry.py")],
+    pathex=[str(APP)],
+    binaries=binaries,
+    datas=datas,
+    hiddenimports=["dateutil.rrule", "dateutil.tz", "webview.platforms.cocoa",
+                   *collect_submodules("ecoscribe.platform.macos"), *collect_submodules("mlx_whisper"),
+                   # mlx.core imports these at init (mlx._reprlib_fix, mlx.__array_api_info): the scan can't see it
+                   *collect_submodules("mlx"),
+                   "AppKit", "Foundation", "Quartz", "ApplicationServices", "AVFoundation", "CoreAudio", "WebKit",
+                   "PyObjCTools.AppHelper"],
+    excludes=["torch", "tensorflow", "matplotlib", "pandas", "IPython", "pytest", "PyInstaller",  # tkinter stays: ecoscribe.ui (shared) imports it
+              "pyaudiowpatch", "win32api", "win32con", "win32event", "comtypes", "pystray"],
+    noarchive=False,
+)
+pyz = PYZ(a.pure)
+exe = EXE(pyz, a.scripts, [], exclude_binaries=True, name="Ecoscribe", console=False, argv_emulation=False,
+          target_arch="arm64", codesign_identity=None)
+coll = COLLECT(exe, a.binaries, a.datas, name="Ecoscribe")
+app = BUNDLE(
+    coll,
+    name="Ecoscribe.app",
+    icon=str(HERE / "Ecoscribe.icns") if (HERE / "Ecoscribe.icns").exists() else None,
+    bundle_identifier="com.erikbros.ecoscribe",
+    version=VERSION,
+    info_plist={
+        "CFBundleName": "Ecoscribe",
+        "CFBundleDisplayName": "Ecoscribe",
+        "CFBundleShortVersionString": VERSION,
+        "CFBundleVersion": VERSION,
+        "LSUIElement": True,  # menu bar only, no Dock icon
+        "LSMinimumSystemVersion": "14.4",  # Core Audio process taps (meetings' system audio)
+        "NSHighResolutionCapable": True,
+        "NSMicrophoneUsageDescription": "Ecoscribe listens while you dictate and records your side of meetings.",
+        "NSAudioCaptureUsageDescription": "Ecoscribe records the other people in your meetings from the computer's audio.",
+    },
+)

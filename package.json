@@ -1,0 +1,7 @@
+{
+  "name": "ecoscribe-window-tests",
+  "private": true,
+  "description": "Test-only: the jsdom smoke test of the Ecoscribe window (tests/ui/smoke.mjs).",
+  "scripts": { "smoke": "node tests/ui/smoke.mjs" },
+  "devDependencies": { "jsdom": "^27.4.0" }
+}

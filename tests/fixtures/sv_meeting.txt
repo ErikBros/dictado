@@ -1,0 +1,3 @@
+Hej allihopa, då kör vi igång sprintplaneringen. Vi har tre saker på agendan i dag. Först kundprojektet i Göteborg, där leveransen är flyttad till den 14 november. Anna har pratat med beställaren och de vill ha en demo redan nästa vecka, så vi behöver prioritera inloggningen och rapportsidan. Sen har vi budgeten. Vi ligger på ungefär 250 000 kronor hittills, vilket är lite under plan.
+
+Tack Mattias. Jag kan ta rapportsidan, men jag behöver hjälp med testerna. Johan är ledig till och med måndag, så vi får nog flytta retrospektiven till onsdag klockan tio. Och en sak till: kan någon boka ett möte med kunden i Malmö innan fredag? Annars hinner vi inte få någon återkoppling före nästa sprint.

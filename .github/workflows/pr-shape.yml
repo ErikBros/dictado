@@ -1,0 +1,41 @@
+# Standard process (CLAUDE.md): one ticket = one branch from main = one PR, never stacked.
+# Fails a PR that carries another open PR's unmerged commits, or that doesn't target main.
+name: pr-shape
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, edited]
+permissions:
+  contents: read
+  pull-requests: read
+jobs:
+  pr-shape:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Not stacked, targets main
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BASE: ${{ github.event.pull_request.base.ref }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+          if [ "$BASE" != "main" ]; then
+            echo "::error::PRs go into main (this one targets '$BASE'). One ticket = one branch from main."
+            exit 1
+          fi
+          git fetch -q origin main
+          bad=0
+          for pr in $(gh pr list --repo "$GITHUB_REPOSITORY" --state open --json number,headRefOid --jq '.[] | "\(.number):\(.headRefOid)"'); do
+            n=${pr%%:*}; sha=${pr#*:}
+            [ "$n" = "$NUMBER" ] && continue
+            git fetch -q origin "$sha" 2>/dev/null || continue
+            # Stacked = this PR contains another open PR's head commit that main doesn't have yet.
+            if git merge-base --is-ancestor "$sha" "$HEAD_SHA" && ! git merge-base --is-ancestor "$sha" origin/main; then
+              echo "::error::Stacked on open PR #$n. Merge #$n first, then rebase this branch onto main (or put both in one PR)."
+              bad=1
+            fi
+          done
+          exit $bad
