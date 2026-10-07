@@ -103,7 +103,7 @@ class Run:
         env = {**__import__("os").environ, "DICTADO_DATA_DIR": str(self.data)}
         self.env = env
         self.data.mkdir(parents=True, exist_ok=True)  # voice commands are a setting (off by default): on here
-        (self.data / "config.toml").write_text("[text]\nvoice_commands = true\n[whisper]\nlanguages = [\"en\", \"es\"]\n", encoding="utf-8")
+        (self.data / "config.toml").write_text("[text]\nvoice_commands = true\n[whisper]\nlanguages = [\"en\", \"es\"]\nextra_languages = [\"es\"]\n", encoding="utf-8")
         self.log = self.data / "dictado-test.log"
         self.start_app()
 
