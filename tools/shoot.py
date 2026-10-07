@@ -21,8 +21,9 @@ SHOTS = {
     "reunion-directo": "page=reuniones/2026-10-05_1400_retro",
     "reunion-lista": "page=reuniones/2026-10-05_0915_planering",
     "reunion-cola": "page=reuniones/2026-10-05_1130_podcast",
+    "insights": "page=insights&insights=1",
 }
-TALL = {"ajustes-largo": "page=ajustes&dirty=1"}
+TALL = {"ajustes-largo": "page=ajustes&dirty=1", "insights-largo": "page=insights&insights=1"}
 for scale in (1, 1.5):
     for name, q in SHOTS.items():
         out = OUT / f"{name}@{scale}x.png"

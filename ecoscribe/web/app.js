@@ -13,11 +13,32 @@ const DEFAULT_MIC = MAC ? "System default" : "Windows default";
 const hotkeyLabel = (k) => HOTKEY_LABEL[k] || (k ? k.split("+").map((p) => (p.length > 1 && !/^f\d/.test(p) ? p[0].toUpperCase() + p.slice(1) : p.toUpperCase())).join("+") : (MAC ? "Right Command" : "Right Ctrl"));
 
 /* ---------------------------------------------------------------- demo API */
+function demoInsights(days) {  // invented numbers and text for the demo and screenshots
+  const k = days === 7 ? 0.3 : days === 30 ? 0.8 : 1;
+  const hours = [0, 0, 0, 0, 0, 0, 1, 3, 8, 12, 10, 6, 4, 9, 14, 11, 7, 4, 2, 3, 2, 1, 0, 0].map((v) => Math.round(v * k));
+  const today = new Date();
+  const dayList = Array.from({ length: 14 }, (_, i) => {
+    const d = new Date(today); d.setDate(today.getDate() - 13 + i);
+    return { date: d.toISOString().slice(0, 10), words: [210, 480, 0, 350, 620, 0, 0, 390, 530, 270, 0, 440, 710, 380][i] };
+  });
+  return {
+    days, first: "2026-09-14",
+    totals: { dictations: Math.round(240 * k), words: Math.round(11800 * k), talk_s: Math.round(5530 * k), wpm: 128, saved_s: Math.round(12170 * k), typing_wpm: 40 },
+    rhythm: { hours, days: dayList, streak: 2 },
+    languages: [{ lang: "en", words: Math.round(8200 * k) }, { lang: "sv", words: Math.round(2900 * k) }, { lang: "de", words: Math.round(500 * k) }, { lang: "mixed", words: Math.round(200 * k) }],
+    apps: [{ app: "slack.exe", dictations: 96 }, { app: "code.exe", dictations: 71 }, { app: "outlook.exe", dictations: 44 }, { app: "chrome.exe", dictations: 29 }],
+    habits: [{ lang: "en", words: 8200, per_100: 3.1, top: [{ word: "like", count: 120 }, { word: "you know", count: 61 }, { word: "basically", count: 40 }, { word: "kind of", count: 33 }] },
+      { lang: "sv", words: 2900, per_100: 1.4, top: [{ word: "typ", count: 25 }, { word: "liksom", count: 16 }] }],
+    phrases: [{ phrase: "at the end of", count: 18 }, { phrase: "let me check", count: 14 }, { phrase: "as soon as", count: 11 }, { phrase: "on the other hand", count: 9 }],
+    suggestions: [{ heard: "Ecoskribe", count: 5, suggest: "Ecoscribe" }, { heard: "Klaude", count: 3, suggest: "Claude" }, { heard: "Kristineberg", count: 3, suggest: "Kristineberg" }],
+  };
+}
+
 function demoApi() {
   const now = new Date();
   const iso = (mins) => new Date(now - mins * 60000).toISOString().slice(0, 19);
   let settings = {
-    values: { hotkey: "rctrl", mic: "Anker PowerConf", languages: "en", sounds: true, overlay: true, live_text: true, unmute: true, startup: true,
+    values: { hotkey: "rctrl", mic: "Anker PowerConf", languages: "en", sounds: true, overlay: true, live_text: true, insights: params.get("insights") === "1", unmute: true, startup: true,
       meet_mode: "prompt", meet_lang: "sv", on_demand: true, speakers: true, vocabulary: "Göteborg\npyannote", voice_commands: false, screen_names: true, hold_to_talk: false, numpad_enter: false, voice_memory: true,
       snippets: [{ trigger: "my email", text: "alex@example.com" }] },
     options: {
@@ -118,6 +139,9 @@ function demoApi() {
       return { items, stats: { total: 312, total_words: 4210, today_words: 152 } };
     },
     copy_text: async () => ({ ok: true }),
+    get_insights: async (days) => demoInsights(days),
+    add_word: async (w) => { settings.values.vocabulary += "\n" + w; window.__added = w; return { ok: true }; },
+    insights_for_claude: async () => ({ ok: true, chars: 5120 }),
     clear_history: async () => { history.length = 0; return { ok: true }; },
     open_log: async () => ({ ok: true }),
     get_welcome: async () => ({ done: params.get("welcome") !== "1" }),
@@ -173,7 +197,7 @@ async function copy(text, btn) {
 }
 
 /* ---------------------------------------------------------------- navigation */
-const PAGES = ["inicio", "reuniones", "historial", "ajustes"];
+const PAGES = ["inicio", "reuniones", "historial", "insights", "ajustes"];
 let current = null;
 async function show(page) {
   if (page && page.startsWith("reuniones/")) { r.open = page.slice("reuniones/".length); r.next = 0; r.status = null; $("#r-segs").innerHTML = ""; page = "reuniones"; }
@@ -185,7 +209,141 @@ async function show(page) {
   if (page === "inicio") await renderInicio();
   if (page === "reuniones") await renderReuniones();
   if (page === "historial") await renderHistory();
+  if (page === "insights") await renderInsights();
   if (page === "ajustes") await renderSettings();
+}
+
+/* ---------------------------------------------------------------- insights (dictado-3je) */
+let iDays = null;
+const SVGNS = "http://www.w3.org/2000/svg";
+const langName = (c) => {
+  if (c === "mixed") return "Mixed";
+  try { return new Intl.DisplayNames(["en"], { type: "language" }).of(c); } catch { return c; }
+};
+function svgEl(tag, attrs) {
+  const e = document.createElementNS(SVGNS, tag);
+  for (const [k, v] of Object.entries(attrs || {})) e.setAttribute(k, v);
+  return e;
+}
+function tip(e, lines) {
+  const t = $("#i-tip");
+  if (!lines) { t.hidden = true; return; }
+  t.textContent = "";
+  const b = document.createElement("strong"); b.textContent = lines[0]; t.append(b);
+  if (lines[1]) t.append(document.createTextNode(" " + lines[1]));
+  t.hidden = false;
+  const r = e.target.getBoundingClientRect();
+  const x = e.clientX || r.left + r.width / 2, y = e.clientY || r.top;
+  t.style.left = `${Math.min(window.innerWidth - t.offsetWidth - 8, x + 12)}px`;
+  t.style.top = `${y - t.offsetHeight - 10}px`;
+}
+/* Columns, one series: thin bars (<= 24 px), 4 px rounded tops square at the baseline, a hairline
+   baseline, a few tick labels, and a hover / focus readout per column (dataviz). */
+function columns(el, data, tickEvery) {
+  el.textContent = "";
+  const W = 320, H = 118, top = 6, base = 96, slot = W / data.length;
+  const bw = Math.min(24, slot * 0.62), max = Math.max(1, ...data.map((d) => d.value));
+  const svg = svgEl("svg", { viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": el.dataset.label || "" });
+  data.forEach((d, i) => {
+    const x = i * slot + (slot - bw) / 2, h = d.value ? Math.max(2, (base - top) * d.value / max) : 0;
+    const hit = svgEl("rect", { x: i * slot, y: top, width: slot, height: base - top, class: "hit", tabindex: 0 });
+    const show = (e) => tip(e, [d.tipValue, d.tipLabel]);
+    hit.addEventListener("pointermove", show); hit.addEventListener("focus", show);
+    hit.addEventListener("pointerleave", () => tip(null)); hit.addEventListener("blur", () => tip(null));
+    svg.append(hit);
+    if (h > 0) {
+      const r = Math.min(4, bw / 2, h);
+      svg.append(svgEl("path", { class: d.dim ? "bar dim" : "bar",
+        d: `M${x},${base}V${base - h + r}Q${x},${base - h} ${x + r},${base - h}H${x + bw - r}Q${x + bw},${base - h} ${x + bw},${base - h + r}V${base}Z` }));
+    } else svg.append(svgEl("g"));
+    if (tickEvery(i)) {
+      const t = svgEl("text", { x: i * slot + slot / 2, y: base + 16, "text-anchor": "middle", class: "tick" });
+      t.textContent = d.label; svg.append(t);
+    }
+  });
+  svg.append(svgEl("line", { x1: 0, x2: W, y1: base + 0.5, y2: base + 0.5, class: "base" }));
+  el.append(svg);
+}
+function hbars(el, items) {
+  el.textContent = "";
+  const box = document.createElement("div"); box.className = "i-hbars";
+  const max = Math.max(1, ...items.map((x) => x.value));
+  for (const it of items) {
+    const row = document.createElement("div"); row.className = "i-hbar";
+    const name = document.createElement("span"); name.className = "i-hbar-name"; name.textContent = it.name; name.title = it.name;
+    const track = document.createElement("span"); track.className = "i-hbar-track";
+    const fill = document.createElement("span"); fill.className = "i-hbar-fill"; fill.style.display = "block";
+    fill.style.width = `${Math.max(1.5, 100 * it.value / max)}%`; track.append(fill);
+    const val = document.createElement("span"); val.className = "i-hbar-val"; val.textContent = it.label;
+    row.append(name, track, val); box.append(row);
+  }
+  el.append(box);
+}
+function iChip(text, count, title) {
+  const c = document.createElement("span"); c.className = "i-chip";
+  c.append(document.createTextNode(text));
+  if (count != null) { const b = document.createElement("b"); b.textContent = `×${count}`; c.append(b); }
+  if (title) c.title = title;
+  return c;
+}
+async function renderInsights() {
+  for (const b of $$("#i-range .seg")) b.setAttribute("aria-checked", String((b.dataset.days || null) === iDays));
+  const d = await api.get_insights(iDays ? Number(iDays) : null);
+  const t = d.totals;
+  $("#i-empty").hidden = t.dictations > 0;
+  $("#i-body").hidden = t.dictations === 0;
+  if (!t.dictations) return;
+  $("#i-saved").textContent = fmtDur(t.saved_s);
+  $("#i-saved-how").textContent = t.wpm
+    ? `You talk at ${t.wpm} words a minute; typing runs about ${t.typing_wpm}. ${fmtNum(t.words)} words took ${fmtDur(t.talk_s)} to say.`
+    : `Typing ${fmtNum(t.words)} words at ${t.typing_wpm} a minute takes longer than saying them.`;
+  $("#i-words").textContent = fmtNum(t.words);
+  $("#i-dictations").textContent = fmtNum(t.dictations);
+  $("#i-talk").textContent = fmtDur(t.talk_s);
+  $("#i-streak").textContent = `${d.rhythm.streak} ${d.rhythm.streak === 1 ? "day" : "days"}`;
+  const peak = Math.max(...d.rhythm.hours);
+  columns($("#i-hours"), d.rhythm.hours.map((v, h) => ({ value: v, label: String(h).padStart(2, "0"), dim: v < peak,
+    tipValue: `${v} ${v === 1 ? "dictation" : "dictations"}`, tipLabel: `${String(h).padStart(2, "0")}:00-${String((h + 1) % 24).padStart(2, "0")}:00` })),
+    (i) => i % 6 === 0);
+  const n = d.rhythm.days.length;
+  columns($("#i-days"), d.rhythm.days.map((x, i) => {
+    const dt = new Date(x.date + "T12:00:00");
+    return { value: x.words, dim: i !== n - 1,
+      label: i === n - 1 ? "Today" : dt.toLocaleDateString("en-GB", { day: "numeric", month: "short" }),
+      tipValue: `${fmtNum(x.words)} words`, tipLabel: dt.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" }) };
+  }), (i) => i === 0 || i === n - 1 || i === Math.floor((n - 1) / 2));
+  const lw = d.languages.reduce((a, x) => a + x.words, 0) || 1;
+  hbars($("#i-langs"), d.languages.map((x) => ({ name: langName(x.lang), value: x.words,
+    label: `${fmtNum(x.words)} · ${Math.round(100 * x.words / lw)}%` })));
+  hbars($("#i-apps"), d.apps.map((x) => ({ name: appName(x.app), value: x.dictations, label: fmtNum(x.dictations) })));
+  const hab = $("#i-habits"); hab.textContent = "";
+  for (const h of d.habits) {
+    const row = document.createElement("div"); row.className = "i-habit";
+    const num = document.createElement("span"); num.className = "i-habit-num"; num.textContent = String(h.per_100);
+    const lab = document.createElement("span"); lab.className = "muted"; lab.textContent = `filler words per 100 in ${langName(h.lang)}`;
+    const chips = document.createElement("span"); chips.className = "i-chips";
+    for (const f of h.top) chips.append(iChip(f.word, f.count));
+    row.append(num, lab, chips); hab.append(row);
+  }
+  if (!d.habits.length) hab.textContent = "A few more dictations and your filler words show up here.";
+  const ph = $("#i-phrases"); ph.textContent = "";
+  for (const p of d.phrases) ph.append(iChip(p.phrase, p.count));
+  if (!d.phrases.length) ph.append(iChip("Nothing repeated three times yet"));
+  const sl = $("#i-suggest"); sl.textContent = "";
+  $("#i-suggest-card").hidden = !d.suggestions.length;
+  for (const s of d.suggestions) {
+    const li = document.createElement("li");
+    const heard = document.createElement("span");
+    heard.textContent = s.heard === s.suggest ? `“${s.heard}”, ${s.count} times` : `Heard “${s.heard}” ${s.count} times`;
+    const input = document.createElement("input"); input.value = s.suggest; input.setAttribute("aria-label", `Add ${s.suggest} to Your words`);
+    const btn = document.createElement("button"); btn.type = "button"; btn.className = "btn btn-ghost btn-sm"; btn.textContent = "Add";
+    btn.onclick = async () => {
+      const r = await api.add_word(input.value);
+      if (r.ok) { li.remove(); toast(`Added “${input.value.trim()}” to Your words.`); }
+    };
+    li.append(heard, input, btn); sl.append(li);
+  }
+  $("#i-foot").textContent = `Worked out on this computer from your dictation history${d.first ? ` since ${new Date(d.first + "T12:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "long" })}` : ""}; nothing is sent anywhere.`;
 }
 
 /* ---------------------------------------------------------------- status */
@@ -639,7 +797,7 @@ function formValues() {
     hotkey: $("#f-hotkey").value, mic: $("#f-mic").value,
     languages: $$("#f-languages input:checked").map((i) => i.value).join(",") || "en",
     extra_languages: [...extraLangs],
-    sounds: $("#f-sounds").checked, overlay: $("#f-overlay").checked, live_text: $("#f-live-text").checked, unmute: $("#f-unmute").checked, startup: $("#f-startup").checked,
+    sounds: $("#f-sounds").checked, overlay: $("#f-overlay").checked, live_text: $("#f-live-text").checked, insights: $("#f-insights").checked, unmute: $("#f-unmute").checked, startup: $("#f-startup").checked,
     meet_mode: $("#f-meet-mode").value, meet_lang: $("#f-meet-lang").value, on_demand: $("#f-on-demand").checked,
     speakers: $("#f-speakers").checked, voice_commands: $("#f-voice-commands").checked,
     screen_names: $("#f-screen-names").checked, hold_to_talk: $("#f-hold").checked, numpad_enter: $("#f-numpad-enter").checked,
@@ -748,7 +906,8 @@ async function renderSettings() {
   baseLangs = s.options.base_languages || ["en", "sv"];
   langCard(new Set(String(s.values.languages || "en").split(",")));
   $("#lang-key").textContent = hotkeyLabel(s.values.hotkey || "rctrl");
-  $("#f-sounds").checked = s.values.sounds; $("#f-overlay").checked = s.values.overlay; $("#f-live-text").checked = s.values.live_text !== false;
+  $("#f-sounds").checked = s.values.sounds; $("#f-overlay").checked = s.values.overlay; $("#f-live-text").checked = s.values.live_text !== false; $("#f-insights").checked = !!s.values.insights;
+  $("#nav-insights").hidden = !s.values.insights;
   $("#f-unmute").checked = s.values.unmute; $("#f-startup").checked = s.values.startup;
   $("#f-startup").disabled = !s.can_startup;
   $("#startup-hint").textContent = s.can_startup ? "Ecoscribe starts by itself when you sign in." : "Available in the installed version.";
@@ -772,7 +931,8 @@ async function save() {
   if (!r.ok) { toast(`Couldn't save: ${r.error}`); return; }
   saved = v;
   $("#savebar").hidden = true;
-  const needsRestart = Object.keys(changed).some((k) => k !== "startup");
+  if ("insights" in changed) $("#nav-insights").hidden = !v.insights;
+  const needsRestart = Object.keys(changed).some((k) => k !== "startup" && k !== "insights");
   toast(!needsRestart ? "Saved." : r.restarting ? "Saved. Ecoscribe restarts, a few seconds."
     : "Saved. It applies the next time Ecoscribe starts.");
   refreshStatus();
@@ -951,6 +1111,12 @@ async function boot() {
   if (MAC) macify();
   try { R_LANGS = (await api.get_settings()).options.meet_langs.map((o) => [o.value, o.label]); } catch {}
   for (const b of $$(".nav-item")) b.onclick = () => { if (b.dataset.page === "reuniones") r.open = null; show(b.dataset.page); };
+  try { $("#nav-insights").hidden = !(await api.get_settings()).values.insights; } catch {}
+  for (const b of $$("#i-range .seg")) b.onclick = () => { iDays = b.dataset.days || null; renderInsights(); };
+  $("#i-claude").onclick = async () => {
+    const r = await api.insights_for_claude();
+    if (r.ok) toast("Copied: paste it into Claude.");
+  };
   rWire();
   notesWire();
   hkWire();

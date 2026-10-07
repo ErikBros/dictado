@@ -97,6 +97,24 @@ async function load(query) {
   const off = await load("page=ajustes&addon=0");
   check(off.doc.querySelector("#f-speakers").disabled && /isn't installed/.test(off.doc.querySelector("#f-speakers-help").textContent), "no add-on: toggle off and says why");
 }
+{ // insights (dictado-3je): off by default, a Settings switch adds the tab
+  const off = await load("page=inicio");
+  check(off.doc.querySelector("#nav-insights").hidden, "Insights tab hidden by default");
+  check(off.doc.querySelector("#f-insights") && !off.doc.querySelector("#f-insights").checked, "Insights switch off by default");
+  const { window, doc, errors } = await load("page=insights&insights=1");
+  await sleep(50);
+  check(!doc.querySelector("#nav-insights").hidden && !doc.querySelector("#page-insights").hidden, "Insights tab shown when switched on");
+  check(doc.querySelector("#i-saved").textContent === "3 h 22 min", "time saved: " + doc.querySelector("#i-saved").textContent);
+  check(doc.querySelectorAll("#i-hours path.bar").length > 5 && doc.querySelectorAll("#i-days .tick").length === 3, "hour and day charts drawn");
+  check(doc.querySelectorAll("#i-langs .i-hbar").length === 4 && doc.querySelector("#i-langs .i-hbar-name").textContent === "English", "languages by name");
+  check(doc.querySelector("#i-habits").textContent.includes("3.1"), "filler words per 100");
+  const add = doc.querySelector("#i-suggest li button");
+  add.click(); await sleep(30);
+  check(window.__added === "Ecoscribe" && doc.querySelectorAll("#i-suggest li").length === 2, "Add puts the suggested spelling in Your words");
+  doc.querySelector('#i-range .seg[data-days="7"]').click(); await sleep(30);
+  check(doc.querySelector('#i-range .seg[data-days="7"]').getAttribute("aria-checked") === "true" && doc.querySelector("#i-words").textContent === "3,540", "7 days range");
+  check(errors.length === 0, "no errors on Insights: " + errors.join("; "));
+}
 { // inicio
   const { doc, errors } = await load("page=inicio");
   check(doc.body.dataset.ready === "1", "boots in demo mode");

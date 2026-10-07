@@ -28,6 +28,8 @@
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10v4M8 7v10M12 4v16M16 8v8M20 11v2"/></svg>Meetings</button>
       <button class="nav-item" data-page="historial">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 7v5l3 2"/><circle cx="12" cy="12" r="8"/></svg>History</button>
+      <button class="nav-item" data-page="insights" id="nav-insights" hidden>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19V11M10 19V5M15 19v-6M20 19V9"/></svg>Insights</button>
       <button class="nav-item" data-page="ajustes">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h8M17 7h2M5 17h2M11 17h8"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg>Settings</button>
     </nav>
@@ -155,6 +157,57 @@
     </section>
 
     <!-- HISTORIAL -->
+    <section class="page" id="page-insights" hidden>
+      <header class="page-head">
+        <h1>Insights</h1>
+        <div class="segmented" role="radiogroup" aria-label="Period" id="i-range">
+          <button type="button" class="seg" role="radio" data-days="7" aria-checked="false">7 days</button>
+          <button type="button" class="seg" role="radio" data-days="30" aria-checked="false">30 days</button>
+          <button type="button" class="seg" role="radio" data-days="" aria-checked="true">All</button>
+        </div>
+      </header>
+      <div class="empty" id="i-empty" hidden><p>Dictate a few times and this page fills up with what your words say.</p></div>
+      <div id="i-body">
+        <div class="card i-hero">
+          <div class="i-hero-main">
+            <div class="i-hero-num" id="i-saved">0 min</div>
+            <div class="i-hero-label">of typing saved</div>
+            <p class="muted small" id="i-saved-how"></p>
+          </div>
+          <div class="i-tiles">
+            <div class="i-tile"><span class="i-tile-label">Words</span><span class="i-tile-value" id="i-words">0</span></div>
+            <div class="i-tile"><span class="i-tile-label">Dictations</span><span class="i-tile-value" id="i-dictations">0</span></div>
+            <div class="i-tile"><span class="i-tile-label">Talking</span><span class="i-tile-value" id="i-talk">0 min</span></div>
+            <div class="i-tile"><span class="i-tile-label">Day streak</span><span class="i-tile-value" id="i-streak">0</span></div>
+          </div>
+        </div>
+        <div class="i-grid">
+          <div class="card i-card"><div class="card-title">When you dictate</div><div class="i-chart" id="i-hours"></div></div>
+          <div class="card i-card"><div class="card-title">Words, last 14 days</div><div class="i-chart" id="i-days"></div></div>
+          <div class="card i-card"><div class="card-title">Languages</div><div id="i-langs"></div></div>
+          <div class="card i-card"><div class="card-title">Where you dictate</div><div id="i-apps"></div></div>
+        </div>
+        <div class="card i-card">
+          <div class="card-title">How you talk</div>
+          <div id="i-habits"></div>
+          <div class="i-sub">Phrases you repeat</div>
+          <div class="i-chips" id="i-phrases"></div>
+        </div>
+        <div class="card i-card" id="i-suggest-card">
+          <div class="card-title">Words to add</div>
+          <p class="muted small">Names Ecoscribe keeps writing its own way. Add one to Your words and it's spelled right from the next dictation.</p>
+          <ul class="i-suggest" id="i-suggest"></ul>
+        </div>
+        <div class="card i-card i-claude">
+          <div><div class="card-title">Your week for Claude</div>
+            <p class="muted small">Everything you dictated in the last 7 days as one prompt: Claude sums up your themes, decisions and loose ends.</p></div>
+          <button type="button" class="btn btn-ghost btn-sm" id="i-claude">Copy for Claude</button>
+        </div>
+        <p class="muted small i-foot" id="i-foot">Worked out on this computer from your dictation history; nothing is sent anywhere.</p>
+      </div>
+      <div class="i-tip" id="i-tip" role="tooltip" hidden></div>
+    </section>
+
     <section class="page" id="page-historial" hidden>
       <header class="page-head">
         <h1>History</h1>
@@ -271,6 +324,8 @@
             <input type="checkbox" class="switch" name="overlay" id="f-overlay"></label>
           <label class="row toggle-row"><span class="row-text"><span class="row-label">Live text on the pill</span><span class="muted small">Shows what Ecoscribe hears while you talk, a few seconds behind. A quick draft: the careful transcription is still what gets pasted.</span></span>
             <input type="checkbox" class="switch" name="live_text" id="f-live-text"></label>
+          <label class="row toggle-row"><span class="row-text"><span class="row-label">Insights tab</span><span class="muted small">A tab with what your dictations say: time saved, when and where you talk, your languages, filler words, names to add. Worked out on this computer.</span></span>
+            <input type="checkbox" class="switch" name="insights" id="f-insights"></label>
           <label class="row toggle-row" id="row-startup"><span class="row-text"><span class="row-label">Start with Windows</span><span class="muted small" id="startup-hint">Ecoscribe starts by itself when you sign in.</span></span>
             <input type="checkbox" class="switch" name="startup" id="f-startup"></label>
         </div>

@@ -150,7 +150,7 @@ class Api:
         return {
             "values": {
                 "hotkey": c.hotkey.key, "hotkey_label": hotkeys.label(c.hotkey.key), "mic": cur, "languages": ",".join(c.whisper.languages),
-                "sounds": c.ui.sounds, "overlay": c.ui.overlay, "live_text": c.ui.live_text, "unmute": c.audio.unmute_while_recording,
+                "sounds": c.ui.sounds, "overlay": c.ui.overlay, "live_text": c.ui.live_text, "insights": c.ui.insights, "unmute": c.audio.unmute_while_recording,
                 "startup": self._startup.is_enabled(),
                 "meet_mode": c.meetings.mode, "meet_lang": c.meetings.default_lang, "on_demand": c.whisper.on_demand,
                 "speakers": c.meetings.speakers, "vocabulary": "\n".join(c.text.vocabulary),
@@ -233,7 +233,7 @@ class Api:
                 if not valid_meeting_lang(values["meet_lang"]):
                     raise ValueError("meet_lang")
                 c.meetings.default_lang = values["meet_lang"]
-            for key, (section, name) in {"sounds": ("ui", "sounds"), "overlay": ("ui", "overlay"), "live_text": ("ui", "live_text"),
+            for key, (section, name) in {"sounds": ("ui", "sounds"), "overlay": ("ui", "overlay"), "live_text": ("ui", "live_text"), "insights": ("ui", "insights"),
                                          "unmute": ("audio", "unmute_while_recording"),
                                          "on_demand": ("whisper", "on_demand"),
                                          "speakers": ("meetings", "speakers"),
@@ -303,7 +303,7 @@ class Api:
                 gate.restore()
 
     # ---------------- history ----------------
-    def get_history(self, limit: int = 200, query: str = "") -> dict:
+    def _history_rows(self) -> list[dict]:
         rows = []
         try:
             with open(self._data_dir / "history.jsonl", encoding="utf-8") as f:
@@ -316,6 +316,10 @@ class Api:
                         rows.append(r)
         except FileNotFoundError:
             pass
+        return rows
+
+    def get_history(self, limit: int = 200, query: str = "") -> dict:
+        rows = self._history_rows()
         today = time.strftime("%Y-%m-%d")
         words = lambda r: len(re.findall(r"\w+", r["text"]))  # noqa: E731
         stats = {"total": len(rows), "total_words": sum(map(words, rows)),
@@ -323,6 +327,29 @@ class Api:
         q = query.strip().lower()
         items = [r for r in reversed(rows) if not q or q in r["text"].lower()][:limit]
         return {"items": items, "stats": stats}
+
+    # ---------------- insights (dictado-3je) ----------------
+    def get_insights(self, days: int | None = None) -> dict:
+        from . import insights
+        return insights.compute(self._history_rows(), list(self._load().text.vocabulary), int(days) if days else None)
+
+    def add_word(self, word: str) -> dict:
+        """Insights > Words to add: one name into Your words (restarts the background app like Save)."""
+        w = " ".join(str(word or "").split())[:60]
+        if not w:
+            return {"ok": False, "error": "empty"}
+        c = self._load()
+        if w.lower() not in {v.lower() for v in c.text.vocabulary}:
+            c.text.vocabulary.append(w)
+            tomlw.save(c, self._config_path)
+            self._signal()
+        return {"ok": True, "vocabulary": list(c.text.vocabulary)}
+
+    def insights_for_claude(self) -> dict:
+        from . import insights
+        text = insights.week_for_claude(self._history_rows())
+        self._copy(text)
+        return {"ok": True, "chars": len(text)}
 
     def copy_text(self, text: str) -> dict:
         self._copy(text)

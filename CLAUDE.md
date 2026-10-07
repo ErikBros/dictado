@@ -18,8 +18,12 @@ outcomes in plain words and only real choices (money, publishing, his desktop, w
 5. **Short-lived branches:** merge within the day; branches are deleted on merge. If main moves,
    rebase your one branch, never a pile.
 6. **Nothing goes straight to main**, ticket/beads updates included: they ride in the PR.
-7. **Public repo:** before every push, `tests/test_no_secrets.py` and `tests/test_repo_hygiene.py`
-   pass and the diff has no names, personal paths, keys or calendar links.
+7. **Public repo:** before every push, `tests/test_no_secrets.py`, `tests/test_repo_hygiene.py` and
+   `tests/test_no_personal_data.py` pass and the diff has no names, personal paths, keys or calendar links.
+   **Never any of Erik's personal data** anywhere in git, tickets (`.beads/issues.jsonl` is public),
+   commit messages, PR bodies or comments: no dictation or meeting text, no quotes of what he says,
+   no numbers about his speech or usage. Tests and demo data use invented text; describe requests
+   neutrally ("the user wants X").
 8. **Parity:** OS-specific work updates `ecoscribe/platform/base.py` + `FEATURES.md` in the same PR
    (`tests/test_platform_contract.py` checks it); the other platform gets done, a ticket, or
    "not needed" with a reason.
