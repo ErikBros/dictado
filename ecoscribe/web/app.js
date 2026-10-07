@@ -18,7 +18,7 @@ function demoApi() {
   const iso = (mins) => new Date(now - mins * 60000).toISOString().slice(0, 19);
   let settings = {
     values: { hotkey: "rctrl", mic: "Anker PowerConf", languages: "en", sounds: true, overlay: true, live_text: true, unmute: true, startup: true,
-      meet_mode: "prompt", meet_lang: "sv", on_demand: true, speakers: true, vocabulary: "Göteborg\npyannote", voice_commands: false, screen_names: true, hold_to_talk: false, voice_memory: true,
+      meet_mode: "prompt", meet_lang: "sv", on_demand: true, speakers: true, vocabulary: "Göteborg\npyannote", voice_commands: false, screen_names: true, hold_to_talk: false, numpad_enter: false, voice_memory: true,
       snippets: [{ trigger: "my email", text: "alex@example.com" }] },
     options: {
       hotkeys: [{ value: "rctrl", label: "Right Ctrl (recommended)" }, { value: "scrolllock", label: "Scroll Lock" }, { value: "pause", label: "Pause" }, { value: "f13", label: "F13" }],
@@ -641,7 +641,7 @@ function formValues() {
     sounds: $("#f-sounds").checked, overlay: $("#f-overlay").checked, live_text: $("#f-live-text").checked, unmute: $("#f-unmute").checked, startup: $("#f-startup").checked,
     meet_mode: $("#f-meet-mode").value, meet_lang: $("#f-meet-lang").value, on_demand: $("#f-on-demand").checked,
     speakers: $("#f-speakers").checked, voice_commands: $("#f-voice-commands").checked,
-    screen_names: $("#f-screen-names").checked, hold_to_talk: $("#f-hold").checked,
+    screen_names: $("#f-screen-names").checked, hold_to_talk: $("#f-hold").checked, numpad_enter: $("#f-numpad-enter").checked,
     voice_memory: $("#f-voice-memory").checked, debug_log: $("#f-debug-log").checked, calendar_url: $("#f-calendar").value.trim(),
     vocabulary: $("#f-vocabulary").value.split("\n").map((w) => w.trim()).filter(Boolean).join("\n"),
     snippets: $$(".snip").map((r) => ({ trigger: $(".snip-trigger", r).value.trim().toLowerCase().replace(/\s+/g, " "),
@@ -716,7 +716,7 @@ async function renderSettings() {
   $("#f-vocabulary").value = s.values.vocabulary || "";
   $("#f-voice-commands").checked = !!s.values.voice_commands;
   $("#f-screen-names").checked = s.values.screen_names !== false;
-  $("#f-hold").checked = !!s.values.hold_to_talk;
+  $("#f-hold").checked = !!s.values.hold_to_talk; $("#f-numpad-enter").checked = !!s.values.numpad_enter;
   holdFits();
   claudeRow();
   $("#f-voice-memory").checked = s.values.voice_memory !== false;
@@ -991,6 +991,7 @@ function macify() {
   for (const el of $$(".tip .keys kbd.key")) if (el.textContent === "Ctrl") el.textContent = "⌘";
   const startup = $("#row-startup .row-label"); if (startup) startup.textContent = "Open at login";
   const unmute = $("#f-unmute"); if (unmute) unmute.closest("label").hidden = true;  // a PC fix (mics muted at 0)
+  const numEnter = $("#f-numpad-enter"); if (numEnter) numEnter.closest("label").hidden = true;  // Windows for now (dictado-1k7)
   for (const el of $$("#page-ajustes .muted")) {  // dictado-p7c: Mac words in Settings
     el.innerHTML = el.innerHTML.replaceAll("this PC", "this Mac")
       .replace("(or the tray icon: Next dictation in)", "(or the menu bar icon: Dictation language)");
