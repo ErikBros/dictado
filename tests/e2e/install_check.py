@@ -45,10 +45,16 @@ def reg(path, name):
         return None
 
 
+# the app's own helpers, started by the engine (dictado-j96): not extra instances
+HELPERS = ("--hook", "--supervise", "--engine-worker", "--meeting", "--transcribe", "--speakers", "--mcp")
+
+
 def procs(image="Ecoscribe.exe") -> list[str]:
-    out = subprocess.run(["tasklist", "/FI", f"IMAGENAME eq {image}", "/FO", "CSV", "/NH"],
+    """The running app instances (engine, window): command lines, the app's helper processes left out."""
+    out = subprocess.run(["powershell", "-NoProfile", "-Command",
+                          f"Get-CimInstance Win32_Process -Filter \"name='{image}'\" | ForEach-Object {{ $_.CommandLine }}"],
                          capture_output=True, text=True).stdout
-    return [l for l in out.splitlines() if image.lower() in l.lower()]
+    return [l.strip() for l in out.splitlines() if l.strip() and not any(h in l.split() for h in HELPERS)]
 
 
 def status() -> dict:
