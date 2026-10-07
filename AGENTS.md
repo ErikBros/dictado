@@ -94,3 +94,5 @@ bd close <id>         # Complete work
 - NEVER say "ready to push when you are" - YOU must push
 - If push fails, resolve and retry until it succeeds
 <!-- END BEADS INTEGRATION -->
+
+> **Standard process:** see CLAUDE.md, "How we work". One ticket = one branch from main = one PR, never stacked; main only changes through green PRs.
