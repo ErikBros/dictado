@@ -5,7 +5,7 @@ mic, taps Right Command with tagged synthetic events, and checks what lands in t
 Never while the user works: waits for 45 s of idle (HIDIdleTime) and aborts (exit 3) on any real key or
 click during the run (a listen-only tap counts events without Ecoscribe's tag).
 
-    .venv/bin/python tools/mac_e2e.py [--scenario basic|voice|recover|langkey|added|all]
+    .venv/bin/python tools/mac_e2e.py [--scenario basic|voice|recover|langkey|added|live|all]
 
 voice: a clip made with macOS `say` ("... new line ... send it"): a real line break in the middle and
 Enter pressed at the end. recover: the app is crashed (SIGSEGV) mid-dictation and started again on
@@ -271,6 +271,35 @@ def scenario_added(r: Run) -> dict:
     return out
 
 
+LIVE_SAID = ("I would like to schedule the climbing session for Thursday evening, and please remind me to bring "
+             "the new shoes and the chalk bag, and also ask Sophie if she wants to come along after lunch.")
+
+
+def scenario_live(r: Run) -> dict:
+    """dictado-ayq: a long dictation shows its live text on the pill (a picture of the pill's strip of the
+    screen at ~8 s), and the paste still comes right after the stop."""
+    make_say_clip(r.clips / "say_live.wav", LIVE_SAID)
+    r.use("say_live.wav")
+    before = r.text()
+    secs = (r.clips / "say_live.wav").stat().st_size / 32000
+    tap_rcmd()
+    time.sleep(8.0)
+    shot = r.tmp / "live_pill.png"
+    from AppKit import NSScreen
+    f = NSScreen.mainScreen().frame()
+    w, h = 700, 200  # bottom centre, where the pill sits
+    subprocess.run(["screencapture", "-x", "-R", f"{int(f.size.width / 2 - w / 2)},{int(f.size.height - h)},{w},{h}",
+                    str(shot)], check=False)
+    time.sleep(max(0.0, secs + 0.6 - 8.0))
+    tap_rcmd()
+    end = time.monotonic() + 20
+    while time.monotonic() < end and r.text() == before:
+        time.sleep(0.1)
+    got = r.text()[len(before):]
+    return {"got": got, "recall": round(recall(got, LIVE_SAID), 2), "shot": str(shot) if shot.exists() else None,
+            "clip_s": round(secs, 1)}
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--scenario", default="basic")
@@ -300,6 +329,8 @@ def main() -> int:
                 results["recover"] = scenario_recover(r)
             elif sc == "langkey":
                 results["langkey"] = scenario_langkey(r)
+            elif sc == "live":
+                results["live"] = scenario_live(r)
             elif sc == "added":
                 results["added"] = scenario_added(r)
             time.sleep(1.5)
@@ -318,6 +349,8 @@ def main() -> int:
     if "langkey" in results:
         v = results["langkey"]
         ok = ok and v["picks"] == ["en", "es"] and v["no_l_typed"]
+    if "live" in results:
+        ok = ok and results["live"]["recall"] >= 0.85
     if "added" in results:
         v = results["added"]
         ok = ok and v["de"]["recall"] >= 0.85 and v["fi"]["recall"] >= 0.85 and "large-v3" in (v["dictation_model"] or "") \

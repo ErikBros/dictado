@@ -49,7 +49,7 @@ Built once for both. "Check on Mac" = works in tests, still to be tried for real
 | System audio for meetings (the other side of a call) | done (WASAPI loopback) | done (Core Audio process tap; real capture: check on Mac, dictado-tjn) |
 | Call detection (who uses the mic, call windows) | done | done (real-call check: dictado-nhn) |
 | Tray / menu bar, pill and prompt box | done | done (AppKit) |
-| Live text on the pill while dictating | done (a quick pass every 2 s; the careful one is still what gets pasted) | to do (dictado-ayq): the shared part works, the Mac pill needs its live() |
+| Live text on the pill while dictating | done (a quick pass every 2 s; the careful one is still what gets pasted) | done (Overlay.live: timer + hint on top, the newest two lines under them; 15 s preview on the Apple GPU 0.7 s with turbo, 1.9 s with large-v3) |
 | Start at login | done (Run key; the old "Dictado" value moves to "Ecoscribe") | done (LaunchAgent com.erikbros.ecoscribe; the old com.erikbros.dictado one moves over) |
 | Single instance | done | done |
 | Settings saved -> restart signal | done | done |
