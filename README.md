@@ -25,6 +25,7 @@ Neither installer is signed with a paid certificate yet, which is why each OS wa
 - **Files.** Drag audio or video onto the window to transcribe it.
 - **Your words, snippets, voice commands.** Names spelled your way (also the names on the window you're typing into), "my email." types the saved text, "new line" / "send it".
 - **Claude.** "Copy for Claude" on every transcript, and a read-only MCP server so the Claude desktop app can search your meetings.
+- **Insights and speech coaching** (switch it on in Settings): time saved, when and where you dictate, and help to speak more clearly: how clearly you're heard and the words the model struggles with, filler words and hedges in your messages to people (optionally noted on the pill right after), your pace and pauses, your share of the talking in meetings, and "Coach me", a prompt that asks Claude for your recurring patterns with before → after rewrites. All worked out on your computer.
 - **Never silent when it breaks.** A watchdog restarts the app after a crash or a freeze, keeps the dictation you were in the middle of, and writes a crash report.
 
 What each platform has, feature by feature: **[FEATURES.md](FEATURES.md)**.

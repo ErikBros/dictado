@@ -7,7 +7,7 @@
 - **Who said what** (optional add-on): splits the other side of a call into Speaker 1, 2, 3, and you can name them.
 - **Files:** drag an audio or video file onto the window to transcribe it.
 
-Version 1.11.1 (October 2026). The interface is in English.
+Version 1.12.0 (October 2026). The interface is in English.
 
 ---
 
@@ -15,7 +15,7 @@ Version 1.11.1 (October 2026). The interface is in English.
 
 | File | What it is | Needed? |
 |---|---|---|
-| `Ecoscribe-Setup-1.11.1.exe` | The app (0.54 GB) | Yes |
+| `Ecoscribe-Setup-1.12.0.exe` | The app (0.54 GB) | Yes |
 | `Ecoscribe-Speakers-Setup-1.2.0.exe` | Speaker add-on: tells the people on a call apart (2.1 GB download, 4.6 GB installed) | Optional |
 
 ## 2. Requirements
@@ -28,7 +28,7 @@ Version 1.11.1 (October 2026). The interface is in English.
 
 ## 3. Install
 
-1. Double-click **`Ecoscribe-Setup-1.11.1.exe`**.
+1. Double-click **`Ecoscribe-Setup-1.12.0.exe`**.
 2. Windows will probably show **"Windows protected your PC"**. That's because the app isn't signed with a paid certificate, not because something is wrong. Click **More info**, then **Run anyway**.
 3. No admin password needed. It installs for your user only, in `%LOCALAPPDATA%\Programs\Ecoscribe`.
 4. Keep **"Start Ecoscribe with Windows"** ticked if you want it always ready.
@@ -75,6 +75,14 @@ Version 1.11.1 (October 2026). The interface is in English.
 
 ### Ask Claude about your meetings
 If you use the Claude desktop app: Settings > Meetings > Claude app > **Connect**, then quit and reopen Claude. Now you can ask it "summarize yesterday's call" or "what did Ana say about the budget?". It can only read your transcripts (and your notes), never change them, and it runs on your PC. To undo, remove the `ecoscribe` entry under `mcpServers` in Claude's `claude_desktop_config.json`.
+
+### Insights and speech coaching
+Settings > **Insights tab** adds a tab with what your dictations say about how you talk, worked out on your PC from your history:
+- **How clearly you speak:** after each dictation Ecoscribe takes a second look at how sure it was of every word (a fraction of a second, after the paste). You see the share heard clearly week by week and the words it keeps struggling with, per language.
+- **In your messages to people:** filler words and hedges ("maybe", "I think", "kind of") per 100 words in what you dictate to people (chat, email), not in prompts to AI apps. Switch on **Note filler words after a message** and the pill shows them right after such a message.
+- **Pace and pauses:** words a minute and how much of the time you pause, to people and to AI apps. 130-160 words a minute is where listeners follow most easily: information, not a goal.
+- **In your meetings:** your share of the talking, turns of yours over 90 seconds, the questions you ask.
+- **Coach me:** copies your recent messages to people as a prompt; paste it into Claude for your three recurring patterns, before → after rewrites of your own sentences and one habit to try. Nothing leaves your PC unless you paste it.
 
 ### Files
 Drag an mp3, m4a, wav, ogg, opus, flac, mp4 or webm onto the window, or use **Import file**. One job runs at a time; the rest wait in the queue.
