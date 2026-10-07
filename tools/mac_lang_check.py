@@ -35,10 +35,10 @@ def main() -> int:
     (tmp / "welcome_done").write_text("x")  # a fresh data dir opens the Welcome card over the page
 
     import webview
-    from dictado import config, window
-    from dictado.platform.macos.shell import Tray
-    from dictado.engine import dictation_model
-    from dictado import meetui
+    from ecoscribe import config, window
+    from ecoscribe.platform.macos.shell import Tray
+    from ecoscribe.engine import dictation_model
+    from ecoscribe import meetui
 
     api = window.Api(data_dir=tmp, config_path=cfg_path, signal_reload=lambda *x: None, list_mic_names=lambda: [])
     url = (window.web_dir() / "index.html").as_uri() + "?page=ajustes"
@@ -81,7 +81,7 @@ def main() -> int:
     def menu_and_meetings():
         c = config.load(cfg_path)
         meetui.set_langs(c.whisper.extra_languages)
-        from dictado.languages import name
+        from ecoscribe.languages import name
         t = Tray.__new__(Tray)  # entries() only reads self.a: the real menu as data, no status item on screen
         t.a = dict(open_window=lambda: None, app_ref=None, log_path=None, on_quit=None, meeting_label=None,
                    on_meeting=None, open_meetings=None, meeting_state=None, last_lang=None, start_meeting=None,
