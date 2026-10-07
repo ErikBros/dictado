@@ -169,3 +169,61 @@ def test_pace_is_words_per_minute_of_speech_and_pauses_are_the_rest_split_by_who
     hist = {b["from"]: b["dictations"] for b in p["histogram"]}
     assert hist[120] == 1 and hist[150] == 1 and sum(hist.values()) == 2  # people only
     assert coach.pace_summary(rows[3:]) == {"people": None, "ai": None, "range": [130, 160], "histogram": []}
+
+
+def seg(t0, t1, who, text):
+    return {"t0": t0, "t1": t1, "speaker": who, "text": text}
+
+
+MEETING = [  # invented
+    seg(0, 10, "Others", "Shall we start with the budget?"),
+    seg(10, 50, "Me", "Sure, I think the budget is maybe fine."),
+    seg(51, 105, "Me", "And the second part is the timeline."),  # 1 s gap: the same turn, 95 s long
+    seg(105, 130, "Speaker 2", "Sounds good."),
+    seg(130, 140, "Me", "What do you think about Friday? Or Monday?"),
+    seg(140, 160, "Others", "Friday works."),
+    seg(160, 161, None, "unlabelled"),
+]
+
+
+def test_one_meeting_talk_share_monologues_questions_and_hedges():
+    m = coach.meeting_stats(MEETING, "en")
+    assert m["me_s"] == 104 and m["others_s"] == 55 and m["talk_share"] == 65
+    assert m["monologues"] == 1 and m["longest_s"] == 95
+    assert m["questions"] == 2
+    assert m["hedges"] == {"i think": 1, "maybe": 1} and m["words"] == 23
+    assert coach.meeting_stats([seg(0, 5, "Others", "Hi.")], "en") is None  # nothing from me: says nothing
+    assert coach.meeting_stats([seg(0, 5, "Me", "Τι ώρα είναι; Πού πάμε;")], "el")["questions"] == 2
+    assert coach.meeting_stats([seg(0, 5, "Me", "¿Vienes mañana?")], "es")["questions"] == 1
+
+
+def test_meetings_summary_over_the_recent_ones_newest_first():
+    meetings = [
+        {"created": "2026-10-06T10:00:00", "title": "Invented sync", "lang": "en", "segments": MEETING},
+        {"created": "2026-10-01T10:00:00", "title": "Invented review", "lang": "en",
+         "segments": [seg(0, 30, "Me", "Here is the plan."), seg(30, 90, "Others", "Great, thanks.")]},
+        {"created": "2026-08-01T10:00:00", "title": "Too old", "lang": "en", "segments": MEETING},
+    ]
+    s = coach.meetings_summary(meetings, NOW, days=30)
+    assert s["meetings"] == 2 and [m["title"] for m in s["list"]] == ["Invented sync", "Invented review"]
+    assert s["talk_share"] == round(100 * (104 + 30) / (104 + 30 + 55 + 60))
+    assert s["monologues"] == 1 and s["questions"] == 2
+    assert s["hedges_per_100"] == round(100 * 2 / 27, 1)
+    assert coach.meetings_summary([], NOW) == {"meetings": 0}
+
+
+def test_insights_reads_recorded_meetings_but_not_imported_files(tmp_path):
+    import json as _json
+    from datetime import datetime as _dt
+
+    from ecoscribe import sessions
+    from ecoscribe.window import Api
+    root = tmp_path / "transcripts"
+    api = Api(data_dir=tmp_path, config_path=tmp_path / "config.toml", signal_reload=lambda: True)
+    api._root = lambda: root
+    for source, title in (("meeting", "Invented sync"), ("import", "Invented podcast")):
+        d = sessions.create(title, "en", source, root, now=_dt.now())
+        (d / "transcript.json").write_text(_json.dumps({"segments": MEETING}), encoding="utf-8")
+    sessions.create("Still recording", "en", "meeting", root, now=_dt.now())  # no transcript yet
+    m = api.get_insights(30)["meetings"]
+    assert m["meetings"] == 1 and m["list"][0]["title"] == "Invented sync"

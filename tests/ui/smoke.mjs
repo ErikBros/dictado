@@ -115,6 +115,8 @@ async function load(query) {
     && doc.querySelectorAll("#i-top-hedges .i-chip").length === 3, "hedges and fillers in messages to people (9jc.3)");
   check(doc.querySelectorAll("#i-pace-rows .i-habit").length === 2 && doc.querySelector("#i-pace-rows .i-habit-num").textContent === "148"
     && doc.querySelectorAll("#i-pace-hist path.bar:not(.dim)").length === 3, "pace to people and to AI apps, the 130-160 band marked (9jc.4)");
+  check(doc.querySelector("#i-meet-share").textContent === "41%" && doc.querySelectorAll("#i-meet-list .i-hbar").length === 3
+    && doc.querySelector("#i-meet-list .i-hbar-val").textContent === "38% · 6 questions", "meetings: share, long turns, questions (9jc.5)");
   check(!doc.querySelector("#i-coach").disabled && doc.querySelector("#i-coach").title.startsWith("64 messages to people"), "Coach me ready with messages to people (9jc.2)");
   const add = doc.querySelector("#i-suggest li button");
   add.click(); await sleep(30);

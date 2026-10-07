@@ -330,8 +330,24 @@ class Api:
 
     # ---------------- insights (dictado-3je) ----------------
     def get_insights(self, days: int | None = None) -> dict:
-        from . import insights
-        return insights.compute(self._history_rows(), list(self._load().text.vocabulary), int(days) if days else None)
+        from . import coach, insights
+        days = int(days) if days else None
+        out = insights.compute(self._history_rows(), list(self._load().text.vocabulary), days)
+        out["meetings"] = coach.meetings_summary(self._recorded_meetings(), days=days)
+        return out
+
+    def _recorded_meetings(self) -> list[dict]:
+        """dictado-9jc.5: recorded meetings with their Me / Others segments (imports have no Me)."""
+        out = []
+        for m in sessions.list_sessions(self._root()):
+            if m.get("source") != "meeting":
+                continue
+            try:
+                segs = json.loads((Path(m["dir"]) / "transcript.json").read_text(encoding="utf-8"))["segments"]
+            except (OSError, ValueError, KeyError):
+                continue
+            out.append({"created": m.get("created"), "title": m.get("title"), "lang": m.get("lang"), "segments": segs})
+        return out
 
     def add_word(self, word: str) -> dict:
         """Insights > Words to add: one name into Your words (restarts the background app like Save)."""

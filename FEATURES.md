@@ -32,6 +32,7 @@ Built once for both. "Check on Mac" = works in tests, still to be tried for real
 | Dictation recovered after a crash | done | done (real crash mid-dictation: back in History, not pasted) |
 | Home crash card, Settings > Troubleshooting | done | done (real SIGSEGV of the installed app: report, restart, card) |
 | Call detection tried on real calls | done | needs real calls (dictado-nhn) |
+| Insights: in your meetings (your share of the talking, turns over 90 s, questions, hedges) | done | done (needs recorded meetings with the call's sound: dictado-qkg) |
 | Insights: pace (words a minute of speech) and pauses, to people vs to AI apps, with the 130-160 range as information | done | done (people / AI split: dictado-9jc.7) |
 | Insights: filler words and hedges in messages to people (per 100 words, weekly), optional note on the pill after such a message | done | done (pill note: check on Mac, dictado-9jc.7) |
 | Insights: Coach me (recent messages and emails to people, not AI prompts, as one prompt for Claude) | done | done (people / AI split: check on Mac, dictado-9jc.7) |
