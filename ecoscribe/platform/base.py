@@ -102,7 +102,7 @@ CAPABILITIES: dict[str, dict] = {
         "macos": "ecoscribe.platform.macos.claude_link:config_files",  # connect() is shared
     },
     "Installer": {
-        "windows": "file:packaging/ecoscribe.iss",
+        "windows": "file:packaging/windows/ecoscribe.iss",
         "macos": "file:tools/build_mac.py",  # Ecoscribe.app + .dmg, signed so permissions survive updates
     },
 }

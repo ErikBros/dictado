@@ -4,7 +4,7 @@ from pathlib import Path
 
 from PyInstaller.utils.hooks import collect_data_files, collect_dynamic_libs
 
-APP = Path(SPECPATH).parent
+APP = Path(SPECPATH).parents[1]  # packaging/windows -> the repo
 SITE = Path(os.environ.get("ECOSCRIBE_SITE", ""))
 KEEP = [l.strip() for l in (Path(SPECPATH) / "cuda_dlls.txt").read_text().splitlines()
         if l.strip() and not l.startswith("#")] if (Path(SPECPATH) / "cuda_dlls.txt").exists() else None
@@ -21,7 +21,7 @@ datas += collect_data_files("tzdata")  # zoneinfo reads the zone files from the 
 icon = Path(SPECPATH) / "ecoscribe.ico"
 
 a = Analysis(
-    [str(Path(SPECPATH) / "entry.py")],
+    [str(APP / "packaging" / "entry.py")],  # shared with the Mac build
     pathex=[str(APP)],
     binaries=binaries,
     datas=datas,

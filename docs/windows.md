@@ -1,6 +1,6 @@
-# Ecoscribe: setup guide
+# Ecoscribe on Windows: setup guide
 
-Ecoscribe is a voice dictation and meeting transcription app for Windows. Everything runs on your own PC: no account, no subscription, and no audio or text ever leaves the computer.
+(On a Mac: [mac.md](mac.md).) Ecoscribe is a voice dictation and meeting transcription app for Windows and macOS; this guide is the Windows one. Everything runs on your own PC: no account, no subscription, and no audio or text ever leaves the computer.
 
 - **Dictation:** tap Right Ctrl, talk, tap again. The text is typed wherever your cursor is (any app).
 - **Meetings:** when Teams, Slack, Zoom, Meet, Discord, Signal, Telegram or Webex starts using the mic, Ecoscribe offers to take notes. You get a transcript that labels each line **Me** or **Others**.
@@ -11,13 +11,12 @@ Version 1.10.0 (October 2026). The interface is in English.
 
 ---
 
-## 1. What's in this folder
+## 1. What to download
 
 | File | What it is | Needed? |
 |---|---|---|
 | `Ecoscribe-Setup-1.10.0.exe` | The app (0.54 GB) | Yes |
 | `Ecoscribe-Speakers-Setup-1.2.0.exe` | Speaker add-on: tells the people on a call apart (2.1 GB download, 4.6 GB installed) | Optional |
-| `ECOSCRIBE-SETUP.md` | This guide | |
 
 ## 2. Requirements
 
