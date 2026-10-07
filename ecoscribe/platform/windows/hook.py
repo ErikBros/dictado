@@ -17,7 +17,7 @@ import time
 from ctypes import wintypes as w
 from typing import Callable
 
-from .keystate import VK_ESCAPE, KeyState
+from ...keystate import VK_ESCAPE, KeyState
 from .win32types import (HOOKPROC, KBDLLHOOKSTRUCT, LLKHF_INJECTED, LLMHF_INJECTED,
                          MOUSE_PRESS_MSGS, MSLLHOOKSTRUCT, WH_KEYBOARD_LL, WH_MOUSE_LL,
                          WM_KEYDOWN, WM_KEYUP, WM_QUIT, WM_SYSKEYDOWN, WM_SYSKEYUP, WM_TIMER,
@@ -293,7 +293,7 @@ def hook_process_main(argv: list[str]) -> int:
     vk, max_tap, reinstall = int(argv[0]), float(argv[1]), float(argv[2])
     combo = None
     if "--hook-combo" in argv:
-        from .hotkeys import ComboMatcher
+        from ...hotkeys import ComboMatcher
         combo = ComboMatcher(argv[argv.index("--hook-combo") + 1])
     state = {"rec": False}
     out_q: queue.SimpleQueue = queue.SimpleQueue()

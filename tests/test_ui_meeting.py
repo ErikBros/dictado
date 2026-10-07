@@ -117,7 +117,7 @@ def test_tk_meeting_pill_and_prompt_box():
     """Real tk: the meeting layer resizes the pill, dictation wins it, the prompt answers.
     Opens two no-activate windows for under a second; no OS input is injected."""
     import tkinter as tk
-    from ecoscribe import ui
+    from ecoscribe.platform.windows import shell as ui
     root = tk.Tk()
     root.withdraw()
     try:

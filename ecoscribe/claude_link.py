@@ -18,15 +18,6 @@ NAME = "ecoscribe"
 OLD_NAME = "dictado"  # before the rename (dictado-c9u)
 
 
-def config_files(appdata: Path | None = None, localappdata: Path | None = None) -> list[Path]:
-    appdata = Path(appdata or os.environ.get("APPDATA", ""))
-    local = Path(localappdata or os.environ.get("LOCALAPPDATA", ""))
-    dirs = [d for d in sorted((local / "Packages").glob("Claude_*/LocalCache/Roaming/Claude")) if d.is_dir()]
-    if (appdata / "Claude").is_dir() or not dirs:
-        dirs.append(appdata / "Claude")
-    return [d / "claude_desktop_config.json" for d in dirs]
-
-
 def server_entry(exe: str | None = None) -> dict:
     return {"command": exe or sys.executable, "args": ["--mcp"]}
 
@@ -68,4 +59,6 @@ def connect(files: list[Path], entry: dict) -> list[Path]:
 
 
 if sys.platform == "darwin":  # ~/Library/Application Support/Claude (ecoscribe/platform/macos/claude_link.py)
-    from .platform.macos.claude_link import config_files  # noqa: F811
+    from .platform.macos.claude_link import config_files  # noqa: F401
+else:  # %APPDATA%\\Claude and the Store build's LocalCache (ecoscribe/platform/windows/claude_link.py)
+    from .platform.windows.claude_link import config_files  # noqa: F401

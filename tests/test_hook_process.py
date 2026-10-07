@@ -4,8 +4,8 @@ import queue
 import threading
 import time
 
-from ecoscribe import hook as hookmod
-from ecoscribe.hook import HookClient
+from ecoscribe.platform.windows import hook as hookmod
+from ecoscribe.platform.windows.hook import HookClient
 
 RCTRL = 0xA3
 
