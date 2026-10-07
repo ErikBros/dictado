@@ -374,3 +374,4 @@ kbd { font: inherit; font-size: 12px; padding: 1px 6px; border: 1px solid var(--
 .i-tip { position: fixed; z-index: 30; pointer-events: none; padding: 6px 9px; border-radius: 7px; background: var(--ink); color: var(--paper); font-size: 12.5px; box-shadow: var(--shadow); white-space: nowrap; }
 .i-tip strong { font-weight: 600; }
 @media (max-width: 860px) { .i-grid { grid-template-columns: 1fr; } .i-hero { grid-template-columns: 1fr; } }
+#i-clarity-weeks { max-width: 440px; margin-bottom: 4px; }  /* dictado-9jc.1: as wide as the half-width charts */

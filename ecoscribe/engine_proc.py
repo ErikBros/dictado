@@ -89,6 +89,10 @@ def serve(engine, inp, out) -> None:
         try:
             if words:
                 kw["words"] = words
+            if req.get("confidence"):  # dictado-9jc.1: the clarity pass after the paste
+                wp = engine.word_confidence(audio, req.get("lang"), words)
+                _send(out, json.dumps({"words_p": wp}).encode())
+                continue
             if req.get("preview"):  # the live transcript's quick pass: may be skipped (dictado-live)
                 r = engine.preview(audio, **{k: v for k, v in kw.items() if k != "words"})
                 if r is None:
@@ -258,6 +262,29 @@ class EngineProxy:
                     if self._w is w:
                         self._w = None
             raise RuntimeError("engine worker failed twice")
+
+    def word_confidence(self, audio: np.ndarray, lang: str | None = None, words=None) -> list | None:
+        """dictado-9jc.1: the clarity pass, after the paste. None (never a restart) when the worker isn't
+        ready or gives no answer: it's only for Insights."""
+        w = self._w
+        if w is None or not w.ready.is_set():
+            return None
+        with self._lock:
+            if self._w is not w or not w.alive():
+                return None
+            audio = np.asarray(audio, np.float32)
+            reply = self._ask(w, audio, max(30.0, 3 * len(audio) / SR), words,
+                              {"confidence": True, **({"lang": lang} if lang else {})})
+            if reply is None:  # no answer: a late one would be read as the next dictation's
+                log.error("engine worker gave no answer to the clarity pass: restarting it")
+                w.kill()
+                with self._spawn_lock:
+                    if self._w is w:
+                        self._w = None
+                return None
+            self._last = self.clock()
+            wp = reply.get("words_p")
+            return [(x, float(p)) for x, p in wp] if wp else None
 
     def preview(self, audio: np.ndarray, lang: str | None = None, prefer: str | None = None) -> Result | None:
         """The live transcript's quick pass (dictado-live). None, without waiting, while the worker

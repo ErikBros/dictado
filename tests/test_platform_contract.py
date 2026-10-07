@@ -43,7 +43,7 @@ def test_every_capability_is_provided_ticketed_or_not_needed(label, platform):
         kind, value = entry
         assert kind in ("ticket", "not_needed"), entry
         if kind == "ticket":
-            assert re.fullmatch(r"dictado-[a-z0-9]+", value), value
+            assert re.fullmatch(r"dictado-[a-z0-9]+(\.[0-9]+)*", value), value  # an epic child: dictado-9jc.6
             assert value in col, f"FEATURES.md '{label}' / {platform} must mention {value}"
         else:
             assert value and "not needed" in col.lower(), f"FEATURES.md '{label}' / {platform} must say not needed"

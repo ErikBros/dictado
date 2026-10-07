@@ -307,8 +307,9 @@ class App:
             if job is None:
                 return
             audio, t_stop, screen, spooled, forced = job
+            done = None
             try:
-                self._process(audio, t_stop, screen, forced)
+                done = self._process(audio, t_stop, screen, forced)
             except Exception:
                 log.exception("transcription/delivery failed")
                 self.ui.flash("Error, see the log")
@@ -318,6 +319,24 @@ class App:
                 with self._lock:
                     self._pending -= 1
                     self._refresh_ui()
+            if done:  # pasted, the pill idle: now the history line, with clarity when Insights is on
+                res, audio, dr, words = done
+                self._history(res, audio, dr, scored=self._clarity(res, audio, words))
+
+    def _clarity(self, res, audio, words) -> dict | None:
+        """dictado-9jc.1: how clearly this dictation was heard, from a second look after the paste. Only
+        with Insights on, and never while another dictation waits: that one would wait ~0.3 s."""
+        if not getattr(self.cfg.ui, "insights", False) or not hasattr(self.engine, "word_confidence"):
+            return None
+        with self._lock:
+            if self._pending:
+                return None
+        try:
+            from .coach import clarity
+            return clarity(self.engine.word_confidence(audio, res.lang, words))
+        except Exception:
+            log.exception("clarity pass failed")
+            return None
 
     def _process(self, audio, t_stop: float, screen=None, forced: str | None = None) -> None:
         words = screen.get(wait_s=0.15) if screen is not None else None
@@ -363,9 +382,9 @@ class App:
                  res.speech_s, dropout_s, res.ms, stop_to_paste, dr.target_exe, dr.pasted, dr.reason)
         if too_short(res.text, len(audio) / SR):
             self._keep_suspect(audio, res, dropout_s)
-        self._history(res, audio, dr)
         if not dr.pasted:
             self.ui.flash(NOT_PASTED.get(dr.reason, f"Copied: paste with {PASTE_KEYS}"), 4.0 if dr.reason == "no_text_box" else 2.0)
+        return res, audio, dr, words
 
     def _keep_suspect(self, audio, res, dropout_s: float) -> None:
         """Much less text than talking (50 s -> one sentence, 2026-10-07): keep the audio on this
@@ -408,14 +427,16 @@ class App:
             self.ui.flash("Recovered what you were saying: it's in History", 6.0)
         return n
 
-    def _history(self, res, audio, dr, recovered: bool = False) -> None:
+    def _history(self, res, audio, dr, recovered: bool = False, scored: dict | None = None) -> None:
         if not self.history_path:
             return
-        rec = {"ts": time.strftime("%Y-%m-%dT%H:%M:%S"), "text": res.text, "lang": res.lang,
-               "audio_s": round(len(audio) / SR, 2), "ms": res.ms, "target": dr.target_exe if dr else None,
-               "pasted": dr.pasted if dr else False}
+        rec = {"ts": time.strftime("%Y-%m-%dT%H:%M:%S"), "text": res.text,
+               "lang": res.lang, "audio_s": round(len(audio) / SR, 2), "speech_s": round(res.speech_s, 2),
+               "ms": res.ms, "target": dr.target_exe if dr else None, "pasted": dr.pasted if dr else False}
         if recovered:
             rec["recovered"] = True
+        if scored:
+            rec.update(scored)  # clarity, heard, unsure (dictado-9jc.1)
         try:
             with open(self.history_path, "a", encoding="utf-8") as f:
                 f.write(json.dumps(rec, ensure_ascii=False) + "\n")

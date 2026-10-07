@@ -67,3 +67,11 @@ def test_week_for_claude_is_a_prompt_with_every_dictation_of_the_week():
 def test_empty_history_is_fine():
     d = insights.compute([], [], None, NOW)
     assert d["totals"]["words"] == 0 and d["totals"]["wpm"] is None and d["first"] is None
+
+
+def test_clarity_is_part_of_insights_and_empty_until_saved():
+    """dictado-9jc.1: dictations from before clarity was saved have none; the card says so."""
+    assert insights.compute(ROWS, [], now=NOW)["clarity"] == {"dictations": 0}
+    scored = [*ROWS, {**ROWS[0], "ts": "2026-10-07T15:10:00", "clarity": 90, "heard": 10, "unsure": ["Ecoskribe"]}]
+    c = insights.compute(scored, [], days=7, now=NOW)["clarity"]
+    assert c["dictations"] == 1 and c["clarity"] == 90 and c["words"][0]["words"][0]["word"] == "Ecoskribe"
