@@ -65,9 +65,19 @@ def names_from_text(texts, limit: int = MAX_NAMES) -> list[str]:
 
 
 if __import__("sys").platform == "darwin":  # Accessibility (ecoscribe/platform/macos/context.py)
-    from .platform.macos.context import window_texts
+    from .platform.macos.context import foreground_title as _title, window_texts
 else:  # UI Automation (ecoscribe/platform/windows/context.py)
-    from .platform.windows.context import window_texts
+    from .platform.windows.context import foreground_title as _title, window_texts
+
+
+def foreground_title() -> str:
+    """dictado-9jc.2: the title of the window you dictate into, read at the paste only to tell a message
+    to a person from a prompt to an AI (Gmail vs claude.ai in the same browser). Never stored."""
+    try:
+        return str(_title() or "")
+    except Exception:
+        log.debug("window title unreadable", exc_info=True)
+        return ""
 
 
 class ScreenNames:

@@ -105,6 +105,10 @@ CAPABILITIES: dict[str, dict] = {
         "windows": "ecoscribe.engine:Engine",  # Engine.word_confidence: faster-whisper word timestamps, after the paste
         "macos": ("ticket", "dictado-9jc.6"),  # mlx ignores word_timestamps today: no clarity saved
     },
+    "Window title at the paste (who a dictation was for: people / AI app)": {
+        "windows": "ecoscribe.platform.windows.context:foreground_title",  # GetWindowText of the foreground window
+        "macos": "ecoscribe.platform.macos.context:foreground_title",  # AXFocusedWindow's AXTitle (desktop check: dictado-9jc.7)
+    },
     "Installer": {
         "windows": "file:packaging/windows/ecoscribe.iss",
         "macos": "file:tools/build_mac.py",  # Ecoscribe.app + .dmg, signed so permissions survive updates

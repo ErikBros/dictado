@@ -202,4 +202,5 @@ def compute(rows: list[dict], vocabulary: list[str], days: int | None = None, no
     return {"days": days, "totals": totals(sel), "rhythm": rh, "languages": by_language(sel),
             "apps": by_app(sel), "habits": habits(sel), "phrases": phrases(sel),
             "suggestions": name_suggestions(sel, vocabulary), "clarity": coach.clarity_summary(sel, now),
+            "coach": {"people": coach.people_count(rows, now), "days": coach.COACH_DAYS},
             "first": str(rows[0].get("ts", ""))[:10] if rows else None}

@@ -54,3 +54,59 @@ def test_words_whisper_struggled_with_count_against_how_often_they_were_said():
 
 def test_nothing_scored_yet():
     assert coach.clarity_summary(ROWS[:1], NOW) == {"dictations": 0}
+
+
+def test_audience_tells_people_from_ai_apps_by_app_and_browser_tab():
+    a = coach.audience
+    assert a("slack.exe") == a("Slack") == a("OUTLOOK.EXE") == a("olk.exe") == a("WhatsApp") == "people"
+    assert a("claude.exe") == a("Claude") == a("WindowsTerminal.exe") == a("Code.exe") == a("iTerm2") == "ai"
+    assert a("chrome.exe", "Lunch on Friday - someone@example.com - Gmail - Google Chrome") == "people"
+    assert a("msedge.exe", "Plan a trip - Claude - Microsoft Edge") == "ai"
+    assert a("Safari", "ChatGPT") == "ai"
+    assert a("chrome.exe", "Weather in Lisbon - Google Search - Google Chrome") == "other"
+    assert a("chrome.exe") == a("notepad.exe") == a(None) == "other"
+    # a site name in the subject doesn't win over the site the tab is on
+    assert a("chrome.exe", "Re: notes from Claude - Inbox - Outlook - Google Chrome") == "people"
+
+
+def test_rows_without_a_saved_audience_fall_back_to_the_app():
+    assert coach.row_audience({"target": "slack.exe"}) == "people"
+    assert coach.row_audience({"target": "chrome.exe", "to": "ai"}) == "ai"
+
+
+def test_coach_prompt_has_only_recent_dictations_to_people_oldest_first():
+    rows = [
+        {"ts": "2026-09-01T10:00:00", "text": "Too old to include.", "target": "slack.exe"},
+        {"ts": "2026-10-06T09:00:00", "text": "Hey, so, I think maybe we could move the call?", "target": "slack.exe"},
+        {"ts": "2026-10-06T10:00:00", "text": "Refactor the parser and add tests.", "target": "claude.exe"},
+        {"ts": "2026-10-07T08:00:00", "text": "Thanks for the notes, I kind of agree.", "target": "chrome.exe", "to": "people"},
+    ]
+    p = coach.coach_prompt(rows, NOW)
+    assert "3 recurring patterns" in p and "before" in p and "one habit" in p.lower()
+    assert "Too old" not in p and "Refactor the parser" not in p
+    assert p.index("move the call") < p.index("Thanks for the notes")
+    assert coach.people_count(rows, NOW) == 2
+
+
+def test_coach_prompt_keeps_the_newest_when_there_is_too_much():
+    rows = [{"ts": f"2026-10-0{d}T10:00:00", "text": f"Message number {d} " + "word " * 300, "target": "slack.exe"}
+            for d in range(1, 8)]
+    p = coach.coach_prompt(rows, NOW, max_words=700)
+    assert "Message number 7" in p and "Message number 6" in p and "Message number 1" not in p
+
+
+def test_coach_me_copies_the_prompt_or_says_there_is_nothing(tmp_path, monkeypatch):
+    import json as _json
+    from datetime import datetime as _dt
+
+    from ecoscribe.window import Api
+    api = Api(data_dir=tmp_path, config_path=tmp_path / "config.toml", signal_reload=lambda: True)
+    copied = []
+    monkeypatch.setattr(api, "_copy", copied.append)
+    assert api.coach_me()["ok"] is False and copied == []
+    now = _dt.now().strftime("%Y-%m-%dT%H:%M:%S")
+    rows = [{"ts": now, "text": "See you at the station at six.", "target": "WhatsApp.exe", "to": "people"},
+            {"ts": now, "text": "Summarise this file.", "target": "claude.exe", "to": "ai"}]
+    (tmp_path / "history.jsonl").write_text("".join(_json.dumps(r) + "\n" for r in rows), encoding="utf-8")
+    r = api.coach_me()
+    assert r["ok"] and "station at six" in copied[0] and "Summarise this file" not in copied[0]

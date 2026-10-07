@@ -30,7 +30,7 @@ NOT_PASTED = {"clipboard_busy": "Couldn't paste",
 class App:
     LIVE_EVERY_S = 2.0  # dictado-live: one quick pass this often while recording
     def __init__(self, cfg, recorder, engine, deliver_fn, ui, gate=None, history_path: Path | None = None,
-                 press_enter=None, screen=None, spool=None):
+                 press_enter=None, screen=None, spool=None, window_title=None):
         self.cfg = cfg
         self.recorder = recorder
         self.engine = engine
@@ -40,6 +40,7 @@ class App:
         self.history_path = history_path
         self.press_enter = press_enter or _press_enter
         self.spool = spool  # t0u.37: the recording on disk while it happens, for crash recovery
+        self._window_title = window_title  # dictado-9jc.2: None -> ecoscribe.context.foreground_title
         self._screen_factory = screen  # None: ecoscribe.context.ScreenNames (read lazily, Windows only)
         self._screen = None
         self._live = None  # dictado-live: the pill's live transcript for the recording in progress
@@ -320,8 +321,8 @@ class App:
                     self._pending -= 1
                     self._refresh_ui()
             if done:  # pasted, the pill idle: now the history line, with clarity when Insights is on
-                res, audio, dr, words = done
-                self._history(res, audio, dr, scored=self._clarity(res, audio, words))
+                res, audio, dr, words, to = done
+                self._history(res, audio, dr, scored=self._clarity(res, audio, words), to=to)
 
     def _clarity(self, res, audio, words) -> dict | None:
         """dictado-9jc.1: how clearly this dictation was heard, from a second look after the paste. Only
@@ -367,6 +368,7 @@ class App:
             self.ui.flash("Didn't hear you")
             return
         dr = self.deliver(res.text)
+        to = self._audience(dr.target_exe)
         if enter and dr.pasted:
             time.sleep(0.12)  # let the paste land before Enter submits it
             self.press_enter()
@@ -384,7 +386,20 @@ class App:
             self._keep_suspect(audio, res, dropout_s)
         if not dr.pasted:
             self.ui.flash(NOT_PASTED.get(dr.reason, f"Copied: paste with {PASTE_KEYS}"), 4.0 if dr.reason == "no_text_box" else 2.0)
-        return res, audio, dr, words
+        return res, audio, dr, words, to
+
+    def _audience(self, target) -> str:
+        """dictado-9jc.2: people / ai / other, from the app and (in a browser) the tab's title, read once
+        right after the paste. Only the label is kept, never the title."""
+        from .coach import audience
+        try:
+            if self._window_title is None:
+                from .context import foreground_title
+                self._window_title = foreground_title
+            return audience(target, self._window_title())
+        except Exception:
+            log.debug("audience unknown", exc_info=True)
+            return audience(target)
 
     def _keep_suspect(self, audio, res, dropout_s: float) -> None:
         """Much less text than talking (50 s -> one sentence, 2026-10-07): keep the audio on this
@@ -427,7 +442,8 @@ class App:
             self.ui.flash("Recovered what you were saying: it's in History", 6.0)
         return n
 
-    def _history(self, res, audio, dr, recovered: bool = False, scored: dict | None = None) -> None:
+    def _history(self, res, audio, dr, recovered: bool = False, scored: dict | None = None,
+                 to: str | None = None) -> None:
         if not self.history_path:
             return
         rec = {"ts": time.strftime("%Y-%m-%dT%H:%M:%S"), "text": res.text,
@@ -435,6 +451,8 @@ class App:
                "ms": res.ms, "target": dr.target_exe if dr else None, "pasted": dr.pasted if dr else False}
         if recovered:
             rec["recovered"] = True
+        if to:
+            rec["to"] = to  # people / ai / other (dictado-9jc.2)
         if scored:
             rec.update(scored)  # clarity, heard, unsure (dictado-9jc.1)
         try:
