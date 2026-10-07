@@ -86,8 +86,8 @@ def test_login_agent_round_trip(tmp_path, monkeypatch):
     monkeypatch.setattr(startup.Path, "home", lambda: tmp_path)
     monkeypatch.setattr(startup.subprocess, "run", lambda *a, **k: None)  # never touch the real launchd
     assert not startup.is_enabled()
-    startup.enable("/Applications/Dictado.app/Contents/MacOS/Dictado")
-    assert startup.get() == "/Applications/Dictado.app/Contents/MacOS/Dictado"
+    startup.enable("/Applications/Ecoscribe.app/Contents/MacOS/Ecoscribe")
+    assert startup.get() == "/Applications/Ecoscribe.app/Contents/MacOS/Ecoscribe"
     startup.disable()
     assert not startup.is_enabled()
 
@@ -118,3 +118,34 @@ def test_spawned_copies_start_where_python_finds_the_package():
     from pathlib import Path
     from ecoscribe.platform.macos import ipc
     assert (Path(ipc._package_parent()) / "ecoscribe" / "__main__.py").exists()
+
+
+@pytest.mark.skipif(sys.platform != "darwin", reason="macOS LaunchAgent")
+def test_old_dictado_login_item_moves_to_ecoscribe(tmp_path, monkeypatch):
+    import logging
+    from ecoscribe import __main__ as m
+    from ecoscribe.platform.macos import startup
+    calls = []
+    monkeypatch.setattr(startup.Path, "home", lambda: tmp_path)
+    monkeypatch.setattr(startup.subprocess, "run", lambda *a, **k: calls.append(a[0]))  # never the real launchd
+    new_bin = "/Applications/Ecoscribe.app/Contents/MacOS/Ecoscribe"
+    from ecoscribe import startup as shared  # what the app calls: it re-exports the Mac functions
+    monkeypatch.setattr(shared, "app_command", lambda: new_bin)
+    startup.enable("/Applications/Dictado.app/Contents/MacOS/Dictado", startup.OLD_NAME)
+    m._migrate_run_key(logging.getLogger("t"))
+    assert startup.get() == new_bin and not startup.is_enabled(startup.OLD_NAME)
+    assert calls and calls[0][:2] == ["launchctl", "bootout"]  # the old agent unloaded, then deleted
+    m._migrate_run_key(logging.getLogger("t"))  # next start: nothing to move
+    assert startup.get() == new_bin and len(calls) == 1
+
+
+@pytest.mark.skipif(sys.platform != "darwin", reason="macOS LaunchAgent")
+def test_no_login_item_stays_off(tmp_path, monkeypatch):
+    import logging
+    from ecoscribe import __main__ as m
+    from ecoscribe.platform.macos import startup
+    monkeypatch.setattr(startup.Path, "home", lambda: tmp_path)
+    from ecoscribe import startup as shared
+    monkeypatch.setattr(shared, "app_command", lambda: "/Applications/Ecoscribe.app/Contents/MacOS/Ecoscribe")
+    m._migrate_run_key(logging.getLogger("t"))
+    assert not startup.is_enabled()

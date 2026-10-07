@@ -1,4 +1,4 @@
-"""Build the speaker add-on for macOS: "Dictado Speakers.app" + Dictado-Speakers-<ver>.dmg.
+"""Build the speaker add-on for macOS: "Ecoscribe Speakers.app" + Ecoscribe-Speakers-<ver>.dmg.
 
     DICTADO_SPEAKERS_MODEL=<community-1 folder> python packaging/speakers/build_speakers_mac.py \
         --python <speakers venv python> [--no-dmg]
@@ -6,7 +6,7 @@
 The speakers venv: torch + pyannote.audio 4 + soundfile + pyinstaller (macOS wheels; pyannote runs on
 the Apple GPU through MPS). The weights folder is the community-1 snapshot (gated on Hugging Face:
 accept its terms once, then copy the snapshot); it is bundled, never committed. Signed with the same
-identity as Dictado.app (tools/build_mac.py), so nothing new to allow.
+identity as Ecoscribe.app (tools/build_mac.py), so nothing new to allow.
 """
 from __future__ import annotations
 
@@ -36,20 +36,20 @@ def main(argv=None) -> int:
     env = {**os.environ, "DICTADO_SPEAKERS_VERSION": VERSION}
     build_mac.run([a.python, "-m", "PyInstaller", "--noconfirm", "--clean", "--distpath", OUT / "dist",
                    "--workpath", OUT / "work", HERE / "speakers.spec"], env=env, cwd=HERE)
-    app = OUT / "dist" / "Dictado Speakers.app"
+    app = OUT / "dist" / "Ecoscribe Speakers.app"
     identity = build_mac.ensure_identity()
     build_mac.sign(app, identity, build_mac.KEYCHAIN)
     size = sum(f.stat().st_size for f in app.rglob("*") if f.is_file() and not f.is_symlink())
     print(f"app: {app}  ({size / 1e9:.2f} GB)")
     if not a.no_dmg:
-        dmg = OUT / f"Dictado-Speakers-{VERSION}.dmg"
+        dmg = OUT / f"Ecoscribe-Speakers-{VERSION}.dmg"
         with tempfile.TemporaryDirectory() as tmp:
-            stage = Path(tmp) / "Dictado Speakers"
+            stage = Path(tmp) / "Ecoscribe Speakers"
             stage.mkdir()
             build_mac.run(["ditto", app, stage / app.name])
             (stage / "Applications").symlink_to("/Applications")
             dmg.unlink(missing_ok=True)
-            build_mac.run(["hdiutil", "create", "-volname", "Dictado Speakers", "-srcfolder", stage, "-ov",
+            build_mac.run(["hdiutil", "create", "-volname", "Ecoscribe Speakers", "-srcfolder", stage, "-ov",
                            "-format", "UDZO", dmg])
         print(f"dmg: {dmg}")
     return 0

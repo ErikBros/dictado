@@ -16,7 +16,7 @@ FAKE = textwrap.dedent('''
     if mode == "silent":            # macOS waiting for consent: no header, nothing
         time.sleep(secs); sys.exit(0)
     if mode == "fail":
-        print("dictado-systap: process tap not created (OSStatus 1)", file=sys.stderr); sys.exit(2)
+        print("ecoscribe-systap: process tap not created (OSStatus 1)", file=sys.stderr); sys.exit(2)
     sys.stdout.write(json.dumps({"rate": 48000, "channels": 2, "device": "Fake Speakers"}) + "\\n"); sys.stdout.flush()
     t0, n = time.monotonic(), 0
     while time.monotonic() - t0 < secs:

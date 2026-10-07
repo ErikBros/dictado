@@ -49,14 +49,15 @@ def _migrate_from_script(log) -> None:
 
 
 def _migrate_run_key(log) -> None:
-    """Start with Windows was the "Dictado" Run value before the rename (dictado-c9u)."""
-    if sys.platform == "darwin":
-        return
+    """Start with Windows was the "Dictado" Run value before the rename (dictado-c9u); on the Mac, the
+    com.erikbros.dictado LaunchAgent. On if the old one was on, the old one removed."""
     from . import startup
+    if not startup.app_command():
+        return
     try:
         old = startup.get(startup.OLD_NAME)
         cur = startup.get()
-        if old is not None or (cur and "dictado.exe" in cur.lower()):  # Ecoscribe 1.6.0 pointed at Dictado.exe
+        if old is not None or (cur and "dictado" in cur.lower()):  # Ecoscribe 1.6.0 pointed at Dictado.exe
             startup.enable(startup.app_command())
             startup.disable(startup.OLD_NAME)
             log.info("Run key %s / %s -> %s", old, cur, startup.app_command())

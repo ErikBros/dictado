@@ -6,7 +6,8 @@ import subprocess
 import sys
 from pathlib import Path
 
-NAME = "com.erikbros.dictado"
+NAME = "com.erikbros.ecoscribe"
+OLD_NAME = "com.erikbros.dictado"  # before the rename (dictado-c9u)
 
 
 def _plist(name: str = NAME) -> Path:

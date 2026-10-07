@@ -93,3 +93,25 @@ def test_old_app_running_sees_the_old_mutex():
     finally:
         win32api.CloseHandle(h)
     assert paths.old_app_running() is False
+
+
+@pytest.mark.skipif(sys.platform != "darwin", reason="macOS folders")
+def test_mac_pair_is_application_support(tmp_path, monkeypatch):
+    monkeypatch.delenv("ECOSCRIBE_DATA_DIR", raising=False)
+    support = paths.Path.home() / "Library" / "Application Support"
+    assert paths.renamed_dirs() == [(support / "Dictado", support / "Ecoscribe")]
+    monkeypatch.setenv("ECOSCRIBE_DATA_DIR", str(tmp_path))  # a test data dir: never touch the real folders
+    assert paths.renamed_dirs() == []
+
+
+@pytest.mark.skipif(sys.platform != "darwin", reason="macOS folders")
+def test_mac_move_brings_config_and_data(tmp_path, monkeypatch):
+    old, new = tmp_path / "Dictado", tmp_path / "Ecoscribe"
+    monkeypatch.setattr(paths, "renamed_dirs", lambda: [(old, new)])
+    _old(tmp_path).rename(old)
+    (old / "config.toml").write_text("[whisper]\n", encoding="utf-8")
+    (old / "run").mkdir()
+    (old / "run" / "DictadoSingleInstance.lock").write_text("")  # left by the old app, which has quit
+    assert [r for _, _, r in paths.migrate_all(lambda: False)] == ["moved"]
+    assert (new / "config.toml").read_text(encoding="utf-8") == "[whisper]\n"
+    assert (new / "history.jsonl").exists() and not old.exists()
