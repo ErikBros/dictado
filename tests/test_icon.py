@@ -1,6 +1,6 @@
 from PIL import Image
 
-from dictado.icon import TRAY, mic_image, save_ico, tray_image
+from ecoscribe.icon import TRAY, mic_image, save_ico, tray_image
 
 
 def test_ico_has_every_size(tmp_path):

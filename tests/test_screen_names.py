@@ -11,9 +11,9 @@ from types import SimpleNamespace
 
 import numpy as np
 
-from dictado.context import ScreenNames, names_from_text
-from dictado.config import TextCfg, WhisperCfg
-from dictado.engine import Engine, Result
+from ecoscribe.context import ScreenNames, names_from_text
+from ecoscribe.config import TextCfg, WhisperCfg
+from ecoscribe.engine import Engine, Result
 
 
 def test_names_from_a_mail_window():
@@ -63,13 +63,13 @@ class Model:
 def test_engine_puts_screen_names_after_your_words():
     m = Model()
     text = TextCfg()
-    text.vocabulary = ["Dictado", "Johanna"]
+    text.vocabulary = ["Ecoscribe", "Johanna"]
     e = Engine(WhisperCfg(), text, model_factory=lambda *a, **k: m)
     e.model = m
     e.transcribe(np.zeros(16000, np.float32), words=["Johanna", "Lindqvist"])
-    assert m.kw["initial_prompt"] == "Dictado, Johanna, Lindqvist."
+    assert m.kw["initial_prompt"] == "Ecoscribe, Johanna, Lindqvist."
     e.transcribe(np.zeros(16000, np.float32))
-    assert m.kw["initial_prompt"] == "Dictado, Johanna."
+    assert m.kw["initial_prompt"] == "Ecoscribe, Johanna."
 
 
 def test_worker_protocol_carries_the_words():
@@ -82,9 +82,9 @@ def test_worker_protocol_carries_the_words():
 
 
 def _run_app(tmp_path, on, screen_words):
-    from dictado.app import App
-    from dictado.config import Config
-    from dictado.deliver import DeliveryResult
+    from ecoscribe.app import App
+    from ecoscribe.config import Config
+    from ecoscribe.deliver import DeliveryResult
     from tests.test_app import FakeGate, FakeRecorder, FakeUi, wait
     cfg = Config()
     cfg.text.screen_names = on
@@ -119,7 +119,7 @@ def test_app_off_never_reads_the_window(tmp_path):
 
 
 def test_setting_round_trips(tmp_path):
-    from dictado.window import Api
+    from ecoscribe.window import Api
     api = Api(data_dir=tmp_path, config_path=tmp_path / "config.toml", signal_reload=lambda: True)
     assert api.get_settings()["values"]["screen_names"] is True
     assert api.save_settings({"screen_names": False})["ok"]
@@ -135,7 +135,7 @@ uia_only = pytest.mark.skipif(sys.platform == "darwin", reason="Windows UI Autom
 def test_every_uia_read_runs_on_one_permanent_thread(monkeypatch):
     """t0u.37: COM objects must never be made, used or freed on different threads."""
     import threading
-    from dictado import context
+    from ecoscribe import context
     seen = []
 
     def fake_read(hwnd, max_elems):
@@ -156,7 +156,7 @@ def test_every_uia_read_runs_on_one_permanent_thread(monkeypatch):
 @uia_only
 @pytest.mark.real_window_texts
 def test_a_failed_read_comes_back_as_an_error_not_a_com_object(monkeypatch):
-    from dictado import context
+    from ecoscribe import context
     monkeypatch.setattr(context, "_read", lambda h, m: 1 / 0)
     with pytest.raises(RuntimeError, match="ZeroDivisionError"):
         context.window_texts(hwnd=1)

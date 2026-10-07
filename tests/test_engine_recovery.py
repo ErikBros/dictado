@@ -3,8 +3,8 @@ from types import SimpleNamespace
 
 import numpy as np
 
-from dictado.config import TextCfg, WhisperCfg
-from dictado.engine import Engine
+from ecoscribe.config import TextCfg, WhisperCfg
+from ecoscribe.engine import Engine
 
 
 class FakeModel:

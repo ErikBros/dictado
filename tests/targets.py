@@ -1,6 +1,6 @@
 """A throwaway text window for tests: whatever lands in it is dumped to a json file.
 
-Run as a script: python targets.py --title DictadoTargetA --out C:/tmp/a.json [--x 100 --y 100]
+Run as a script: python targets.py --title EcoscribeTargetA --out C:/tmp/a.json [--x 100 --y 100]
 """
 import argparse
 import json

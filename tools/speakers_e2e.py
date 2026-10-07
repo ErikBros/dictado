@@ -16,7 +16,7 @@ from pathlib import Path
 APP = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(APP))
 
-from dictado import commands, paths, sessions  # noqa: E402
+from ecoscribe import commands, paths, sessions  # noqa: E402
 
 
 def main(argv=None) -> int:

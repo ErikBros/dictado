@@ -3,8 +3,8 @@ import time
 
 import pytest
 
-from dictado import deliver as dl
-from dictado.sendkeys import send_keys
+from ecoscribe import deliver as dl
+from ecoscribe.sendkeys import send_keys
 from tests.winhelp import Target
 
 pytestmark = pytest.mark.win
@@ -12,7 +12,7 @@ pytestmark = pytest.mark.win
 
 @pytest.fixture
 def target():
-    t = Target("DictadoTargetDeliver")
+    t = Target("EcoscribeTargetDeliver")
     assert t.focus()
     yield t
     t.close()

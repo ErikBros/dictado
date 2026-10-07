@@ -1,5 +1,5 @@
-from dictado.choose import pick_device, pick_language
-from dictado.text import clean, is_hallucination
+from ecoscribe.choose import pick_device, pick_language
+from ecoscribe.text import clean, is_hallucination
 
 
 def test_fillers():

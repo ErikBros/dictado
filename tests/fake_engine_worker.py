@@ -9,8 +9,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from dictado import engine_proc  # noqa: E402
-from dictado.engine import Result  # noqa: E402
+from ecoscribe import engine_proc  # noqa: E402
+from ecoscribe.engine import Result  # noqa: E402
 
 mode = sys.argv[1] if len(sys.argv) > 1 else "normal"
 calls = {"n": 0}

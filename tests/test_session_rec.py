@@ -1,7 +1,7 @@
 """SessionRecorder with fake sources, pumped by hand."""
 import numpy as np
 
-from dictado.session_rec import SessionRecorder
+from ecoscribe.session_rec import SessionRecorder
 
 SR = 16000
 
@@ -130,7 +130,7 @@ def test_levels(tmp_path):
 
 def test_meeting_and_dictation_gates_share_the_mic():
     """Both open the same muted mic: dictation must not re-mute it mid-meeting; the meeting restores it."""
-    from dictado.micgate import MicGate
+    from ecoscribe.micgate import MicGate
 
     class Vol:
         mute, level = 1, 0.0

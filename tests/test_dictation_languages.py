@@ -6,12 +6,12 @@ import time
 import numpy as np
 import pytest
 
-from dictado.app import App
-from dictado.choose import pick_language
-from dictado.config import Config, WhisperCfg
-from dictado.deliver import DeliveryResult
-from dictado.engine import Result, dictation_model
-from dictado.window import parse_languages
+from ecoscribe.app import App
+from ecoscribe.choose import pick_language
+from ecoscribe.config import Config, WhisperCfg
+from ecoscribe.deliver import DeliveryResult
+from ecoscribe.engine import Result, dictation_model
+from ecoscribe.window import parse_languages
 from tests.test_app import FakeGate, FakeRecorder, FakeUi, wait
 
 RCTRL = 0xA3
@@ -98,7 +98,7 @@ windows_only = pytest.mark.skipif(sys.platform != "win32", reason="the Windows k
 
 @windows_only
 def test_hook_swallows_L_only_with_the_dictation_key_held():
-    from dictado.hook import VK_LANG, HookThread
+    from ecoscribe.hook import VK_LANG, HookThread
     events = []
     h = HookThread(lambda a: None, RCTRL, 0.3, emit=events.append, consume=False)
     assert not h.lang_key(VK_LANG, True)  # a normal L: typed as usual
@@ -112,8 +112,8 @@ def test_hook_swallows_L_only_with_the_dictation_key_held():
 
 @windows_only
 def test_combo_hotkeys_keep_L():
-    from dictado.hook import VK_LANG, HookThread
-    from dictado.hotkeys import ComboMatcher
+    from ecoscribe.hook import VK_LANG, HookThread
+    from ecoscribe.hotkeys import ComboMatcher
     h = HookThread(lambda a: None, RCTRL, 0.3, emit=lambda e: None, consume=False, combo=ComboMatcher("ctrl+shift+d"))
     h._toggle_down = True
     assert not h.lang_key(VK_LANG, True)

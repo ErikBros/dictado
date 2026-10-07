@@ -1,6 +1,6 @@
 import numpy as np
 
-from dictado import segclean
+from ecoscribe import segclean
 
 SR = 16000
 

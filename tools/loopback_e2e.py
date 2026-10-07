@@ -20,8 +20,8 @@ from pathlib import Path
 APP = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(APP))
 
-from dictado import sessions  # noqa: E402
-from dictado.wer import wer  # noqa: E402
+from ecoscribe import sessions  # noqa: E402
+from ecoscribe.wer import wer  # noqa: E402
 
 
 def main(argv=None) -> int:
@@ -37,7 +37,7 @@ def main(argv=None) -> int:
     a.root.mkdir(parents=True, exist_ok=True)
     d = sessions.create(f"Prueba loopback {Path(a.audio).stem}", a.lang, "meeting", a.root)
     print(f"Sesión: {d}", flush=True)
-    p = subprocess.Popen([sys.executable, "-m", "dictado", "--meeting", str(d)], cwd=str(APP))
+    p = subprocess.Popen([sys.executable, "-m", "ecoscribe", "--meeting", str(d)], cwd=str(APP))
     sysf = d / "audio" / "system.flac"
     t0 = time.monotonic()
     while not sysf.exists():

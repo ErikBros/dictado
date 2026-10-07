@@ -3,14 +3,14 @@ import subprocess
 import sys
 from pathlib import Path
 
-from dictado import crash
+from ecoscribe import crash
 
 APP = Path(__file__).resolve().parent.parent
 
 
 def test_native_crash_leaves_every_thread_stack(tmp_path):
     """A real access violation in a child process: faulthandler writes the stack to the file."""
-    code = ("import sys; sys.path.insert(0, r'%s'); from dictado import crash; import os, faulthandler;"
+    code = ("import sys; sys.path.insert(0, r'%s'); from ecoscribe import crash; import os, faulthandler;"
             "crash.enable(r'%s', os.getpid());\n"
             "def dictating(): faulthandler._sigsegv()\n"
             "dictating()") % (APP, tmp_path)
@@ -26,9 +26,9 @@ def test_report_folder_has_summary_trace_tail_and_no_secret(tmp_path):
     fp = crash.fault_path(data, 4242)
     fp.parent.mkdir(parents=True)
     fp.write_text('Windows fatal exception: access violation\n\nCurrent thread 0x1 (most recent call first):\n'
-                  '  File "C:\\x\\dictado\\context.py", line 117 in window_texts\n', encoding="utf-8")
-    log = tmp_path / "dictado.log"
-    log.write_text("\n".join(f"line {i}" for i in range(500)) + "\n2026 INFO dictado.app: recording started\n")
+                  '  File "C:\\x\\ecoscribe\\context.py", line 117 in window_texts\n', encoding="utf-8")
+    log = tmp_path / "ecoscribe.log"
+    log.write_text("\n".join(f"line {i}" for i in range(500)) + "\n2026 INFO ecoscribe.app: recording started\n")
     cfg = tmp_path / "config.toml"
     cfg.write_text('[meetings]\ncalendar_url = "https://calendar.google.com/x/private-SECRET/basic.ics"\n')
     d = crash.make_report(data, 4242, 0xC0000005, log, cfg, version="1.4.1", now=1791288000)
@@ -79,7 +79,7 @@ def test_freeze_watch_dumps_once_per_freeze(tmp_path):
 
 
 def _api(tmp_path, copied):
-    from dictado.window import Api
+    from ecoscribe.window import Api
     return Api(data_dir=tmp_path / "data", config_path=tmp_path / "config.toml", signal_reload=lambda: True,
                copy=copied.append)
 
@@ -88,8 +88,8 @@ def test_home_lists_crashes_until_dismissed_and_copies_the_report(tmp_path):
     copied = []
     api = _api(tmp_path, copied)
     (tmp_path / "data").mkdir()
-    log = tmp_path / "data" / "dictado.log"
-    log.write_text("INFO dictado.app: recording started\n")
+    log = tmp_path / "data" / "ecoscribe.log"
+    log.write_text("INFO ecoscribe.app: recording started\n")
     d = crash.make_report(tmp_path / "data", 9, 0xC0000005, log, version="1.4.1", now=1791288000)
     got = api.crashes()
     assert [c["name"] for c in got["items"]] == [d.name] and "access violation" in got["items"][0]["exit"]
@@ -104,7 +104,7 @@ def test_debug_info_has_logs_status_and_no_secret(tmp_path):
     api = _api(tmp_path, copied)
     data = tmp_path / "data"
     data.mkdir()
-    (data / "dictado.log").write_text("\n".join(f"log line {i}" for i in range(400)))
+    (data / "ecoscribe.log").write_text("\n".join(f"log line {i}" for i in range(400)))
     (tmp_path / "config.toml").write_text('[meetings]\ncalendar_url = "https://x/private-SECRET/basic.ics"\n')
     api.copy_debug_info()
     text = copied[-1]
@@ -113,7 +113,7 @@ def test_debug_info_has_logs_status_and_no_secret(tmp_path):
 
 
 def test_detailed_logging_setting(tmp_path):
-    from dictado import config
+    from ecoscribe import config
     api = _api(tmp_path, [])
     assert api.get_settings()["values"]["debug_log"] is False
     assert api.save_settings({"debug_log": True})["ok"]
@@ -121,7 +121,7 @@ def test_detailed_logging_setting(tmp_path):
 
 
 def test_reports_dismissed_by_1_4_1_stay_dismissed(tmp_path):
-    log = tmp_path / "dictado.log"
+    log = tmp_path / "ecoscribe.log"
     log.write_text("x\n")
     d = crash.make_report(tmp_path, 5, 0xC0000005, log, now=1791288000)
     (d / "seen-erik").write_text("1")  # the 1.4.1 marker name

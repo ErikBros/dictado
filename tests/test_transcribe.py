@@ -6,8 +6,8 @@ from types import SimpleNamespace
 import numpy as np
 import pytest
 
-from dictado import sessions, transcribe
-from dictado.config import TranscribeCfg
+from ecoscribe import sessions, transcribe
+from ecoscribe.config import TranscribeCfg
 
 SR = 16000
 OOM = "CUDA failed with error out of memory"
@@ -168,7 +168,7 @@ def test_no_audio_file_fails_cleanly(tmp_path):
 
 
 def test_cli_flag_parses():
-    from dictado.__main__ import parse
+    from ecoscribe.__main__ import parse
     assert parse(["--transcribe", "C:/x"]).transcribe == "C:/x"
 
 

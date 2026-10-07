@@ -2,7 +2,7 @@
 
 Off by default ([text] voice_commands = false): today's text is unchanged unless the user turns it on.
 """
-from dictado.text import voice_commands
+from ecoscribe.text import voice_commands
 
 
 def test_new_line_and_paragraph_in_three_languages():
@@ -25,10 +25,10 @@ def test_words_inside_a_sentence_are_left_alone():
 
 
 def _app(tmp_path, said, on):
-    from dictado.app import App
-    from dictado.config import Config
-    from dictado.deliver import DeliveryResult
-    from dictado.engine import Result
+    from ecoscribe.app import App
+    from ecoscribe.config import Config
+    from ecoscribe.deliver import DeliveryResult
+    from ecoscribe.engine import Result
     from tests.test_app import FakeGate, FakeRecorder, FakeUi, wait
     cfg = Config()
     cfg.text.voice_commands = on
@@ -57,8 +57,8 @@ def test_off_by_default_pastes_exactly_what_was_said(tmp_path):
 
 def test_settings_list_comes_from_the_matcher_table(tmp_path):
     """t0u.38: every phrase in the Settings list is one the matcher really understands."""
-    from dictado.text import VOICE_COMMANDS, voice_commands
-    from dictado.window import Api
+    from ecoscribe.text import VOICE_COMMANDS, voice_commands
+    from ecoscribe.window import Api
     rows = Api(data_dir=tmp_path, config_path=tmp_path / "c.toml", signal_reload=lambda: True).get_settings()["voice_command_list"]
     assert [r["what"] for r in rows] == [w for _, w, _ in VOICE_COMMANDS]
     assert rows[0]["es"] == '"nuevo párrafo", "punto y aparte"'

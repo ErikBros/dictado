@@ -2,7 +2,7 @@ import sys
 
 import pytest
 
-from dictado import hotkeys
+from ecoscribe import hotkeys
 
 # Windows key rules (VK codes, Win key, AltGr). The Mac rules are in test_mac_keys.py.
 win_rules = pytest.mark.skipif(sys.platform == "darwin", reason="Windows shortcut rules")
@@ -54,7 +54,7 @@ def test_plain_key_passes_through():
 
 def test_cancel_hint_on_the_pill():
     """t0u.36: the Dictating pill says how to cancel. A combo has no Esc cancel (tray only)."""
-    from dictado.hotkeys import cancel_hint
+    from ecoscribe.hotkeys import cancel_hint
     assert cancel_hint("rctrl") == "Right Ctrl + Esc to cancel"
     assert cancel_hint("f13") == "F13 + Esc to cancel"
     assert cancel_hint("ctrl+l") == "Cancel from the tray icon"

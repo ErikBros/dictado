@@ -3,8 +3,8 @@ import json
 from pathlib import Path
 from types import SimpleNamespace
 
-from dictado import meetings, sessions
-from dictado.config import Config
+from ecoscribe import meetings, sessions
+from ecoscribe.config import Config
 
 
 class FakeProc:

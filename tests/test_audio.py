@@ -2,8 +2,8 @@ import time
 
 import numpy as np
 
-from dictado.audio import FileSource, Recorder
-from dictado.config import AudioCfg
+from ecoscribe.audio import FileSource, Recorder
+from ecoscribe.config import AudioCfg
 
 WIN = {"device": "Anker PowerConf", "host": "MME"}  # the fakes below are the PC's MME devices
 
@@ -271,14 +271,14 @@ def test_last_stream_ok_sampled_before_close():
 
 def test_no_mic_chosen_means_the_windows_default_without_a_warning():
     """Public default (t0u.39): config device "" uses the system default mic, silently."""
-    from dictado.choose import pick_device
+    from ecoscribe.choose import pick_device
     devs = [{"name": "Microphone (USB)", "hostapi": 0, "max_input_channels": 1}]
     assert pick_device(devs, [{"name": "MME"}], "", "MME") is None
     assert pick_device(devs, [{"name": "MME"}], "  ", "MME") is None
 
 
 def test_file_source_hands_the_spool_what_it_heard_so_far(tmp_path, monkeypatch):
-    from dictado import audio
+    from ecoscribe import audio
     clip = np.arange(16000 * 2, dtype=np.float32)
     monkeypatch.setattr(audio, "read_wav", lambda p: clip)
     t = [100.0]

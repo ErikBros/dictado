@@ -4,7 +4,7 @@ Ecoscribe is one codebase. Most features live in shared code and work on Windows
 only the OS-specific pieces differ. Rules:
 
 - A pull request that adds or changes a feature updates this file.
-- Something OS-specific goes in `dictado/platform/base.py` **and** the platform table below, with
+- Something OS-specific goes in `ecoscribe/platform/base.py` **and** the platform table below, with
   the other platform done, a ticket (`dictado-xxx`), or "not needed" with the reason.
 - `tests/test_platform_contract.py` checks the platform table against the code on every test run
   (and in CI on Windows and macOS), so it can't drift.

@@ -1,7 +1,7 @@
 """Passive meeting-detector logger (log-only mode, pre-mortem #1).
 
 Polls the ConsentStore + window titles every 2 s, forever, and appends to
-%LOCALAPPDATA%\\dictado\\detector.log:
+%LOCALAPPDATA%\\ecoscribe\\detector.log:
   <iso time> startup pid=<pid>
   <iso time> mic_on|mic_off <app>
   <iso time> start|end <app> titles=[<matching meeting titles>]
@@ -20,7 +20,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from dictado import detect, paths  # noqa: E402
+from ecoscribe import detect, paths  # noqa: E402
 
 
 def line(log: Path, *parts) -> None:
@@ -52,8 +52,8 @@ def main(argv=None) -> int:
     a = ap.parse_args(argv)
     log = a.log or paths.data_dir() / "detector.log"
     if not a.once:
-        from dictado import winutil
-        if not winutil.single_instance("Local\\DictadoDetectLog"):
+        from ecoscribe import winutil
+        if not winutil.single_instance("Local\\EcoscribeDetectLog"):
             return 0
     line(log, "startup", f"pid={os.getpid()}", "once" if a.once else "")
     det, prev = detect.Detector(), set()

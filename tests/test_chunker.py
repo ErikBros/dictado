@@ -1,6 +1,6 @@
 import numpy as np
 
-from dictado.chunker import Chunker
+from ecoscribe.chunker import Chunker
 
 SR = 16000
 

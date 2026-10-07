@@ -2,8 +2,8 @@
 import json
 from pathlib import Path
 
-from dictado import diarize, sessions
-from dictado.config import Config
+from ecoscribe import diarize, sessions
+from ecoscribe.config import Config
 
 
 def seg(t0, t1, speaker, text="x"):

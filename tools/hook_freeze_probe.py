@@ -25,7 +25,7 @@ if not wait_idle(45, 900):
     print("not idle; no probe")
     sys.exit(2)
 
-from dictado.hook import HookClient, HookThread, spawn_hook_process  # noqa: E402
+from ecoscribe.hook import HookClient, HookThread, spawn_hook_process  # noqa: E402
 
 RCTRL = 0xA3
 if mode == "process":
@@ -38,7 +38,7 @@ time.sleep(1.5)
 INJECT = r'''
 import ctypes, time, sys
 sys.path.insert(0, r"%s")
-from dictado.win32types import INPUT, INPUT_KEYBOARD, KEYEVENTF_KEYUP, user32
+from ecoscribe.win32types import INPUT, INPUT_KEYBOARD, KEYEVENTF_KEYUP, user32
 VK = 0x87  # F24
 def send(up):
     i = INPUT(type=INPUT_KEYBOARD); i.u.ki.wVk = VK; i.u.ki.dwFlags = KEYEVENTF_KEYUP if up else 0

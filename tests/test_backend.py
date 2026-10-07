@@ -5,7 +5,7 @@ import uuid
 
 import pytest
 
-from dictado import config, ipc, startup, status, tomlw
+from ecoscribe import config, ipc, startup, status, tomlw
 
 
 def test_toml_roundtrip(tmp_path):
@@ -28,11 +28,11 @@ def test_toml_save_is_atomic_and_creates_dir(tmp_path):
 
 
 def test_startup_toggle_uses_given_value_name():
-    name = f"DictadoTest-{uuid.uuid4().hex[:6]}"
+    name = f"EcoscribeTest-{uuid.uuid4().hex[:6]}"
     try:
         assert not startup.is_enabled(name)
-        startup.enable('"C:\\x\\Dictado.exe"', name)
-        assert startup.is_enabled(name) and startup.get(name) == '"C:\\x\\Dictado.exe"'
+        startup.enable('"C:\\x\\Ecoscribe.exe"', name)
+        assert startup.is_enabled(name) and startup.get(name) == '"C:\\x\\Ecoscribe.exe"'
         startup.disable(name)
         assert not startup.is_enabled(name)
         startup.disable(name)  # idempotent
@@ -57,7 +57,7 @@ def test_status_corrupt_file_reads_none(tmp_path):
 
 
 def test_reload_event_roundtrip():
-    name = f"Local\\DictadoTestReload-{uuid.uuid4().hex[:6]}"
+    name = f"Local\\EcoscribeTestReload-{uuid.uuid4().hex[:6]}"
     assert ipc.signal_reload(name) is False  # nobody listening
     got = threading.Event()
     w = ipc.ReloadWatcher(got.set, name)
@@ -71,22 +71,22 @@ def test_reload_event_roundtrip():
 def test_self_command_dev_vs_frozen(monkeypatch):
     monkeypatch.setattr(sys, "frozen", False, raising=False)
     cmd = ipc.self_command(["--ui", "--page", "historial"])
-    assert cmd[0] == sys.executable and cmd[1:3] == ["-m", "dictado"] and cmd[-2:] == ["--page", "historial"]
+    assert cmd[0] == sys.executable and cmd[1:3] == ["-m", "ecoscribe"] and cmd[-2:] == ["--page", "historial"]
     monkeypatch.setattr(sys, "frozen", True, raising=False)
-    monkeypatch.setattr(sys, "executable", r"C:\Apps\Dictado\Dictado.exe")
-    assert ipc.self_command(["--ui"]) == [r"C:\Apps\Dictado\Dictado.exe", "--ui"]
+    monkeypatch.setattr(sys, "executable", r"C:\Apps\Ecoscribe\Ecoscribe.exe")
+    assert ipc.self_command(["--ui"]) == [r"C:\Apps\Ecoscribe\Ecoscribe.exe", "--ui"]
 
 
 def test_startup_command_only_when_frozen(monkeypatch):
     monkeypatch.setattr(sys, "frozen", False, raising=False)
     assert startup.app_command() is None
     monkeypatch.setattr(sys, "frozen", True, raising=False)
-    monkeypatch.setattr(sys, "executable", r"C:\Apps\Dictado\Dictado.exe")
-    want = r"C:\Apps\Dictado\Dictado.exe" if sys.platform == "darwin" else '"C:\\Apps\\Dictado\\Dictado.exe"'
+    monkeypatch.setattr(sys, "executable", r"C:\Apps\Ecoscribe\Ecoscribe.exe")
+    want = r"C:\Apps\Ecoscribe\Ecoscribe.exe" if sys.platform == "darwin" else '"C:\\Apps\\Ecoscribe\\Ecoscribe.exe"'
     assert startup.app_command() == want  # a LaunchAgent takes the bare path, the Run key a quoted one
 
 
-from dictado.__main__ import decide_launch
+from ecoscribe.__main__ import decide_launch
 
 
 @pytest.mark.parametrize("have,restarted,test,want", [

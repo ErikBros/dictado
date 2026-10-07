@@ -8,8 +8,8 @@ import asyncio, json, shutil, subprocess, sys, tempfile, time, urllib.request
 from pathlib import Path
 import websockets
 C = r"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe"
-TMP = Path(tempfile.mkdtemp(prefix="dictado-scroll-"))
-shutil.copytree(Path(__file__).resolve().parent.parent / "dictado" / "web", TMP / "web")  # Chrome can't read \\wsl paths reliably
+TMP = Path(tempfile.mkdtemp(prefix="ecoscribe-scroll-"))
+shutil.copytree(Path(__file__).resolve().parent.parent / "ecoscribe" / "web", TMP / "web")  # Chrome can't read \\wsl paths reliably
 URL = (TMP / "web" / "index.html").as_uri() + "?demo=1&page=reuniones/2026-10-05_1400_retro"
 p = subprocess.Popen([C, "--headless=new", "--disable-gpu", "--remote-debugging-port=9333", f"--user-data-dir={TMP / 'prof'}",
                       "--window-size=980,690", URL])

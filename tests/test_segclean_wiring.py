@@ -7,9 +7,9 @@ from types import SimpleNamespace
 
 import numpy as np
 
-from dictado import meeting, sessions, transcribe
-from dictado.config import TranscribeCfg
-from dictado.flacw import FlacWriter
+from ecoscribe import meeting, sessions, transcribe
+from ecoscribe.config import TranscribeCfg
+from ecoscribe.flacw import FlacWriter
 
 SR = 16000
 SEGS = [(0.0, 2.0, " Hej <i>alla</i>"), (2.0, 4.0, " då"), (4.0, 6.0, " Text: VSI OrdKedjan 2021 www.vsi-stockholm.se")]

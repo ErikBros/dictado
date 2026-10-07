@@ -4,8 +4,8 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from dictado.audio import read_wav
-from dictado.config import TextCfg, WhisperCfg
+from ecoscribe.audio import read_wav
+from ecoscribe.config import TextCfg, WhisperCfg
 
 pytestmark = pytest.mark.gpu
 FIX = Path(__file__).parent / "fixtures"
@@ -30,7 +30,7 @@ def recall(got, want):
 @pytest.fixture(scope="module")
 def engine():
     """Multilingual engine (en + es) so the Spanish cases still prove detection works."""
-    from dictado.engine import Engine
+    from ecoscribe.engine import Engine
     e = Engine(WhisperCfg(languages=["en", "es"]), TextCfg())
     e.load()
     return e
@@ -39,7 +39,7 @@ def engine():
 @pytest.fixture(scope="module")
 def engine_en(engine):
     """The shipped default: English only (shares the loaded model)."""
-    from dictado.engine import Engine
+    from ecoscribe.engine import Engine
     e = Engine(WhisperCfg(), TextCfg())
     e.model, e.device = engine.model, engine.device
     return e

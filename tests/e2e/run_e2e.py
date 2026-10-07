@@ -1,4 +1,4 @@
-"""End-to-end test of Dictado on the real Windows desktop.
+"""End-to-end test of Ecoscribe on the real Windows desktop.
 
 Starts the real app in --test mode (accepts injected keys, wav files instead of
 the mic), drives it with SendInput exactly like a person would (Right Ctrl taps,
@@ -33,9 +33,9 @@ import win32con  # noqa: E402
 import win32gui  # noqa: E402
 import win32process  # noqa: E402
 
-from dictado.deliver import get_clipboard_text, set_clipboard_text  # noqa: E402
-from dictado.sendkeys import send_keys, send_wheel  # noqa: E402
-from dictado.win32types import (HOOKPROC, KBDLLHOOKSTRUCT, LLKHF_INJECTED, LLMHF_INJECTED,  # noqa: E402
+from ecoscribe.deliver import get_clipboard_text, set_clipboard_text  # noqa: E402
+from ecoscribe.sendkeys import send_keys, send_wheel  # noqa: E402
+from ecoscribe.win32types import (HOOKPROC, KBDLLHOOKSTRUCT, LLKHF_INJECTED, LLMHF_INJECTED,  # noqa: E402
                                 MSLLHOOKSTRUCT, WH_KEYBOARD_LL, WH_MOUSE_LL, kernel32, user32)
 from tests.winhelp import Target, focus  # noqa: E402
 
@@ -119,7 +119,7 @@ def release_all():
 
 
 # ---------------------------------------------------------------- app control
-DATA = Path(os.environ["LOCALAPPDATA"]) / "dictado"
+DATA = Path(os.environ["LOCALAPPDATA"]) / "ecoscribe"
 
 
 class AppUnderTest:
@@ -134,7 +134,7 @@ class AppUnderTest:
         if exe:
             self.proc = subprocess.Popen([exe, *args])
         else:
-            code = ("import sys; sys.path.insert(0, r'%s'); from dictado.__main__ import main; sys.exit(main(%r))"
+            code = ("import sys; sys.path.insert(0, r'%s'); from ecoscribe.__main__ import main; sys.exit(main(%r))"
                     % (APP, args))
             self.proc = subprocess.Popen([sys.executable, "-c", code])
         end = time.monotonic() + 600
@@ -388,7 +388,7 @@ def _terminal_windows() -> set[int]:
 
 def sc_terminal(app, A, B):
     # Capture goes to a Windows path: WSL /tmp is not reliably the one \\wsl.localhost shows.
-    out_w = Path(tempfile.gettempdir()) / "dictado_e2e_wt.txt"
+    out_w = Path(tempfile.gettempdir()) / "ecoscribe_e2e_wt.txt"
     drive, rest = str(out_w)[0].lower(), str(out_w)[2:].replace("\\", "/")
     out_l = f"/mnt/{drive}{rest}"
     try:
@@ -430,7 +430,7 @@ def sc_terminal(app, A, B):
 
 
 # both "ready model=" (model kept loaded) and "ready on_demand model=" (1.2+, the default)
-READY = " dictado: ready "
+READY = " ecoscribe: ready "
 
 
 def sc_settings_restart(app, A, B):
@@ -443,7 +443,7 @@ def sc_settings_restart(app, A, B):
     n_ready = app.count(READY)
     with open(app.tmp / "config.toml", "a", encoding="utf-8") as f:
         f.write("\n[whisper]\nbeam_size = 4\n")
-    h = win32event.OpenEvent(0x0002, False, "Local\\DictadoReload-test")  # EVENT_MODIFY_STATE
+    h = win32event.OpenEvent(0x0002, False, "Local\\EcoscribeReload-test")  # EVENT_MODIFY_STATE
     win32event.SetEvent(h)
     end = time.monotonic() + 60
     while time.monotonic() < end and app.count(READY) <= n_ready:
@@ -453,7 +453,7 @@ def sc_settings_restart(app, A, B):
     assert new and new != old and pid_alive(new), f"pid old={old} new={new}"
     assert not pid_alive(old), "old instance still running: two engines"
     assert win32gui.GetForegroundWindow() == fg_before, "a window took focus during the restart"
-    assert win32gui.FindWindow(None, "Dictado") == 0, "the Dictado window opened on its own"
+    assert win32gui.FindWindow(None, "Ecoscribe") == 0, "the Ecoscribe window opened on its own"
     return sc_basic(app, A, B)
 
 
@@ -531,7 +531,7 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--only", default="")
     ap.add_argument("--keep-tmp", action="store_true")
-    ap.add_argument("--exe", default=None, help="test this Dictado.exe instead of the source tree")
+    ap.add_argument("--exe", default=None, help="test this Ecoscribe.exe instead of the source tree")
     ap.add_argument("--wait-idle", type=float, default=300, help="max seconds to wait for 45 s of idle")
     ap.add_argument("--on-demand", action="store_true", help="run with [whisper] on_demand = true")
     ap.add_argument("--hold", action="store_true", help="run with [hotkey] hold_to_talk = true (t0u.28)")
@@ -557,14 +557,14 @@ def main() -> int:
     user32.GetWindowLongW.restype = ctypes.c_long
     GUARD.start()
     time.sleep(0.3)
-    tmp = Path(tempfile.mkdtemp(prefix="dictado-e2e-"))
+    tmp = Path(tempfile.mkdtemp(prefix="ecoscribe-e2e-"))
     results, app, A, B = [], None, None, None
     code = 0
     try:
         app = AppUnderTest(tmp, args.exe, (ON_DEMAND_CFG if args.on_demand else "") + (HOLD_CFG if args.hold else ""))
         GUARD.check()
-        A = Target("DictadoTargetA", 80, 120)
-        B = Target("DictadoTargetB", 700, 120)
+        A = Target("EcoscribeTargetA", 80, 120)
+        B = Target("EcoscribeTargetB", 700, 120)
         for name, fn in SCENARIOS:
             if only and name not in only:
                 continue

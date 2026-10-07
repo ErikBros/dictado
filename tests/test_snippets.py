@@ -4,7 +4,7 @@ Local and deterministic, like voice commands: "my email" alone between punctuati
 replaced; "what's my email again" stays text. Matching ignores case; the longest trigger wins.
 Empty list (the default) = text unchanged.
 """
-from dictado.text import snippets
+from ecoscribe.text import snippets
 
 S = {"my email": "alex@example.com", "signature": "Best,\nAlex", "my email at work": "alex@work.example"}
 
@@ -31,10 +31,10 @@ def test_no_snippets_no_change():
 
 
 def test_app_applies_snippets(tmp_path):
-    from dictado.app import App
-    from dictado.config import Config
-    from dictado.deliver import DeliveryResult
-    from dictado.engine import Result
+    from ecoscribe.app import App
+    from ecoscribe.config import Config
+    from ecoscribe.deliver import DeliveryResult
+    from ecoscribe.engine import Result
     from tests.test_app import FakeGate, FakeRecorder, FakeUi, wait
     cfg = Config()
     cfg.text.snippets = {"my email": "alex@example.com"}
@@ -51,7 +51,7 @@ def test_app_applies_snippets(tmp_path):
 
 
 def test_setting_round_trips(tmp_path):
-    from dictado.window import Api
+    from ecoscribe.window import Api
     api = Api(data_dir=tmp_path, config_path=tmp_path / "config.toml", signal_reload=lambda: True)
     assert api.get_settings()["values"]["snippets"] == []
     rows = [{"trigger": "  My   Email ", "text": "alex@example.com"}, {"trigger": "sig", "text": "Best,\nAlex"},

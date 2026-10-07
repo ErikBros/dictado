@@ -20,7 +20,7 @@ outcomes in plain words and only real choices (money, publishing, his desktop, w
 6. **Nothing goes straight to main**, ticket/beads updates included: they ride in the PR.
 7. **Public repo:** before every push, `tests/test_no_secrets.py` and `tests/test_repo_hygiene.py`
    pass and the diff has no names, personal paths, keys or calendar links.
-8. **Parity:** OS-specific work updates `dictado/platform/base.py` + `FEATURES.md` in the same PR
+8. **Parity:** OS-specific work updates `ecoscribe/platform/base.py` + `FEATURES.md` in the same PR
    (`tests/test_platform_contract.py` checks it); the other platform gets done, a ticket, or
    "not needed" with a reason.
 9. **gh account:** the repo belongs to ErikBros. Use `GH_TOKEN=$(gh auth token --user ErikBros) gh ...`

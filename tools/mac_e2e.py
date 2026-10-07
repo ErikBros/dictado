@@ -51,7 +51,7 @@ class RealInputGuard(threading.Thread):
 
     def run(self):
         import Quartz as Q
-        from dictado.platform.macos.keys import is_ours
+        from ecoscribe.platform.macos.keys import is_ours
 
         def cb(proxy, etype, ev, ref):
             if etype in (Q.kCGEventKeyDown, Q.kCGEventFlagsChanged, Q.kCGEventLeftMouseDown,
@@ -72,7 +72,7 @@ class RealInputGuard(threading.Thread):
 
 
 def tap_rcmd():
-    from dictado.platform.macos import keys
+    from ecoscribe.platform.macos import keys
     import Quartz as Q
     keys._post(RCMD, True, Q.kCGEventFlagMaskCommand | 0x10)
     time.sleep(0.08)
@@ -100,16 +100,16 @@ class Run:
             (self.clips / f).write_bytes((FIX / f).read_bytes())
         self.out = tmp / "target.json"
         self.target = subprocess.Popen([PY, str(APP / "tools" / "mac_target.py"), "--out", str(self.out)])
-        env = {**__import__("os").environ, "DICTADO_DATA_DIR": str(self.data)}
+        env = {**__import__("os").environ, "ECOSCRIBE_DATA_DIR": str(self.data)}
         self.env = env
         self.data.mkdir(parents=True, exist_ok=True)  # voice commands are a setting (off by default): on here
         (self.data / "config.toml").write_text("[text]\nvoice_commands = true\n[whisper]\nlanguages = [\"en\", \"es\"]\nextra_languages = [\"es\"]\n", encoding="utf-8")
-        self.log = self.data / "dictado-test.log"
+        self.log = self.data / "ecoscribe-test.log"
         self.start_app()
 
     def start_app(self):
         seen = self._log().count("key tap installed")
-        self.app = subprocess.Popen([PY, "-m", "dictado", "--test", "--test-audio", str(self.clips), "--no-sounds"],
+        self.app = subprocess.Popen([PY, "-m", "ecoscribe", "--test", "--test-audio", str(self.clips), "--no-sounds"],
                                     cwd=str(APP), env=self.env)
         end = time.monotonic() + 30
         while time.monotonic() < end and self._log().count("key tap installed") <= seen:
@@ -210,7 +210,7 @@ def scenario_recover(r: Run) -> dict:
 
 
 def rcmd_plus_l():
-    from dictado.platform.macos import keys
+    from ecoscribe.platform.macos import keys
     import Quartz as Q
     cmd = Q.kCGEventFlagMaskCommand | 0x10
     keys._post(RCMD, True, cmd)
@@ -249,7 +249,7 @@ def main() -> int:
         return 3
     guard = RealInputGuard()
     guard.start()
-    tmp = Path(tempfile.mkdtemp(prefix="dictado-e2e-"))
+    tmp = Path(tempfile.mkdtemp(prefix="ecoscribe-e2e-"))
     r = Run(tmp)
     results = {}
     todo = ["basic", "voice", "recover", "langkey"] if a.scenario == "all" else [a.scenario]

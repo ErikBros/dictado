@@ -1,15 +1,15 @@
-// jsdom smoke test of the Dictado window in demo mode: every page renders and the
+// jsdom smoke test of the Ecoscribe window in demo mode: every page renders and the
 // main interactions work. Run from WSL: node tests/ui/smoke.mjs
 import fs from "fs";
 import path from "path";
 import { fileURLToPath, pathToFileURL } from "url";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
-const web = path.resolve(here, "../../dictado/web");
-// jsdom: DICTADO_JSDOM (path to jsdom/lib/api.js) if set, else Node's normal lookup from this folder up
+const web = path.resolve(here, "../../ecoscribe/web");
+// jsdom: ECOSCRIBE_JSDOM (path to jsdom/lib/api.js) if set, else Node's normal lookup from this folder up
 // (a node_modules here, in the repo, or in any parent folder), else the global install.
 async function loadJsdom() {
-  if (process.env.DICTADO_JSDOM) return import(pathToFileURL(process.env.DICTADO_JSDOM).href);
+  if (process.env.ECOSCRIBE_JSDOM) return import(pathToFileURL(process.env.ECOSCRIBE_JSDOM).href);
   const { createRequire } = await import("module");
   for (const base of [import.meta.url, pathToFileURL(path.join(process.env.NODE_PATH || "", "x")).href]) {
     try { return import(pathToFileURL(createRequire(base).resolve("jsdom")).href); } catch {}
@@ -19,7 +19,7 @@ async function loadJsdom() {
     const root = execSync("npm root -g").toString().trim();
     return import(pathToFileURL(createRequire(path.join(root, "x")).resolve("jsdom")).href);
   } catch {}
-  throw new Error("jsdom not found: npm install jsdom (here or globally) or set DICTADO_JSDOM");
+  throw new Error("jsdom not found: npm install jsdom (here or globally) or set ECOSCRIBE_JSDOM");
 }
 const { JSDOM } = await loadJsdom();
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -48,7 +48,7 @@ async function load(query) {
   v.value = "Göteborg\npyannote\n  Kristineberg  \n"; v.dispatchEvent(new window.Event("input", { bubbles: true }));
   check(!doc.querySelector("#savebar").hidden, "typing a word shows the savebar");
   let sent = null;
-  const api = window.__dictado.api, orig = api.save_settings;
+  const api = window.__ecoscribe.api, orig = api.save_settings;
   api.save_settings = async (x) => { sent = x; return orig(x); };
   doc.querySelector("#save").click(); await sleep(100);
   check(sent && sent.vocabulary === "Göteborg\npyannote\nKristineberg" && Object.keys(sent).length === 1, "saves only the word list, trimmed: " + JSON.stringify(sent));
@@ -79,7 +79,7 @@ async function load(query) {
   rows[1].querySelector(".snip-text").dispatchEvent(new window.Event("input", { bubbles: true }));
   check(!doc.querySelector("#savebar").hidden, "a new snippet shows the savebar");
   let sent = null;
-  const api = window.__dictado.api, orig = api.save_settings;
+  const api = window.__ecoscribe.api, orig = api.save_settings;
   api.save_settings = async (x) => { sent = x; return orig(x); };
   doc.querySelector("#save").click(); await sleep(100);
   check(sent && Object.keys(sent).length === 1 && sent.snippets?.[1]?.trigger === "my signature" && sent.snippets[1].text === "Best,\nAlex",
@@ -167,7 +167,7 @@ async function load(query) {
   check(es && es.checked && doc.querySelector("#f-languages .lang-x"), "Spanish added, ticked, removable");
   check(!doc.querySelector("#savebar").hidden, "language change marks dirty");
   let sent = null;
-  const api = window.__dictado.api;
+  const api = window.__ecoscribe.api;
   const orig = api.save_settings;
   api.save_settings = async (v) => { sent = v; return orig(v); };
   doc.querySelector("#save").click(); await sleep(100);
@@ -180,7 +180,7 @@ async function load(query) {
   check(doc.querySelector("#mic-test").textContent === "Test", "leaving ajustes stops the mic test");
   // races: count open tests through the fake api
   let open = 0;
-  const a2 = window.__dictado.api;
+  const a2 = window.__ecoscribe.api;
   const s0 = a2.mic_test_start, s1 = a2.mic_test_stop;
   a2.mic_test_start = async (d) => { await sleep(60); open = 1; return s0(d); };
   a2.mic_test_stop = async () => { open = 0; return s1(); };
@@ -273,7 +273,7 @@ async function load(query) {
   check(doc.querySelector('.wstep.on').dataset.step === "1" && doc.querySelector("#w-mic-name").textContent.includes("Anker"), "step 2 shows the mic");
   next.click(); await sleep(100);
   check(next.textContent === "Start", "last step button says Start");
-  check(window.__dictado && true, "api reachable");
+  check(window.__ecoscribe && true, "api reachable");
   next.click(); await sleep(100);
   check(doc.querySelector("#welcome").hidden && !doc.querySelector("#page-inicio").hidden, "welcome closes to inicio");
 }

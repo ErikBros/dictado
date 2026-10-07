@@ -1,6 +1,6 @@
-"""Build Dictado.exe (and optionally the installer). Run with Windows Python.
+"""Build Ecoscribe.exe (and optionally the installer). Run with Windows Python.
 
-    python build.py              -> %USERPROFILE%\\dictado-build\\dist\\Dictado\\Dictado.exe
+    python build.py              -> %USERPROFILE%\\ecoscribe-build\\dist\\Ecoscribe\\Ecoscribe.exe
     python build.py --installer  -> also Ecoscribe-Setup-<ver>.exe (copied to Downloads)
 """
 from __future__ import annotations
@@ -15,22 +15,22 @@ from pathlib import Path
 
 APP = Path(__file__).resolve().parent.parent
 PKG = APP / "packaging"
-OUT = Path(os.environ["USERPROFILE"]) / "dictado-build"
+OUT = Path(os.environ["USERPROFILE"]) / "ecoscribe-build"
 ISCC = Path(os.environ["LOCALAPPDATA"]) / "Programs" / "Inno Setup 6" / "ISCC.exe"
 
 
 def version() -> str:
     ns = {}
-    exec((APP / "dictado" / "__init__.py").read_text(encoding="utf-8"), ns)
+    exec((APP / "ecoscribe" / "__init__.py").read_text(encoding="utf-8"), ns)
     return ns["__version__"]
 
 
 def freeze() -> Path:
-    env = dict(os.environ, DICTADO_SITE=site.getsitepackages()[-1])
+    env = dict(os.environ, ECOSCRIBE_SITE=site.getsitepackages()[-1])
     cmd = [sys.executable, "-m", "PyInstaller", "--noconfirm", "--clean",
-           "--distpath", str(OUT / "dist"), "--workpath", str(OUT / "work"), str(PKG / "dictado.spec")]
+           "--distpath", str(OUT / "dist"), "--workpath", str(OUT / "work"), str(PKG / "ecoscribe.spec")]
     subprocess.run(cmd, check=True, env=env, cwd=str(OUT))
-    exe = OUT / "dist" / "Dictado" / "Dictado.exe"
+    exe = OUT / "dist" / "Ecoscribe" / "Ecoscribe.exe"
     size = sum(f.stat().st_size for f in exe.parent.rglob("*") if f.is_file())
     print(f"built {exe}  ({size / 1e9:.2f} GB)")
     return exe
@@ -38,8 +38,8 @@ def freeze() -> Path:
 
 def installer() -> Path:
     v = version()
-    subprocess.run([str(ISCC), f"/DAppVersion={v}", f"/DDistDir={OUT / 'dist' / 'Dictado'}",
-                    f"/O{OUT}", str(PKG / "dictado.iss")], check=True)
+    subprocess.run([str(ISCC), f"/DAppVersion={v}", f"/DDistDir={OUT / 'dist' / 'Ecoscribe'}",
+                    f"/O{OUT}", str(PKG / "ecoscribe.iss")], check=True)
     setup = OUT / f"Ecoscribe-Setup-{v}.exe"
     dl = Path(os.environ["USERPROFILE"]) / "Downloads" / setup.name
     shutil.copy2(setup, dl)

@@ -23,7 +23,7 @@ faulthandler.enable(fault, all_threads=True)
 rounds = int(sys.argv[2]) if len(sys.argv) > 2 and sys.argv[2].isdigit() else 300
 use_gc = "--gc" in sys.argv
 
-from dictado.context import ScreenNames  # noqa: E402
+from ecoscribe.context import ScreenNames  # noqa: E402
 
 t0 = time.monotonic()
 for i in range(rounds):

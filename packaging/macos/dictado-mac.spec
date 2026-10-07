@@ -10,9 +10,9 @@ VERSION = os.environ.get("DICTADO_VERSION", "0.0.0")
 
 binaries = collect_dynamic_libs("mlx")  # dictado-systap goes into Contents/MacOS after the build
 datas = (collect_data_files("mlx") + collect_data_files("mlx_whisper") + collect_data_files("faster_whisper")
-         + collect_data_files("webview") + [(str(APP / "dictado" / "web"), "dictado/web"),
-                                             (str(APP / "dictado" / "platform" / "macos" / "systap.swift"),
-                                              "dictado/platform/macos")])
+         + collect_data_files("webview") + [(str(APP / "ecoscribe" / "web"), "ecoscribe/web"),
+                                             (str(APP / "ecoscribe" / "platform" / "macos" / "systap.swift"),
+                                              "ecoscribe/platform/macos")])
 
 a = Analysis(
     [str(APP / "packaging" / "entry.py")],
@@ -20,12 +20,12 @@ a = Analysis(
     binaries=binaries,
     datas=datas,
     hiddenimports=["dateutil.rrule", "dateutil.tz", "webview.platforms.cocoa",
-                   *collect_submodules("dictado.platform.macos"), *collect_submodules("mlx_whisper"),
+                   *collect_submodules("ecoscribe.platform.macos"), *collect_submodules("mlx_whisper"),
                    # mlx.core imports these at init (mlx._reprlib_fix, mlx.__array_api_info): the scan can't see it
                    *collect_submodules("mlx"),
                    "AppKit", "Foundation", "Quartz", "ApplicationServices", "AVFoundation", "CoreAudio", "WebKit",
                    "PyObjCTools.AppHelper"],
-    excludes=["torch", "tensorflow", "matplotlib", "pandas", "IPython", "pytest", "PyInstaller",  # tkinter stays: dictado.ui (shared) imports it
+    excludes=["torch", "tensorflow", "matplotlib", "pandas", "IPython", "pytest", "PyInstaller",  # tkinter stays: ecoscribe.ui (shared) imports it
               "pyaudiowpatch", "win32api", "win32con", "win32event", "comtypes", "pystray"],
     noarchive=False,
 )

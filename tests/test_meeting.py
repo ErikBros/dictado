@@ -7,9 +7,9 @@ from types import SimpleNamespace
 
 import numpy as np
 
-from dictado import meeting, sessions
-from dictado.config import TranscribeCfg
-from dictado.flacw import FlacWriter
+from ecoscribe import meeting, sessions
+from ecoscribe.config import TranscribeCfg
+from ecoscribe.flacw import FlacWriter
 
 SR = 16000
 
@@ -142,7 +142,7 @@ def test_worker_writes_levels_for_the_silence_backup(tmp_path):
 def test_live_language_follows_a_switch(tmp_path):
     """Switching the language mid-meeting (meta lang) applies to the next live chunk."""
     d = sessions.create("Reunión", "sv", "meeting", tmp_path / "t")
-    from dictado import meeting as mt
+    from ecoscribe import meeting as mt
     assert mt._current_lang(d, "sv") == "sv"
     sessions.write_meta(d, lang="en")
     assert mt._current_lang(d, "sv") == "en"
@@ -151,8 +151,8 @@ def test_live_language_follows_a_switch(tmp_path):
 
 
 def test_a_recovered_meeting_gets_the_final_pass_and_labels(tmp_path):
-    """dictado --transcribe on a killed meeting: transcribe what was saved, then Me / Others."""
-    from dictado import transcribe
+    """ecoscribe --transcribe on a killed meeting: transcribe what was saved, then Me / Others."""
+    from ecoscribe import transcribe
     d = sessions.create("Meeting", "sv", "meeting", tmp_path / "t")
     FakeRecorder(d, None).stop()  # the FLACs a killed worker left behind
     sessions.write_meta(d, status="queued", recovered=True)
@@ -165,7 +165,7 @@ def test_a_recovered_meeting_gets_the_final_pass_and_labels(tmp_path):
 
 
 def test_an_imported_file_is_not_labelled(tmp_path):
-    from dictado import transcribe
+    from ecoscribe import transcribe
     d = sessions.create("x", "sv", "import", tmp_path / "t")
     w = FlacWriter(d / "audio" / "x.flac")
     w.write(np.full(2 * SR, 0.2, np.float32))

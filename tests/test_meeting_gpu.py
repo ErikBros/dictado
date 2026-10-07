@@ -10,9 +10,9 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from dictado import config, meeting, paths, sessions
-from dictado.audio import read_wav
-from dictado.session_rec import SessionRecorder
+from ecoscribe import config, meeting, paths, sessions
+from ecoscribe.audio import read_wav
+from ecoscribe.session_rec import SessionRecorder
 
 pytestmark = pytest.mark.gpu
 FIX = Path(__file__).parent / "fixtures"
@@ -61,8 +61,8 @@ def _clip(name):
 def test_dictation_latency_unchanged_during_a_job(tmp_path):
     """Criterion 6 (amended by the user 2026-10-02): within +200 ms (median) while a 60-min file job runs.
     Measured +180..195 ms; it is GPU contention, process priority does not help."""
-    from dictado.config import TextCfg, WhisperCfg
-    from dictado.engine_proc import EngineProxy
+    from ecoscribe.config import TextCfg, WhisperCfg
+    from ecoscribe.engine_proc import EngineProxy
     e = EngineProxy(WhisperCfg(on_demand=True), TextCfg(), check_s=None)
     clip = read_wav(FIX / "en_long.wav")
     e.transcribe(clip)  # cold start out of the way
@@ -77,7 +77,7 @@ def test_dictation_latency_unchanged_during_a_job(tmp_path):
     base = median_ms()
     d = sessions.create("carga", "sv", "import", tmp_path / "t")
     os.link(paths.data_dir() / "bench" / "long_60min.wav", d / "audio" / "long.wav")
-    job = subprocess.Popen([sys.executable, "-m", "dictado", "--transcribe", str(d)], cwd=str(APP))
+    job = subprocess.Popen([sys.executable, "-m", "ecoscribe", "--transcribe", str(d)], cwd=str(APP))
     try:
         time.sleep(15)  # job past loading, transcribing
         busy = median_ms()

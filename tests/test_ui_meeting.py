@@ -2,7 +2,7 @@
 import json
 from datetime import datetime
 
-from dictado import meetui, sessions
+from ecoscribe import meetui, sessions
 
 T0 = datetime(2026, 10, 5, 14, 0, 0)
 
@@ -117,7 +117,7 @@ def test_tk_meeting_pill_and_prompt_box():
     """Real tk: the meeting layer resizes the pill, dictation wins it, the prompt answers.
     Opens two no-activate windows for under a second; no OS input is injected."""
     import tkinter as tk
-    from dictado import ui
+    from ecoscribe import ui
     root = tk.Tk()
     root.withdraw()
     try:

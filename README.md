@@ -11,7 +11,7 @@ Local voice dictation and meeting transcription for Windows. Tap a key, talk, an
 - **Your words.** A list of names and terms to spell your way, plus names read from the window you're typing into (Windows UI Automation, never stored).
 - **Snippets and voice commands.** Say "my email." and get the saved text; "new line", "new paragraph", "send it" (English, Spanish, Swedish).
 - **Calendar names.** Paste a calendar's secret iCal link and recorded calls take the name of the event happening then.
-- **Claude.** "Copy for Claude" on every transcript, and a read-only MCP server (`Dictado.exe --mcp`) so the Claude desktop app can search and read your meetings.
+- **Claude.** "Copy for Claude" on every transcript, and a read-only MCP server (`Ecoscribe.exe --mcp`) so the Claude desktop app can search and read your meetings.
 - **Never silent when it breaks.** A watchdog restarts the app after a crash, keeps the dictation you were in the middle of, and writes a crash report with every thread's stack (Settings > Troubleshooting > Copy debug info).
 
 ## Requirements
@@ -25,7 +25,7 @@ Local voice dictation and meeting transcription for Windows. Tap a key, talk, an
 
 Download `Ecoscribe-Setup-<version>.exe` from [Releases](../../releases) and run it. It installs for your user only (no admin), adds Ecoscribe to the Start menu and, if you keep the box ticked, starts it with Windows. The installer isn't signed, so Windows SmartScreen will warn: **More info > Run anyway**.
 
-The full guide (settings, meetings, troubleshooting, where files live) is in [`packaging/DICTADO-SETUP.md`](packaging/DICTADO-SETUP.md).
+The full guide (settings, meetings, troubleshooting, where files live) is in [`packaging/ECOSCRIBE-SETUP.md`](packaging/ECOSCRIBE-SETUP.md).
 
 ## Build from source
 
@@ -37,14 +37,14 @@ wtest "$APP_W\\tests" -q -m "not gpu and not win"  # unit tests (~500)
 wtest "$APP_W\\tests" -q -m gpu                  # needs an NVIDIA GPU and the models
 wtest "$APP_W\\tests" -q -m win                  # real desktop: waits until nobody has touched the PC for 45 s
 npm install && npm run smoke                     # the window's JavaScript in jsdom
-wpy "$APP_W\\tools\\build.py" --installer         # Dictado.exe + Ecoscribe-Setup-<version>.exe (needs Inno Setup 6)
+wpy "$APP_W\\tools\\build.py" --installer         # Ecoscribe.exe + Ecoscribe-Setup-<version>.exe (needs Inno Setup 6)
 ```
 
-Windows Python needs the packages in the build spec (`packaging/dictado.spec`): faster-whisper, numpy, sounddevice, pyaudiowpatch, pywin32, comtypes, pycaw, pystray, Pillow, pywebview, python-dateutil, tzdata, pyinstaller. The speaker add-on builds separately (`packaging/speakers/`) and needs the gated `pyannote/speaker-diarization-community-1` weights from Hugging Face.
+Windows Python needs the packages in the build spec (`packaging/ecoscribe.spec`): faster-whisper, numpy, sounddevice, pyaudiowpatch, pywin32, comtypes, pycaw, pystray, Pillow, pywebview, python-dateutil, tzdata, pyinstaller. The speaker add-on builds separately (`packaging/speakers/`) and needs the gated `pyannote/speaker-diarization-community-1` weights from Hugging Face.
 
 ## Windows and macOS stay in step
 
-One codebase; OS-specific code is listed in [`dictado/platform/base.py`](dictado/platform/base.py) and
+One codebase; OS-specific code is listed in [`ecoscribe/platform/base.py`](ecoscribe/platform/base.py) and
 [`FEATURES.md`](FEATURES.md). A capability added on one platform needs the other one done, a ticket,
 or a "not needed" reason, or `tests/test_platform_contract.py` fails. GitHub Actions runs the unit
 tests on Windows and macOS for every push and pull request.
@@ -53,13 +53,13 @@ tests on Windows and macOS for every push and pull request.
 
 | Path | What |
 |---|---|
-| `dictado/` | The app. `__main__.py` starts the background app and every worker (`--engine-worker`, `--meeting`, `--transcribe`, `--speakers`, `--hook`, `--supervise`, `--mcp`) |
-| `dictado/web/` | The window (HTML/CSS/JS, served to pywebview) |
+| `ecoscribe/` | The app. `__main__.py` starts the background app and every worker (`--engine-worker`, `--meeting`, `--transcribe`, `--speakers`, `--hook`, `--supervise`, `--mcp`) |
+| `ecoscribe/web/` | The window (HTML/CSS/JS, served to pywebview) |
 | `tests/` | pytest suite; `tests/e2e/` real-desktop scenarios; `tests/ui/` jsdom smoke test |
 | `tools/` | Build, screenshots, benchmarks, crash/freeze probes |
 | `packaging/` | PyInstaller spec, Inno Setup scripts, the user guide |
 
-Settings live in `%APPDATA%\dictado\config.toml`; logs, history, transcripts and crash reports in `%LOCALAPPDATA%\dictado\`.
+Settings live in `%APPDATA%\ecoscribe\config.toml`; logs, history, transcripts and crash reports in `%LOCALAPPDATA%\ecoscribe\`.
 
 ## Privacy
 

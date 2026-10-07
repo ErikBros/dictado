@@ -2,8 +2,8 @@
 right now (the foreground one if several), else nothing ("App: Meeting" as before)."""
 from pathlib import Path
 
-from dictado import commands
-from dictado.detect import MicUse, call_app_now
+from ecoscribe import commands
+from ecoscribe.detect import MicUse, call_app_now
 
 
 def use(app, in_use=True, start=1, nonpackaged=True):
@@ -58,8 +58,8 @@ def test_manual_start_passes_the_app():
 
 
 def test_watch_prefers_the_call_it_already_sees(tmp_path):
-    from dictado.config import Config
-    from dictado.meetwatch import MeetWatch
+    from ecoscribe.config import Config
+    from ecoscribe.meetwatch import MeetWatch
     w = MeetWatch(Ctl(), Config(), lambda *a: None, read=lambda: ([use("zoom")], [], {"zoom"}), data_dir=tmp_path)
     assert w.call_app_now() == "zoom"
     w.call = "msteams"

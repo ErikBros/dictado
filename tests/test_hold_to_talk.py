@@ -10,7 +10,7 @@ A recording started by a tap is never touched by shortcuts, as today.
 """
 import time
 
-from dictado.keystate import KeyState
+from ecoscribe.keystate import KeyState
 from tests.test_app import make, wait
 
 R = 0xA3
@@ -122,7 +122,7 @@ def test_app_esc_on_a_quiet_start_is_silent(tmp_path):
 
 
 def test_setting_round_trips(tmp_path):
-    from dictado.window import Api
+    from ecoscribe.window import Api
     api = Api(data_dir=tmp_path, config_path=tmp_path / "config.toml", signal_reload=lambda: True)
     assert api.get_settings()["values"]["hold_to_talk"] is False
     assert api.save_settings({"hold_to_talk": True})["ok"]

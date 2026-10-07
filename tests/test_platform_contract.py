@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from dictado.platform.base import CAPABILITIES, PLATFORMS
+from ecoscribe.platform.base import CAPABILITIES, PLATFORMS
 
 ROOT = Path(__file__).resolve().parent.parent
 FEATURES = (ROOT / "FEATURES.md").read_text(encoding="utf-8")

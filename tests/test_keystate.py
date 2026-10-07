@@ -1,4 +1,4 @@
-from dictado.keystate import KeyState
+from ecoscribe.keystate import KeyState
 
 R = 0xA3
 

@@ -1,4 +1,4 @@
-"""Deploy Ecoscribe to %USERPROFILE%\\dictado and (re)start it. Run with Windows Python.
+"""Deploy Ecoscribe to %USERPROFILE%\\ecoscribe and (re)start it. Run with Windows Python.
 
     python deploy.py            copy, add Startup shortcut, restart, wait for ready
     python deploy.py --uninstall  stop it and remove the Startup shortcut
@@ -13,15 +13,15 @@ import sys
 import time
 from pathlib import Path
 
-SRC = Path(__file__).resolve().parent.parent / "dictado"
-DEST = Path(os.environ["USERPROFILE"]) / "dictado"
-DATA = Path(os.environ["LOCALAPPDATA"]) / "dictado"
-STARTUP = Path(os.environ["APPDATA"]) / "Microsoft" / "Windows" / "Start Menu" / "Programs" / "Startup" / "Dictado.lnk"
+SRC = Path(__file__).resolve().parent.parent / "ecoscribe"
+DEST = Path(os.environ["USERPROFILE"]) / "ecoscribe"
+DATA = Path(os.environ["LOCALAPPDATA"]) / "ecoscribe"
+STARTUP = Path(os.environ["APPDATA"]) / "Microsoft" / "Windows" / "Start Menu" / "Programs" / "Startup" / "Ecoscribe.lnk"
 PYTHONW = Path(sys.executable).with_name("pythonw.exe")
 
 
 def stop_running() -> None:
-    pid_file = DATA / "dictado.pid"
+    pid_file = DATA / "ecoscribe.pid"
     if not pid_file.exists():
         return
     pid = pid_file.read_text().strip()
@@ -34,7 +34,7 @@ def stop_running() -> None:
 
 
 def copy() -> None:
-    target = DEST / "dictado"
+    target = DEST / "ecoscribe"
     if target.exists():
         shutil.rmtree(target)
     shutil.copytree(SRC, target, ignore=shutil.ignore_patterns("__pycache__", "*.pyc"))
@@ -45,18 +45,18 @@ def shortcut() -> None:
     import win32com.client
     sc = win32com.client.Dispatch("WScript.Shell").CreateShortcut(str(STARTUP))
     sc.TargetPath = str(PYTHONW)
-    sc.Arguments = "-m dictado"
+    sc.Arguments = "-m ecoscribe"
     sc.WorkingDirectory = str(DEST)
-    sc.Description = "Ecoscribe: dictado por voz (toca Ctrl derecho)"
+    sc.Description = "Ecoscribe: ecoscribe por voz (toca Ctrl derecho)"
     sc.Save()
     print("startup shortcut", STARTUP)
 
 
 def launch() -> None:
-    log = DATA / "dictado.log"
+    log = DATA / "ecoscribe.log"
     start_size = log.stat().st_size if log.exists() else 0
     flags = subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP
-    subprocess.Popen([str(PYTHONW), "-m", "dictado"], cwd=str(DEST), creationflags=flags, close_fds=True)
+    subprocess.Popen([str(PYTHONW), "-m", "ecoscribe"], cwd=str(DEST), creationflags=flags, close_fds=True)
     end = time.monotonic() + 180
     while time.monotonic() < end:
         if log.exists():

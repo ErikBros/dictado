@@ -49,8 +49,8 @@ class Peak:
 
 def one(model: str, compute: str) -> dict:
     import numpy as np
-    from dictado import config, models, paths, winutil
-    from dictado.wer import wer
+    from ecoscribe import config, models, paths, winutil
+    from ecoscribe.wer import wer
     winutil.add_cuda_dll_dirs()
     from faster_whisper import WhisperModel, decode_audio
     cfg = config.load(paths.config_path()).transcribe
@@ -91,7 +91,7 @@ def main(argv=None) -> int:
     ap.add_argument("--out", type=Path)
     a = ap.parse_args(argv)
     if a.one:
-        from dictado import winutil
+        from ecoscribe import winutil
         try:
             print("RESULT " + json.dumps(one(*a.one), ensure_ascii=False), flush=True)
             winutil.hard_exit(0)

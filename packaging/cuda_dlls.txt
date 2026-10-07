@@ -1,4 +1,4 @@
-# CUDA DLLs bundled into Dictado.exe. Measured 2026-10-01: a GPU selftest loads only
+# CUDA DLLs bundled into Ecoscribe.exe. Measured 2026-10-01: a GPU selftest loads only
 # cublas64_12, cublasLt64_12 and cudnn64_9 (no cuDNN sub-libraries). cudart kept as margin.
 # Re-measure with the selftest's nvidia_dlls list before removing anything else.
 cublas64_12.dll
