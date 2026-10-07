@@ -60,7 +60,12 @@ def _clip(name):
 @pytest.mark.skipif(not (paths.data_dir() / "bench" / "long_60min.wav").exists(), reason="needs tools/make_long.py")
 def test_dictation_latency_unchanged_during_a_job(tmp_path):
     """Criterion 6 (amended by the user 2026-10-02): within +200 ms (median) while a 60-min file job runs.
-    Measured +180..195 ms; it is GPU contention, process priority does not help."""
+    Measured +180..195 ms; it is GPU contention, process priority does not help.
+    dictado-2ta: next to the installed app's GPU work it measures that app, not this: skipped, with why."""
+    from tests.gpu_busy import installed_app_gpu_use
+    busy_with = installed_app_gpu_use()
+    if busy_with:
+        pytest.skip(f"the installed Ecoscribe is {busy_with}: latency can't be measured next to it")
     from ecoscribe.config import TextCfg, WhisperCfg
     from ecoscribe.engine_proc import EngineProxy
     e = EngineProxy(WhisperCfg(on_demand=True), TextCfg(), check_s=None)
