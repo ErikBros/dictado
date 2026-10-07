@@ -31,6 +31,13 @@ function demoInsights(days) {  // invented numbers and text for the demo and scr
       { lang: "sv", words: 2900, per_100: 1.4, top: [{ word: "typ", count: 25 }, { word: "liksom", count: 16 }] }],
     phrases: [{ phrase: "at the end of", count: 18 }, { phrase: "let me check", count: 14 }, { phrase: "as soon as", count: 11 }, { phrase: "on the other hand", count: 9 }],
     suggestions: [{ heard: "Ecoskribe", count: 5, suggest: "Ecoscribe" }, { heard: "Klaude", count: 3, suggest: "Claude" }, { heard: "Kristineberg", count: 3, suggest: "Kristineberg" }],
+    clarity: { dictations: Math.round(90 * k), clarity: 91, since: "2026-09-20",
+      weeks: [null, null, null, null, 86, 89, 90, 93].map((c, i) => {
+        const d = new Date(today); d.setDate(today.getDate() - today.getDay() + 1 - 7 * (7 - i));
+        return { week: d.toISOString().slice(0, 10), clarity: c, dictations: c ? 20 : 0 };
+      }),
+      words: [{ lang: "en", words: [{ word: "particularly", unsure: 4, said: 6 }, { word: "Kristineberg", unsure: 3, said: 3 }, { word: "rural", unsure: 2, said: 5 }] },
+        { lang: "sv", words: [{ word: "sjuksköterska", unsure: 2, said: 2 }] }] },
   };
 }
 
@@ -286,6 +293,28 @@ function iChip(text, count, title) {
   if (title) c.title = title;
   return c;
 }
+function renderClarity(c) {  // dictado-9jc.1
+  const has = !!(c && c.dictations);
+  $("#i-clarity-empty").hidden = has; $("#i-clarity-body").hidden = !has;
+  if (!has) return;
+  const day = (iso) => new Date(iso + "T12:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+  $("#i-clarity").textContent = `${c.clarity}%`;
+  $("#i-clarity-how").textContent = `of your words heard clearly, over ${fmtNum(c.dictations)} ${c.dictations === 1 ? "dictation" : "dictations"} since ${day(c.since)}`;
+  const n = c.weeks.length;
+  columns($("#i-clarity-weeks"), c.weeks.map((w, i) => ({ value: w.clarity || 0, dim: i !== n - 1,
+    label: i === n - 1 ? "This week" : day(w.week),
+    tipValue: w.clarity == null ? "No dictations" : `${w.clarity}% heard clearly`, tipLabel: `week of ${day(w.week)}` })),
+    (i) => i === 0 || i === n - 1);
+  const box = $("#i-unsure"); box.textContent = "";
+  for (const l of c.words) {
+    const row = document.createElement("div"); row.className = "i-habit";
+    const lab = document.createElement("span"); lab.className = "muted"; lab.textContent = langName(l.lang);
+    const chips = document.createElement("span"); chips.className = "i-chips";
+    for (const w of l.words) chips.append(iChip(w.word, w.unsure, `Unsure ${w.unsure} of the ${w.said} times you said it`));
+    row.append(lab, chips); box.append(row);
+  }
+  if (!c.words.length) box.textContent = "None so far: every word came through clearly.";
+}
 async function renderInsights() {
   for (const b of $$("#i-range .seg")) b.setAttribute("aria-checked", String((b.dataset.days || null) === iDays));
   const d = await api.get_insights(iDays ? Number(iDays) : null);
@@ -326,6 +355,7 @@ async function renderInsights() {
     row.append(num, lab, chips); hab.append(row);
   }
   if (!d.habits.length) hab.textContent = "A few more dictations and your filler words show up here.";
+  renderClarity(d.clarity);
   const ph = $("#i-phrases"); ph.textContent = "";
   for (const p of d.phrases) ph.append(iChip(p.phrase, p.count));
   if (!d.phrases.length) ph.append(iChip("Nothing repeated three times yet"));

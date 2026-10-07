@@ -2,8 +2,8 @@
 
 Everything is computed here, on this computer, from the dictation history (history.jsonl): time
 saved against typing, when and where you dictate, your languages, filler words, the phrases you
-repeat, names Whisper keeps spelling its own way (one click adds them to Your words), and your week as
-a prompt for Claude. Nothing here leaves the computer except what you copy yourself.
+repeat, names Whisper keeps spelling its own way (one click adds them to Your words), your week as
+a prompt for Claude, and speech coaching (coach.py, dictado-9jc). Nothing here leaves the computer except what you copy yourself.
 """
 from __future__ import annotations
 
@@ -11,6 +11,8 @@ import difflib
 import re
 from collections import Counter
 from datetime import datetime, timedelta
+
+from . import coach
 
 TYPING_WPM = 40  # an average typist; what the time saved is measured against
 WORD = re.compile(r"[^\W\d_][\w'’-]*", re.UNICODE)
@@ -199,5 +201,5 @@ def compute(rows: list[dict], vocabulary: list[str], days: int | None = None, no
     rh["days"], rh["streak"] = rh_all["days"], rh_all["streak"]
     return {"days": days, "totals": totals(sel), "rhythm": rh, "languages": by_language(sel),
             "apps": by_app(sel), "habits": habits(sel), "phrases": phrases(sel),
-            "suggestions": name_suggestions(sel, vocabulary),
+            "suggestions": name_suggestions(sel, vocabulary), "clarity": coach.clarity_summary(sel, now),
             "first": str(rows[0].get("ts", ""))[:10] if rows else None}

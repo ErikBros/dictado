@@ -149,3 +149,26 @@ def test_an_unsure_quick_check_is_checked_the_full_way():
     seen.clear()
     e.model = Unsure(QUICK_SURE)
     assert e._detect(a, ["en", "es"]) == "en" and seen == ["quick"]
+
+def test_word_confidence_is_a_second_pass_with_word_timestamps():
+    """dictado-9jc.1: how sure Whisper was of each word, asked for after the paste."""
+    class Worded(FakeModel):
+        def transcribe(self, audio, language=None, **kw):
+            self.calls.append((language, kw.get("word_timestamps"), kw.get("without_timestamps")))
+            w = [SimpleNamespace(word=" Hola", probability=0.9), SimpleNamespace(word=" amigos.", probability=0.4)]
+            seg = SimpleNamespace(text=" Hola amigos.", no_speech_prob=0.01, words=w if kw.get("word_timestamps") else None)
+            return iter([seg]), SimpleNamespace(duration=len(audio) / SR, duration_after_vad=len(audio) / SR)
+
+    e = engine(("es", "el"))
+    e.model = Worded()
+    e._pieces = lambda audio: [(0.0, len(audio) / SR)]
+    a = recording((("es", 4),))
+    assert e.word_confidence(a, "es") == [("Hola", 0.9), ("amigos.", 0.4)]
+    assert e.model.calls == [("es", True, False)]
+    assert e.transcribe(a, lang="es").text.strip() == "Hola amigos."
+    assert e.model.calls[-1] == ("es", None, True)  # the dictation itself stays without word timestamps
+
+    class NoWords(FakeModel):  # the Mac's mlx model until dictado-9jc.6
+        pass
+    e.model = NoWords()
+    assert e.word_confidence(a, "es") is None

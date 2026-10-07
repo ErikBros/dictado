@@ -38,6 +38,18 @@ class Result:
     ms: int
 
 
+def _timestamps(words_out) -> dict:
+    """A dictation goes without timestamps (fastest); the clarity pass asks for word timestamps, which
+    come with each word's probability (dictado-9jc.1)."""
+    return {"without_timestamps": True} if words_out is None else {"without_timestamps": False, "word_timestamps": True}
+
+
+def _collect(segments, words_out) -> None:
+    if words_out is not None:
+        words_out.extend((w.word.strip(), round(float(w.probability), 3))
+                         for s in segments for w in (getattr(s, "words", None) or []))
+
+
 def _is_gpu_error(e: BaseException) -> bool:
     msg = str(e).lower()
     return any(k in msg for k in _GPU_ERRORS)
@@ -158,7 +170,7 @@ class Engine:
                 runs.append((a, b, lang))
         return runs
 
-    def _run_mixed(self, audio: np.ndarray, runs, words=None, beam_size: int | None = None):
+    def _run_mixed(self, audio: np.ndarray, runs, words=None, beam_size: int | None = None, words_out=None):
         """Each run in its own language; the text in order. Result lang "es+el" (first seen first)."""
         prompt = vocab_prompt([*self.text_cfg.vocabulary, *(words or [])])
         texts, speech_s, order = [], 0.0, []
@@ -167,8 +179,9 @@ class Engine:
             segments, info = self.model.transcribe(
                 chunk, language=lang, beam_size=beam_size or self.cfg.beam_size, vad_filter=True,
                 vad_parameters={"min_silence_duration_ms": 500}, condition_on_previous_text=False,
-                without_timestamps=True, initial_prompt=prompt)
+                initial_prompt=prompt, **_timestamps(words_out))
             segments = list(segments)
+            _collect(segments, words_out)
             raw = "".join(s.text for s in segments).strip()
             run_s = float(getattr(info, "duration_after_vad", info.duration))
             no_speech = max((getattr(s, "no_speech_prob", 0.0) for s in segments), default=1.0)
@@ -227,8 +240,21 @@ class Engine:
             self._busy.release()
         return Result(text=text, lang=lang, speech_s=speech_s, ms=int((time.perf_counter() - t0) * 1000))
 
+    def word_confidence(self, audio: np.ndarray, lang: str | None = None, words=None) -> list[tuple[str, float]] | None:
+        """dictado-9jc.1: [(word, probability)], how sure Whisper was of each word. A second pass with word
+        timestamps, asked for after the paste: inline it would add ~80 ms to every dictation. `lang` is
+        what the dictation came out in (a mix like "es+en" is split again). None when the model can't
+        say (the Mac's mlx model until dictado-9jc.6)."""
+        out: list[tuple[str, float]] = []
+        with self._busy:
+            if self.model is None:
+                return None
+            self._run(np.asarray(audio, dtype=np.float32), words, None if not lang or "+" in lang else lang,
+                      words_out=out)
+        return out or None
+
     def _run(self, audio: np.ndarray, words=None, forced: str | None = None, prefer: str | None = None,
-             beam_size: int | None = None, mix: bool = True):
+             beam_size: int | None = None, mix: bool = True, words_out=None):
         langs = list(self.cfg.languages)
         if mix and not forced and len(langs) > 1 and len(audio) >= MIX_FROM_S * SR:
             try:
@@ -239,7 +265,7 @@ class Engine:
                 log.warning("per-piece language check failed (%s): one language for all", e)
                 runs = None
             if runs and len(runs) > 1:
-                return self._run_mixed(audio, runs, words, beam_size)
+                return self._run_mixed(audio, runs, words, beam_size, words_out)
         if forced:
             lang = forced  # the user chose this dictation's language (dictation key + L)
         elif len(self.cfg.languages) == 1:
@@ -255,8 +281,9 @@ class Engine:
         segments, info = self.model.transcribe(
             audio, language=lang, beam_size=beam_size or self.cfg.beam_size, vad_filter=True,
             vad_parameters={"min_silence_duration_ms": 500}, condition_on_previous_text=False,
-            without_timestamps=True, initial_prompt=vocab_prompt([*self.text_cfg.vocabulary, *(words or [])]))
+            initial_prompt=vocab_prompt([*self.text_cfg.vocabulary, *(words or [])]), **_timestamps(words_out))
         segments = list(segments)
+        _collect(segments, words_out)
         raw = "".join(s.text for s in segments).strip()
         speech_s = float(getattr(info, "duration_after_vad", info.duration))
         no_speech = max((getattr(s, "no_speech_prob", 0.0) for s in segments), default=1.0)

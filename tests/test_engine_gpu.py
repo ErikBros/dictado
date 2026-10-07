@@ -118,3 +118,20 @@ def test_mixed_dictation_after_a_breath(engine, gap_s):
     assert recall(" ".join(words(r.text)[:half + 3]), EXPECTED["es_climb"][1]) >= 0.8, r.text
     assert recall(r.text, EXPECTED["en_fox"][1]) >= 0.85, r.text
     assert r.ms < 2500
+
+
+def test_word_confidence_after_the_paste(engine):
+    """dictado-9jc.1: the clarity pass on the real model: every word with a probability, a clean
+    recording heard clearly, a mix split again; fast enough to finish between dictations."""
+    import time
+    from ecoscribe.coach import clarity
+    a = read_wav(FIX / "en_fox.wav")
+    t0 = time.perf_counter()
+    wp = engine.word_confidence(a, "en")
+    ms = (time.perf_counter() - t0) * 1000
+    print("word_confidence ms", round(ms), wp)
+    assert recall(" ".join(w for w, _ in wp), EXPECTED["en_fox"][1]) >= 0.85
+    assert clarity(wp)["clarity"] >= 80 and ms < 1000
+    mix = np.concatenate([_trimmed("es_climb"), np.zeros(int(0.5 * SR), np.float32), _trimmed("en_fox")])
+    words_mix = [w.lower() for w, _ in engine.word_confidence(mix, "es+en")]
+    assert "mañana" in words_mix and "fox" in words_mix

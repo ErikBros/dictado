@@ -101,6 +101,10 @@ CAPABILITIES: dict[str, dict] = {
         "windows": "ecoscribe.platform.windows.claude_link:config_files",
         "macos": "ecoscribe.platform.macos.claude_link:config_files",  # connect() is shared
     },
+    "Word confidence for Insights (clarity, words it wasn't sure of)": {
+        "windows": "ecoscribe.engine:Engine",  # Engine.word_confidence: faster-whisper word timestamps, after the paste
+        "macos": ("ticket", "dictado-9jc.6"),  # mlx ignores word_timestamps today: no clarity saved
+    },
     "Installer": {
         "windows": "file:packaging/windows/ecoscribe.iss",
         "macos": "file:tools/build_mac.py",  # Ecoscribe.app + .dmg, signed so permissions survive updates

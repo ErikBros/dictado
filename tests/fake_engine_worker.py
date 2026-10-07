@@ -37,6 +37,9 @@ class FakeEngine:
         return Result(text=f"pid{os.getpid()} n{len(audio)}{tail}", lang="en", speech_s=len(audio) / 16000, ms=5)
 
 
+    def word_confidence(self, audio, lang=None, words=None):
+        return [("hola", 0.9), (lang or "?", 0.4)]
+
     def preview(self, audio, lang=None, prefer=None):
         return Result(text=f"preview n{len(audio)}", lang=lang or "en", speech_s=len(audio) / 16000, ms=1)
 

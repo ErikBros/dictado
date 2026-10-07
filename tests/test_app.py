@@ -334,3 +334,59 @@ def test_no_text_box_says_where_the_text_is(tmp_path):
     assert wait(lambda: ("flash", f"No text box here: copied, paste with {app_mod.PASTE_KEYS}", 4.0) in ui.events)
     rec = json.loads((tmp_path / "h.jsonl").read_text(encoding="utf-8").splitlines()[-1])
     assert rec["pasted"] is False  # Home's Last dictation says "not pasted: copy it from here"
+
+
+class ScoringEngine(FakeEngine):
+    """An engine that can say how sure it was of each word (dictado-9jc.1)."""
+    def __init__(self, **kw):
+        super().__init__(**kw)
+        self.scored = []
+
+    def word_confidence(self, audio, lang=None, words=None):
+        self.scored.append(lang)
+        return [("text", 0.99), ("one", 0.95), ("Tromsø", 0.3)]
+
+
+def test_clarity_is_saved_after_the_paste_when_insights_is_on(tmp_path):
+    eng = ScoringEngine()
+    app, out = make(tmp_path, eng=eng)
+    app.cfg.ui.insights = True
+    app.on_action("toggle"); app.on_action("toggle")
+    assert wait(lambda: (tmp_path / "h.jsonl").exists())
+    h = json.loads((tmp_path / "h.jsonl").read_text(encoding="utf-8").splitlines()[0])
+    assert out == ["text 1 "] and eng.scored == ["en"]
+    assert h["clarity"] == 67 and h["heard"] == 3 and h["unsure"] == ["Tromsø"] and h["speech_s"] == 1.0
+    app.shutdown()
+
+
+def test_no_clarity_pass_when_insights_is_off_or_a_dictation_is_waiting(tmp_path):
+    eng = ScoringEngine()
+    app, out = make(tmp_path, eng=eng)
+    app.on_action("toggle"); app.on_action("toggle")
+    assert wait(lambda: (tmp_path / "h.jsonl").exists())
+    assert eng.scored == [] and "clarity" not in json.loads((tmp_path / "h.jsonl").read_text(encoding="utf-8"))
+    app.shutdown()
+
+    eng = ScoringEngine(delay=0.3)
+    (tmp_path / "b").mkdir()
+    app, out = make(tmp_path / "b", eng=eng)
+    app.cfg.ui.insights = True
+    app.on_action("toggle"); app.on_action("toggle")
+    time.sleep(0.05)
+    app.on_action("toggle"); app.on_action("toggle")  # the second waits while the first is transcribed
+    assert wait(lambda: len(out) == 2) and wait(lambda: len(eng.scored) == 1)
+    assert eng.scored == ["en"]  # only the last one, once nothing was waiting
+    app.shutdown()
+
+
+def test_the_pill_is_not_kept_busy_by_the_clarity_pass(tmp_path):
+    class Slow(ScoringEngine):
+        def word_confidence(self, audio, lang=None, words=None):
+            seen.append(app._pending)
+            return super().word_confidence(audio, lang, words)
+    seen = []
+    app, out = make(tmp_path, eng=Slow())
+    app.cfg.ui.insights = True
+    app.on_action("toggle"); app.on_action("toggle")
+    assert wait(lambda: seen) and seen == [0]
+    app.shutdown()

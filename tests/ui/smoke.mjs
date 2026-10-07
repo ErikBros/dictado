@@ -108,6 +108,9 @@ async function load(query) {
   check(doc.querySelectorAll("#i-hours path.bar").length > 5 && doc.querySelectorAll("#i-days .tick").length === 3, "hour and day charts drawn");
   check(doc.querySelectorAll("#i-langs .i-hbar").length === 4 && doc.querySelector("#i-langs .i-hbar-name").textContent === "English", "languages by name");
   check(doc.querySelector("#i-habits").textContent.includes("3.1"), "filler words per 100");
+  check(doc.querySelector("#i-clarity").textContent === "91%" && doc.querySelector("#i-clarity-empty").hidden
+    && doc.querySelectorAll("#i-clarity-weeks path.bar").length === 4, "clarity: score and the weeks that have one (9jc.1)");
+  check(doc.querySelectorAll("#i-unsure .i-chip").length === 4 && doc.querySelector("#i-unsure .i-chip").title === "Unsure 4 of the 6 times you said it", "words it wasn't sure of, per language");
   const add = doc.querySelector("#i-suggest li button");
   add.click(); await sleep(30);
   check(window.__added === "Ecoscribe" && doc.querySelectorAll("#i-suggest li").length === 2, "Add puts the suggested spelling in Your words");

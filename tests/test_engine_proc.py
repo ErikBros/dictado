@@ -176,3 +176,14 @@ def test_preview_skips_until_the_worker_is_ready_then_round_trips():
     assert p.text == "preview n16000" and p.lang == "es"
     assert e.transcribe(audio(8000)).text.endswith("n8000")  # replies stay paired
     e.close()
+
+
+def test_the_clarity_pass_round_trip_and_none_before_the_worker_is_up():
+    """dictado-9jc.1: word probabilities after the paste; never starts or waits for a worker."""
+    spawn, procs = spawner("normal")
+    e = proxy(spawn)
+    assert e.word_confidence(audio()) is None and procs == []  # no worker yet: nothing to ask
+    e.transcribe(audio())
+    assert e.word_confidence(audio(), "es") == [("hola", 0.9), ("es", 0.4)]
+    assert e.transcribe(audio(8000)).text.endswith("n8000")  # the next dictation reads its own reply
+    e.close()
