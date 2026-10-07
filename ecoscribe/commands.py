@@ -28,19 +28,10 @@ def _dir(data_dir: Path) -> Path:
     return d
 
 
-def _signal(name: str = EVENT) -> bool:
-    import win32con
-    import win32event
-    try:
-        h = win32event.OpenEvent(win32con.EVENT_MODIFY_STATE, False, name)
-    except Exception:
-        return False
-    win32event.SetEvent(h)
-    return True
-
-
 if sys.platform == "darwin":  # a Unix socket instead of the named event (ecoscribe/platform/macos/commands.py)
-    from .platform.macos.commands import _signal  # noqa: F811
+    from .platform.macos.commands import Watcher, _signal  # noqa: F401
+else:  # the named event Local\\EcoscribeCommand (ecoscribe/platform/windows/commands.py)
+    from .platform.windows.commands import Watcher, _signal  # noqa: F401
 
 
 def send(data_dir: Path, cmd: str, args: dict | None = None, wait_s: float = 3.0, signal=_signal,
@@ -98,34 +89,6 @@ def run_pending(data_dir: Path, handler) -> int:
         os.replace(tmp, done)
         n += 1
     return n
-
-
-class Watcher(threading.Thread):
-    """Background app side: waits on the event (and every 5 s anyway) and runs requests."""
-
-    def __init__(self, data_dir: Path, handler, name: str = EVENT):
-        import win32event
-        super().__init__(name="ecoscribe-commands", daemon=True)
-        self.data_dir, self.handler, self._we = Path(data_dir), handler, win32event
-        self._event = win32event.CreateEvent(None, False, False, name)
-        self._stop = win32event.CreateEvent(None, True, False, None)
-
-    def run(self) -> None:
-        while True:
-            r = self._we.WaitForMultipleObjects([self._event, self._stop], False, 5000)
-            if r == self._we.WAIT_OBJECT_0 + 1:
-                return
-            try:
-                run_pending(self.data_dir, self.handler)
-            except Exception:
-                log.exception("command watcher failed")
-
-    def stop(self) -> None:
-        self._we.SetEvent(self._stop)
-
-
-if sys.platform == "darwin":
-    from .platform.macos.commands import Watcher  # noqa: F811
 
 
 def handler_for(ctl, watch=None, manual_key: str = "_manual"):

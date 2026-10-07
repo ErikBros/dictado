@@ -34,7 +34,7 @@ class RealInputGuard:
         import threading
         from ctypes import wintypes as w
 
-        from ecoscribe.win32types import (HOOKPROC, KBDLLHOOKSTRUCT, LLKHF_INJECTED, LLMHF_INJECTED,
+        from ecoscribe.platform.windows.win32types import (HOOKPROC, KBDLLHOOKSTRUCT, LLKHF_INJECTED, LLMHF_INJECTED,
                                         MSLLHOOKSTRUCT, WH_KEYBOARD_LL, WH_MOUSE_LL, kernel32, user32)
         self.tripped = threading.Event()
         self.what = ""

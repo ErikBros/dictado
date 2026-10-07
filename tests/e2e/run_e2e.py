@@ -34,8 +34,8 @@ import win32gui  # noqa: E402
 import win32process  # noqa: E402
 
 from ecoscribe.deliver import get_clipboard_text, set_clipboard_text  # noqa: E402
-from ecoscribe.sendkeys import send_keys, send_wheel  # noqa: E402
-from ecoscribe.win32types import (HOOKPROC, KBDLLHOOKSTRUCT, LLKHF_INJECTED, LLMHF_INJECTED,  # noqa: E402
+from ecoscribe.platform.windows.sendkeys import send_keys, send_wheel  # noqa: E402
+from ecoscribe.platform.windows.win32types import (HOOKPROC, KBDLLHOOKSTRUCT, LLKHF_INJECTED, LLMHF_INJECTED,  # noqa: E402
                                 MSLLHOOKSTRUCT, WH_KEYBOARD_LL, WH_MOUSE_LL, kernel32, user32)
 from tests.winhelp import Target, focus  # noqa: E402
 

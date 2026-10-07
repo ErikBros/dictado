@@ -3,8 +3,8 @@ import time
 
 import pytest
 
-from ecoscribe import deliver as dl
-from ecoscribe.sendkeys import send_keys
+from ecoscribe.platform.windows import deliver as dl
+from ecoscribe.platform.windows.sendkeys import send_keys
 from tests.winhelp import Target
 
 pytestmark = pytest.mark.win

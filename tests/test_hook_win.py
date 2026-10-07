@@ -3,8 +3,8 @@ import time
 
 import pytest
 
-from ecoscribe.hook import HookThread
-from ecoscribe.sendkeys import send_keys
+from ecoscribe.platform.windows.hook import HookThread
+from ecoscribe.platform.windows.sendkeys import send_keys
 
 pytestmark = pytest.mark.win
 R = 0xA3

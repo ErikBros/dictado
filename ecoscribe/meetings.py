@@ -36,58 +36,10 @@ def read_state(data_dir: Path) -> dict:
         return {"meeting": None, "job": None, "queue": []}
 
 
-class _StopEvent:
-    """Local\\EcoscribeMeetingStop, manual reset (the worker opens the same one)."""
-
-    def __init__(self, name: str = STOP_EVENT):
-        import win32event
-        self._ev = win32event
-        self._h = win32event.CreateEvent(None, True, False, name)
-
-    def set(self):
-        self._ev.SetEvent(self._h)
-
-    def reset(self):
-        self._ev.ResetEvent(self._h)
-
-
-class PidProc:
-    """Popen-like handle on a process we did not start (adopted after a restart)."""
-
-    def __init__(self, pid: int, handle):
-        self.pid, self._h = pid, handle
-
-    def poll(self):
-        import ctypes
-        code = ctypes.c_ulong()
-        ctypes.windll.kernel32.GetExitCodeProcess(self._h, ctypes.byref(code))
-        return None if code.value == 259 else int(code.value)  # STILL_ACTIVE
-
-    def kill(self):
-        import ctypes
-        ctypes.windll.kernel32.TerminateProcess(self._h, 1)
-
-    def wait(self, timeout=None):
-        import ctypes
-        ctypes.windll.kernel32.WaitForSingleObject(self._h, 0xFFFFFFFF if timeout is None else int(timeout * 1000))
-        return self.poll()
-
-
-def attach_pid(pid: int):
-    """A PidProc if `pid` is still a Ecoscribe (or dev Python) process, else None: after a
-    reboot the pid in meetings.json may belong to anything."""
-    import ctypes
-    from . import detect
-    if not pid or detect._exe_of_pid(pid) not in ("ecoscribe", "python", "pythonw"):
-        return None
-    h = ctypes.windll.kernel32.OpenProcess(0x100000 | 0x1000 | 0x1, False, pid)  # SYNCHRONIZE|QUERY|TERMINATE
-    return PidProc(pid, h) if h else None
-
-
 if sys.platform == "darwin":  # ecoscribe/platform/macos/procs.py; the worker stops on DIR/stop, no named event
-    from .platform.macos.procs import PidProc, attach_pid  # noqa: F811
+    from .platform.macos.procs import PidProc, attach_pid  # noqa: F401
 
-    class _StopEvent:  # noqa: F811
+    class _StopEvent:
         def __init__(self, name: str = STOP_EVENT):
             pass
 
@@ -96,6 +48,8 @@ if sys.platform == "darwin":  # ecoscribe/platform/macos/procs.py; the worker st
 
         def reset(self):
             pass
+else:  # ecoscribe/platform/windows/procs.py: kernel32 handles, the named stop event
+    from .platform.windows.procs import PidProc, StopEvent as _StopEvent, attach_pid  # noqa: F401
 
 
 def _default_spawn(args):

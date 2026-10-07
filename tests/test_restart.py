@@ -69,7 +69,8 @@ def test_single_instance_becomes_free_after_holder_releases():
         end = time.monotonic() + 2
         while not winutil.single_instance(name) and time.monotonic() < end:
             time.sleep(0.05)
-        assert winutil._mutex is not None, "should own the mutex now"
+        from ecoscribe.platform.windows import sysutil
+        assert sysutil._mutex is not None, "should own the mutex now"
     finally:
         release.set()
         winutil.release_instance()

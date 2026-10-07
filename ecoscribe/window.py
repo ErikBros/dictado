@@ -65,44 +65,16 @@ def pretty_mic(name: str) -> str:
     return m.group(1).strip() if m else (name or "")
 
 
-def _pid_alive(pid) -> bool:
-    import ctypes
-    if not pid:
-        return False
-    k = ctypes.windll.kernel32
-    h = k.OpenProcess(0x1000, False, int(pid))
-    if not h:
-        return False
-    code = ctypes.c_ulong()
-    ok = k.GetExitCodeProcess(h, ctypes.byref(code))
-    k.CloseHandle(h)
-    return bool(ok) and code.value == 259  # STILL_ACTIVE
-
-
-def _mme_input_names() -> list[str]:
-    import sounddevice as sd
-    names = []
-    for d in sd.query_devices():
-        host = sd.query_hostapis(d["hostapi"])["name"]
-        if host == "MME" and d["max_input_channels"] > 0 and "Sound Mapper" not in d["name"]:
-            if d["name"] not in names:
-                names.append(d["name"])
-    return names
-
-
-DEFAULT_MIC_LABEL = "Windows default"
-WEBVIEW_GUI = "edgechromium"
-
-
-def _startfile(path: str) -> None:
-    os.startfile(path)
-
-
 if sys.platform == "darwin":  # ecoscribe/platform/macos/desktop.py + procs.py
-    from .platform.macos.desktop import DEFAULT_MIC_LABEL, WEBVIEW_GUI  # noqa: F811
-    from .platform.macos.desktop import input_names as _mme_input_names  # noqa: F811
-    from .platform.macos.desktop import startfile as _startfile  # noqa: F811
-    from .platform.macos.procs import alive as _pid_alive  # noqa: F811
+    from .platform.macos.desktop import DEFAULT_MIC_LABEL, WEBVIEW_GUI
+    from .platform.macos.desktop import input_names as _mme_input_names
+    from .platform.macos.desktop import startfile as _startfile
+    from .platform.macos.procs import alive as _pid_alive
+else:  # ecoscribe/platform/windows/desktop.py + procs.py
+    from .platform.windows.desktop import DEFAULT_MIC_LABEL, WEBVIEW_GUI
+    from .platform.windows.desktop import input_names as _mme_input_names
+    from .platform.windows.desktop import startfile as _startfile
+    from .platform.windows.procs import alive as _pid_alive
 
 
 def _platform() -> str:

@@ -135,7 +135,7 @@ uia_only = pytest.mark.skipif(sys.platform == "darwin", reason="Windows UI Autom
 def test_every_uia_read_runs_on_one_permanent_thread(monkeypatch):
     """t0u.37: COM objects must never be made, used or freed on different threads."""
     import threading
-    from ecoscribe import context
+    from ecoscribe.platform.windows import context
     seen = []
 
     def fake_read(hwnd, max_elems):
@@ -156,7 +156,7 @@ def test_every_uia_read_runs_on_one_permanent_thread(monkeypatch):
 @uia_only
 @pytest.mark.real_window_texts
 def test_a_failed_read_comes_back_as_an_error_not_a_com_object(monkeypatch):
-    from ecoscribe import context
+    from ecoscribe.platform.windows import context
     monkeypatch.setattr(context, "_read", lambda h, m: 1 / 0)
     with pytest.raises(RuntimeError, match="ZeroDivisionError"):
         context.window_texts(hwnd=1)

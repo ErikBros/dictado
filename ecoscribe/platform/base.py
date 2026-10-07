@@ -18,19 +18,19 @@ PLATFORMS = ("windows", "macos")
 
 CAPABILITIES: dict[str, dict] = {
     "Hotkey (tap / hold / combo, Esc cancel)": {
-        "windows": "ecoscribe.hook:HookThread",
+        "windows": "ecoscribe.platform.windows.hook:HookThread",
         "macos": "ecoscribe.platform.macos.keyhook:HookThread",
     },
     "Language key (dictation key + L picks the next language)": {
-        "windows": "ecoscribe.hook:VK_LANG",
+        "windows": "ecoscribe.platform.windows.hook:VK_LANG",
         "macos": "ecoscribe.platform.macos.keyhook:KC_LANG,HookThread",  # Right Command + L
     },
     "Paste text where the cursor is": {
-        "windows": "ecoscribe.deliver:deliver,set_clipboard_text",
+        "windows": "ecoscribe.platform.windows.deliver:deliver,set_clipboard_text",
         "macos": "ecoscribe.platform.macos.deliver:deliver,set_clipboard_text",
     },
     "Names on your screen": {
-        "windows": "ecoscribe.context:window_texts",
+        "windows": "ecoscribe.platform.windows.context:window_texts",
         "macos": "ecoscribe.platform.macos.context:window_texts",
     },
     "Speech engine on the GPU": {
@@ -38,7 +38,7 @@ CAPABILITIES: dict[str, dict] = {
         "macos": "ecoscribe.platform.macos.mlx_engine:MlxWhisperModel",  # mlx-whisper on Metal
     },
     "Mic list in Settings": {
-        "windows": "ecoscribe.window:_mme_input_names",
+        "windows": "ecoscribe.platform.windows.desktop:input_names",
         "macos": "ecoscribe.platform.macos.desktop:input_names",
     },
     "Unmute the mic only while recording": {
@@ -50,27 +50,27 @@ CAPABILITIES: dict[str, dict] = {
         "macos": "ecoscribe.platform.macos.systap:Loopback",  # Core Audio process tap (ecoscribe-systap helper)
     },
     "Call detection (who uses the mic, call windows)": {
-        "windows": "ecoscribe.detect:read_consent,window_titles,running_apps",
+        "windows": "ecoscribe.platform.windows.detect:read_consent,window_titles,running_apps",
         "macos": "ecoscribe.platform.macos.detect:read_consent,window_titles,running_apps",
     },
     "Tray / menu bar, pill and prompt box": {
-        "windows": "ecoscribe.ui:Tray,Overlay",
+        "windows": "ecoscribe.platform.windows.shell:Tray,Overlay,PromptWindow",
         "macos": "ecoscribe.platform.macos.shell:Tray,Overlay,PromptWindow",
     },
     "Start at login": {
-        "windows": "ecoscribe.startup:enable,disable,is_enabled",
+        "windows": "ecoscribe.platform.windows.startup:enable,disable,is_enabled",
         "macos": "ecoscribe.platform.macos.startup:enable,disable,is_enabled",
     },
     "Single instance": {
-        "windows": "ecoscribe.winutil:single_instance",
+        "windows": "ecoscribe.platform.windows.sysutil:single_instance",
         "macos": "ecoscribe.platform.macos.sysutil:single_instance",
     },
     "Settings saved -> restart signal": {
-        "windows": "ecoscribe.ipc:ReloadWatcher",
+        "windows": "ecoscribe.platform.windows.ipc:ReloadWatcher",
         "macos": "ecoscribe.platform.macos.ipc:ReloadWatcher",
     },
     "Window buttons -> background app (commands)": {
-        "windows": "ecoscribe.commands:Watcher",
+        "windows": "ecoscribe.platform.windows.commands:Watcher",
         "macos": "ecoscribe.platform.macos.commands:Watcher",
     },
     "Watchdog: watch, restart, kill a frozen app": {
@@ -78,7 +78,7 @@ CAPABILITIES: dict[str, dict] = {
         "macos": "ecoscribe.supervise:MacProc",
     },
     "A frozen app can't lag the computer's input": {
-        "windows": "ecoscribe.hook:HookClient",  # hooks in their own process
+        "windows": "ecoscribe.platform.windows.hook:HookClient",  # hooks in their own process
         "macos": ("not_needed", "macOS times out a stuck event tap by itself and Ecoscribe re-enables it"),
     },
     "Speakers + Remember voices (add-on)": {
@@ -86,7 +86,7 @@ CAPABILITIES: dict[str, dict] = {
         "macos": "ecoscribe.platform.macos.speakers:addon_exe",  # Ecoscribe Speakers.app (the old Dictado Speakers.app still found), pyannote on MPS
     },
     "Claude app connection (MCP)": {
-        "windows": "ecoscribe.claude_link:config_files,connect",
+        "windows": "ecoscribe.platform.windows.claude_link:config_files",
         "macos": "ecoscribe.platform.macos.claude_link:config_files",  # connect() is shared
     },
     "Installer": {

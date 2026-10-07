@@ -155,7 +155,7 @@ def _start_meetings(cfg, data, ui, root, log):
     if sys.platform == "darwin":
         from .platform.macos.shell import PromptWindow
     else:
-        from .ui import PromptWindow
+        from .platform.windows.shell import PromptWindow
     try:
         ctl = Controller(data, cfg)
     except Exception:
@@ -205,7 +205,7 @@ def main(argv=None) -> int:
         renamed = [("dictado folders", "", f"error: {e}")]
     raw = sys.argv[1:] if argv is None else argv
     if raw[:1] == ["--hook"]:  # the hooks' own small process (t0u.37): nothing else loads
-        from .hook import hook_process_main
+        from .platform.windows.hook import hook_process_main
         winutil.hard_exit(hook_process_main(raw[1:]))
     args = parse(sys.argv[1:] if argv is None else argv)
     if args.transcribe:  # worker process: no mutex, no hook/tray/tk
@@ -299,8 +299,9 @@ def main(argv=None) -> int:
     else:
         import tkinter as tk
 
-        from .hook import HookThread
-        from .ui import Overlay, Sounds, Tray
+        from .platform.windows.hook import HookThread
+        from .platform.windows.shell import Overlay, Tray
+        from .ui import Sounds
 
     try:
         cfg = config_mod.load(Path(args.config) if args.config else paths.config_path())
@@ -415,7 +416,7 @@ def main(argv=None) -> int:
     use_proc = cfg.limits.hook_process and sys.platform != "darwin"  # test instances too: run_e2e exercises the real path
     hook_cls, hook_kw = HookThread, {}
     if use_proc:
-        from .hook import HookClient, spawn_hook_process
+        from .platform.windows.hook import HookClient, spawn_hook_process
         hook_cls, hook_kw = HookClient, {"spawn": spawn_hook_process}
     hook = hook_cls(app.on_action, cfg.hotkey.vk, cfg.hotkey.max_tap_s, **hook_kw,
                       combo=ComboMatcher(cfg.hotkey.key) if combo_vks(cfg.hotkey.key) else None,

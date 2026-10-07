@@ -98,7 +98,7 @@ windows_only = pytest.mark.skipif(sys.platform != "win32", reason="the Windows k
 
 @windows_only
 def test_hook_swallows_L_only_with_the_dictation_key_held():
-    from ecoscribe.hook import VK_LANG, HookThread
+    from ecoscribe.platform.windows.hook import VK_LANG, HookThread
     events = []
     h = HookThread(lambda a: None, RCTRL, 0.3, emit=events.append, consume=False)
     assert not h.lang_key(VK_LANG, True)  # a normal L: typed as usual
@@ -112,7 +112,7 @@ def test_hook_swallows_L_only_with_the_dictation_key_held():
 
 @windows_only
 def test_combo_hotkeys_keep_L():
-    from ecoscribe.hook import VK_LANG, HookThread
+    from ecoscribe.platform.windows.hook import VK_LANG, HookThread
     from ecoscribe.hotkeys import ComboMatcher
     h = HookThread(lambda a: None, RCTRL, 0.3, emit=lambda e: None, consume=False, combo=ComboMatcher("ctrl+shift+d"))
     h._toggle_down = True
