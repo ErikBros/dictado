@@ -272,7 +272,7 @@ def scenario_added(r: Run) -> dict:
 
 
 LIVE_SAID = ("I would like to schedule the climbing session for Thursday evening, and please remind me to bring "
-             "the new shoes and the chalk bag, and also ask Sophie if she wants to come along after lunch.")
+             "the new shoes and the chalk bag, and also check whether the wall is open on Sunday.")
 
 
 def scenario_live(r: Run) -> dict:
