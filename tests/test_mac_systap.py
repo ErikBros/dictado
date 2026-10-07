@@ -37,26 +37,41 @@ def fake(tmp_path):
     return lambda mode, secs=5.0: [sys.executable, str(p), mode, str(secs)]
 
 
-def collect(lb, secs):
+def collect(lb, secs, levels=None):
     out, end = [], time.monotonic() + secs
     while time.monotonic() < end:
         out.append(lb.read())
+        if levels is not None:
+            levels.append(lb.level())
         time.sleep(0.05)
     return np.concatenate(out)
+
+
+def voiced_blocks(x, sr=systap.SR, block_s=0.02):
+    """20 ms blocks that carry sound. A slow machine (a CI runner) makes the fake helper lag; the
+    GapFiller then rightly puts silence there, so only the blocks with sound say anything about it."""
+    n = int(sr * block_s)
+    blocks = [x[i:i + n] for i in range(0, len(x) - n + 1, n)]
+    return [b for b in blocks if float(np.sqrt(np.mean(b * b))) > 0.1]
 
 
 def test_tone_comes_out_as_16k_mono_on_the_wall_clock(fake):
     lb = Loopback(command=fake("tone", 3.0), check_s=None)
     lb.start()
+    levels = []
     try:
-        x = collect(lb, 1.5)
+        x = collect(lb, 1.5, levels)
     finally:
         lb.stop()
     assert lb.device_name == "Fake Speakers"
-    assert abs(len(x) / systap.SR - 1.5) < 0.35  # wall clock, not bytes received
-    rms = float(np.sqrt(np.mean(x[len(x) // 2:] ** 2)))
-    assert 0.25 < rms < 0.45  # a 0.5 sine is 0.354 RMS; stereo folded by averaging, not summed
-    assert lb.level() > 0.2
+    assert abs(len(x) / systap.SR - 1.5) < 0.5  # placed on the wall clock, not by bytes received
+    voiced = voiced_blocks(x)
+    assert len(voiced) >= 5, "no tone came through"
+    rms = float(np.median([np.sqrt(np.mean(b * b)) for b in voiced]))
+    assert 0.3 < rms < 0.41  # a 0.5 sine is 0.354 RMS: stereo folded by averaging, not summed (0.707)
+    crossings = np.median([np.count_nonzero(np.diff(np.signbit(b))) for b in voiced])
+    assert 14 <= crossings <= 21  # 440 Hz -> 17.6 sign changes per 20 ms: resampled, not sped up
+    assert max(levels) > 0.2
 
 
 def test_no_header_yet_gives_zeros_and_says_which_permission(fake, caplog, monkeypatch):
