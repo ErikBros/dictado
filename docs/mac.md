@@ -16,16 +16,16 @@
 ## 2. Install
 
 1. Download **`Ecoscribe-<version>.dmg`** from [Releases](https://github.com/ErikBros/ecoscribe/releases/latest), open it and drag **Ecoscribe** to **Applications**.
-2. Open Ecoscribe from Applications. The app isn't signed with a paid Apple Developer ID yet, so the first time macOS says it can't check it. Open **System Settings > Privacy & Security**, scroll down and click **Open Anyway** next to Ecoscribe, then confirm. You only do this once.
-3. Ecoscribe asks for permissions. Allow each one in System Settings > Privacy & Security; the window's Home page says which one is still missing and opens the right pane:
-   - **Microphone**: to hear you.
-   - **Accessibility** and **Input Monitoring**: for the Right Command key and to paste the text.
-   - **Screen & System Audio Recording**: only for meetings (the other side of the call).
+2. Open Ecoscribe from Applications. It isn't signed with a paid Apple Developer ID yet, so the first time macOS says it can't check it: click **Done** (on macOS 15, right-click > Open no longer gets past this). Then open **System Settings > Privacy & Security**, scroll down to **Security** and click **Open Anyway** next to Ecoscribe, enter your password, and click **Open Anyway** once more. Once per version: each new download is checked again until Ecoscribe has a Developer ID.
+3. Allow the permissions in System Settings > Privacy & Security. Ecoscribe's window says which one is still missing:
+   - **Accessibility** and **Input Monitoring**: for the Right Command key and to paste the text. After allowing them, quit Ecoscribe from its menu bar icon and open it again (macOS only hands a key watcher to an app when it starts; Ecoscribe flashes a reminder).
+   - **Microphone**: macOS asks at your first dictation. Click Allow; that first dictation may come out empty, the next ones work.
+   - **Screen & System Audio Recording**: macOS asks at your first meeting (the other side of the call). Not needed for dictation.
 4. The first dictation downloads the speech model (a few minutes); the window shows the progress.
 
 **Open at login:** the switch in Settings.
 
-**Updating:** drag the new Ecoscribe over the old one in Applications. Your settings, history and transcripts stay, and so do the permissions.
+**Updating:** quit Ecoscribe, drag the new one over the old one in Applications, then Open Anyway once more (step 2). Your settings, history and transcripts stay, and so do the permissions (same signing certificate).
 
 ## 3. Where your files are
 
@@ -34,6 +34,6 @@
 | Settings, history, transcripts, crash reports | `~/Library/Application Support/Ecoscribe` |
 | Speaker add-on (optional) | `Ecoscribe Speakers.app` in Applications |
 
-## 4. Not on the Mac yet
+## 4. Same as Windows
 
-Windows has a few things the Mac doesn't yet; each has a ticket and shows in [FEATURES.md](../FEATURES.md): the numpad's Enter as a second dictation key, and keeping a dictation on the clipboard when there's no text box under the cursor.
+Everything in [FEATURES.md](../FEATURES.md) works on the Mac too; the table there says how each piece is done on each system.
