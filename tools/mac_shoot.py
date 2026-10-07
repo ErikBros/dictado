@@ -25,7 +25,7 @@ def shoot(page: str, extra: str = "") -> Path:
                                                                         NSBackingStoreBuffered, False)
     web = WKWebView.alloc().initWithFrame_configuration_(NSMakeRect(0, 0, 980, 720), WKWebViewConfiguration.alloc().init())
     win.setContentView_(web)
-    index = APP / "dictado" / "web" / "index.html"
+    index = APP / "ecoscribe" / "web" / "index.html"
     url = NSURL.URLWithString_(f"{index.as_uri()}?demo=1&mac=1&page={page}{extra}")
     web.loadFileURL_allowingReadAccessToURL_(url, NSURL.fileURLWithPath_(str(index.parent)))
     spin(2.5)

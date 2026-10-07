@@ -20,7 +20,7 @@ user32 = ctypes.windll.user32
 class Target:
     def __init__(self, title: str, x: int = 200, y: int = 200):
         self.title = title
-        self.out = Path(tempfile.mkdtemp(prefix="dictado-")) / f"{title}.json"
+        self.out = Path(tempfile.mkdtemp(prefix="ecoscribe-")) / f"{title}.json"
         self.proc = subprocess.Popen([sys.executable, str(HERE / "targets.py"), "--title", title,
                                       "--out", str(self.out), "--x", str(x), "--y", str(y)])
         self.hwnd = 0

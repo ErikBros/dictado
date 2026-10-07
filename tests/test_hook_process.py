@@ -4,8 +4,8 @@ import queue
 import threading
 import time
 
-from dictado import hook as hookmod
-from dictado.hook import HookClient
+from ecoscribe import hook as hookmod
+from ecoscribe.hook import HookClient
 
 RCTRL = 0xA3
 

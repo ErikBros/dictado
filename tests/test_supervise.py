@@ -1,8 +1,8 @@
 """The watchdog (t0u.37) with a fake process table."""
 import json
 
-from dictado import crash
-from dictado.supervise import Supervisor
+from ecoscribe import crash
+from ecoscribe.supervise import Supervisor
 
 
 class Procs:
@@ -27,8 +27,8 @@ def setup(tmp_path, pid=100, state="ready"):
     data = tmp_path / "data"
     data.mkdir()
     (data / "status.json").write_text(json.dumps({"pid": pid, "state": state}))
-    log = data / "dictado.log"
-    log.write_text("INFO dictado.app: recording started\n")
+    log = data / "ecoscribe.log"
+    log.write_text("INFO ecoscribe.app: recording started\n")
     procs, spawned, t = Procs(), [], [1000.0]
     procs.live.add(pid)
     sup = Supervisor(data, spawn=spawned.append, proc=procs, log_path=log, version="1.4.1", clock=lambda: t[0])
@@ -131,7 +131,7 @@ def test_mac_crash_with_a_native_trace_is_a_crash(tmp_path):
     fp = crash.fault_path(data, 100)
     fp.parent.mkdir(parents=True, exist_ok=True)
     fp.write_text('Fatal Python error: Segmentation fault\n\nCurrent thread 0x1 (most recent call first):\n'
-                  '  File "/x/dictado/engine.py", line 42 in run\n')
+                  '  File "/x/ecoscribe/engine.py", line 42 in run\n')
     procs.live.discard(100)
     assert sup.step() == "ok"
     [rep] = crash.reports(data)
@@ -142,7 +142,7 @@ def test_mac_crash_with_a_native_trace_is_a_crash(tmp_path):
 
 def test_mac_unhandled_error_in_the_log_is_a_crash(tmp_path):
     sup, procs, spawned, data, _ = mac_setup(tmp_path)
-    (data / "dictado.log").write_text("CRITICAL dictado.crash: unhandled error\nTraceback ...\n")
+    (data / "ecoscribe.log").write_text("CRITICAL ecoscribe.crash: unhandled error\nTraceback ...\n")
     procs.live.discard(100)
     assert sup.step() == "ok" and len(crash.reports(data)) == 1
 
@@ -238,7 +238,7 @@ def test_winproc_kill_ends_a_real_process():
     import pytest
     if sys.platform != "win32":
         pytest.skip("Windows process handles")
-    from dictado.supervise import WinProc
+    from ecoscribe.supervise import WinProc
     p = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(60)"])
     wp = WinProc()
     h = wp.open(p.pid)

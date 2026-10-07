@@ -2,7 +2,7 @@
 
     python tools/record_meeting.py --lang sv [--minutes 10] [--title "Reunión"]
 
-Starts `dictado --meeting` on a new session folder, prints the live transcript as
+Starts `ecoscribe --meeting` on a new session folder, prints the live transcript as
 it arrives, and stops after --minutes or on Ctrl+C (writes the stop file, so the
 worker finishes the FLACs and runs the final pass). Prints where everything is.
 """
@@ -18,7 +18,7 @@ from pathlib import Path
 APP = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(APP))
 
-from dictado import config, paths, sessions  # noqa: E402
+from ecoscribe import config, paths, sessions  # noqa: E402
 
 
 def main(argv=None) -> int:
@@ -30,7 +30,7 @@ def main(argv=None) -> int:
     cfg = config.load(paths.config_path()).transcribe
     d = sessions.create(a.title, a.lang, "meeting", sessions.root_dir(cfg.root))
     print(f"Sesión: {d}")
-    p = subprocess.Popen([sys.executable, "-m", "dictado", "--meeting", str(d)], cwd=str(APP))
+    p = subprocess.Popen([sys.executable, "-m", "ecoscribe", "--meeting", str(d)], cwd=str(APP))
     live, seen, t0 = d / "live.jsonl", 0, time.monotonic()
     try:
         while p.poll() is None:

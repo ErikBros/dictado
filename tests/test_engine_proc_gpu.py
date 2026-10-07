@@ -6,17 +6,17 @@ from pathlib import Path
 
 import pytest
 
-from dictado.audio import read_wav
-from dictado.config import TextCfg, WhisperCfg
-from dictado.engine_proc import EngineProxy
+from ecoscribe.audio import read_wav
+from ecoscribe.config import TextCfg, WhisperCfg
+from ecoscribe.engine_proc import EngineProxy
 
 pytestmark = pytest.mark.gpu
 FIX = Path(__file__).parent / "fixtures"
 
 
 def _worker_mem_mb() -> int:
-    """macOS: unified memory, so "VRAM" is the Dictado worker processes' own footprint (MB)."""
-    out = subprocess.run(["pgrep", "-f", "dictado --(engine-worker|transcribe|meeting)"], capture_output=True, text=True).stdout
+    """macOS: unified memory, so "VRAM" is the Ecoscribe worker processes' own footprint (MB)."""
+    out = subprocess.run(["pgrep", "-f", "ecoscribe --(engine-worker|transcribe|meeting)"], capture_output=True, text=True).stdout
     total = 0
     for pid in out.split():
         fp = subprocess.run(["footprint", "-p", pid], capture_output=True, text=True).stdout

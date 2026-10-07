@@ -1,4 +1,4 @@
-"""Install / uninstall / reinstall checks for Dictado-Setup-*.exe (Windows Python).
+"""Install / uninstall / reinstall checks for Ecoscribe-Setup-*.exe (Windows Python).
 
     python install_check.py <setup.exe> [--keep-installed]
 
@@ -20,10 +20,10 @@ sys.path.insert(0, str(HERE.parent.parent))
 from tests.idle import wait_idle  # noqa: E402
 
 LOCAL = Path(os.environ["LOCALAPPDATA"])
-APPDIR = LOCAL / "Programs" / "Dictado"
-EXE = APPDIR / "Dictado.exe"
-DATA = LOCAL / "dictado"
-STARTMENU = Path(os.environ["APPDATA"]) / "Microsoft" / "Windows" / "Start Menu" / "Programs" / "Dictado.lnk"
+APPDIR = LOCAL / "Programs" / "Ecoscribe"
+EXE = APPDIR / "Ecoscribe.exe"
+DATA = LOCAL / "ecoscribe"
+STARTMENU = Path(os.environ["APPDATA"]) / "Microsoft" / "Windows" / "Start Menu" / "Programs" / "Ecoscribe.lnk"
 OLD_LNK = Path(os.environ["APPDATA"]) / "Microsoft" / "Windows" / "Start Menu" / "Programs" / "Startup" / "Dictado.lnk"
 RUN = r"Software\Microsoft\Windows\CurrentVersion\Run"
 UNINST = r"Software\Microsoft\Windows\CurrentVersion\Uninstall\{7C1B3F2E-5D4A-4E8B-9A61-D1C7A0D1C7A0}_is1"
@@ -45,7 +45,7 @@ def reg(path, name):
         return None
 
 
-def procs(image="Dictado.exe") -> list[str]:
+def procs(image="Ecoscribe.exe") -> list[str]:
     out = subprocess.run(["tasklist", "/FI", f"IMAGENAME eq {image}", "/FO", "CSV", "/NH"],
                          capture_output=True, text=True).stdout
     return [l for l in out.splitlines() if image.lower() in l.lower()]
@@ -70,7 +70,8 @@ def wait_ready(after_ts: float, timeout=120) -> dict:
 
 def install(setup: str) -> None:
     t0 = time.time()
-    r = subprocess.run([setup, "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/TASKS=startup", "/LOG=" + str(DATA / "install.log")],
+    r = subprocess.run([setup, "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/TASKS=startup",
+                        "/LOG=" + str(Path(os.environ["TEMP"]) / "ecoscribe-install.log")],
                        timeout=900)
     check("installer exit code 0", r.returncode == 0, str(r.returncode))
     print(f"     install took {time.time() - t0:.0f} s", flush=True)
@@ -86,16 +87,21 @@ def uninstall() -> None:
 def installed_state_checks(t_install: float) -> None:
     check("exe installed", EXE.exists(), str(EXE))
     check("CUDA DLLs installed", (APPDIR / "_internal" / "nvidia" / "cublas" / "bin" / "cublasLt64_12.dll").exists())
-    check("web UI installed", (APPDIR / "_internal" / "dictado" / "web" / "index.html").exists())
+    check("web UI installed", (APPDIR / "_internal" / "ecoscribe" / "web" / "index.html").exists())
     check("Start menu shortcut", STARTMENU.exists(), str(STARTMENU))
-    check("Run key points at the installed exe", (reg(RUN, "Dictado") or "").strip('"').lower() == str(EXE).lower(),
-          str(reg(RUN, "Dictado")))
-    check("Apps & Features entry", reg(UNINST, "DisplayName") == "Dictado", str(reg(UNINST, "DisplayName")))
+    check("Run key points at the installed exe", (reg(RUN, "Ecoscribe") or "").strip('"').lower() == str(EXE).lower(),
+          str(reg(RUN, "Ecoscribe")))
+    check("Apps & Features entry", reg(UNINST, "DisplayName") == "Ecoscribe", str(reg(UNINST, "DisplayName")))
     check("Apps & Features icon", (reg(UNINST, "DisplayIcon") or "").lower().startswith(str(EXE).lower()))
     check("old script Startup shortcut gone", not OLD_LNK.exists())
+    check("Dictado install folder gone (dictado-c9u)", not (LOCAL / "Programs" / "Dictado").exists())
+    check("old Run value gone", reg(RUN, "Dictado") is None)
+    check("old Start menu shortcut gone", not STARTMENU.with_name("Dictado.lnk").exists())
     s = wait_ready(t_install)
     check("app launched after install and is ready on CUDA", s.get("state") == "ready" and s.get("device") == "cuda", json.dumps(s))
-    check("exactly one Dictado.exe running", len(procs()) == 1, str(procs()))
+    check("exactly one Ecoscribe.exe running", len(procs()) == 1, str(procs()))
+    check("Dictado data moved to the Ecoscribe folder", not (LOCAL / "dictado").exists() and (DATA / "history.jsonl").exists())
+    check("Dictado config moved too", not (Path(os.environ["APPDATA"]) / "dictado").exists())
 
 
 def selftest_installed() -> None:
@@ -120,7 +126,7 @@ def second_launch_opens_window_not_engine() -> None:
     hwnd = 0
     end = time.time() + 20
     while time.time() < end and not hwnd:
-        hwnd = win32gui.FindWindow(None, "Dictado")
+        hwnd = win32gui.FindWindow(None, "Ecoscribe")
         time.sleep(0.3)
     check("second launch opens the window", bool(hwnd))
     time.sleep(3)
@@ -131,7 +137,7 @@ def second_launch_opens_window_not_engine() -> None:
     subprocess.Popen([str(EXE), "--ui"])
     time.sleep(4)
     n = []
-    win32gui.EnumWindows(lambda h, _: (n.append(h) if win32gui.GetWindowText(h) == "Dictado" and win32gui.IsWindowVisible(h) else None) or True, None)
+    win32gui.EnumWindows(lambda h, _: (n.append(h) if win32gui.GetWindowText(h) == "Ecoscribe" and win32gui.IsWindowVisible(h) else None) or True, None)
     check("opening again focuses the same window (one window)", len(n) == 1, str(n))
     if hwnd:
         win32gui.PostMessage(hwnd, win32con.WM_CLOSE, 0, 0)
@@ -164,9 +170,9 @@ def capture(hwnd, path) -> None:
 def uninstalled_checks() -> None:
     check("app folder removed", not APPDIR.exists())
     check("Start menu shortcut removed", not STARTMENU.exists())
-    check("Run key removed", reg(RUN, "Dictado") is None)
+    check("Run key removed", reg(RUN, "Ecoscribe") is None)
     check("Apps & Features entry removed", reg(UNINST, "DisplayName") is None)
-    check("no Dictado.exe running", len(procs()) == 0, str(procs()))
+    check("no Ecoscribe.exe running", len(procs()) == 0, str(procs()))
     check("history kept", (DATA / "history.jsonl").exists())
 
 

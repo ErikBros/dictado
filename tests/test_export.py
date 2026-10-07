@@ -1,7 +1,7 @@
 import json
 import re
 
-from dictado import export
+from ecoscribe import export
 
 META = {"title": "Planering", "lang": "sv", "created": "2026-10-02T14:05:00", "duration_s": 3725.0,
         "source": "meeting", "app": "msteams"}

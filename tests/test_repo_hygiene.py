@@ -35,4 +35,4 @@ def test_signing_folder_is_ignored():
 def test_the_pattern_catches_what_build_mac_makes():
     for p in (".signing/identity.p12", ".signing/dictado-signing.keychain-db", ".signing/cert.pem", "x/.signing/a"):
         assert SECRET.search(p), p
-    assert not SECRET.search("dictado/platform/macos/systap.swift")
+    assert not SECRET.search("ecoscribe/platform/macos/systap.swift")

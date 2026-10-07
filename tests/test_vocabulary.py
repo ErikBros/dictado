@@ -7,14 +7,14 @@ from types import SimpleNamespace
 
 import numpy as np
 
-from dictado.config import TextCfg, WhisperCfg
-from dictado.engine import Engine
-from dictado.text import vocab_prompt
+from ecoscribe.config import TextCfg, WhisperCfg
+from ecoscribe.engine import Engine
+from ecoscribe.text import vocab_prompt
 
 
 def test_prompt_from_the_word_list():
     assert vocab_prompt([]) is None and vocab_prompt(["  ", ""]) is None
-    assert vocab_prompt(["Dictado", " pyannote ", "Dictado", "Göteborg"]) == "Dictado, pyannote, Göteborg."
+    assert vocab_prompt(["Ecoscribe", " pyannote ", "Ecoscribe", "Göteborg"]) == "Ecoscribe, pyannote, Göteborg."
     long = vocab_prompt([f"word{i:03d}" for i in range(200)])
     assert len(long) <= 400  # Whisper's prompt window is small: the first words win
 
@@ -39,14 +39,14 @@ def dictate(words):
 
 
 def test_dictation_passes_the_vocabulary_as_the_prompt():
-    assert dictate(["Dictado", "Kristineberg"])["initial_prompt"] == "Dictado, Kristineberg."
+    assert dictate(["Ecoscribe", "Kristineberg"])["initial_prompt"] == "Ecoscribe, Kristineberg."
     assert dictate([]).get("initial_prompt") is None  # empty list: exactly today's call
 
 
 def test_files_and_meetings_get_the_prompt(tmp_path):
     from pathlib import Path
-    from dictado import sessions, transcribe
-    from dictado.config import TranscribeCfg
+    from ecoscribe import sessions, transcribe
+    from ecoscribe.config import TranscribeCfg
     seen = []
 
     class M:
@@ -56,12 +56,12 @@ def test_files_and_meetings_get_the_prompt(tmp_path):
     d = sessions.create("x", "sv", "import", tmp_path / "t")
     (d / "audio" / "a.flac").write_bytes(b"x")
     rc = transcribe.run(d, TranscribeCfg(), factory=lambda *a: M(), resolve=lambda n, c: Path("M:/") / n,
-                        decode=lambda p: np.zeros(16000, np.float32), prompt="Dictado, Göteborg.")
-    assert rc == 0 and seen == ["Dictado, Göteborg."]
+                        decode=lambda p: np.zeros(16000, np.float32), prompt="Ecoscribe, Göteborg.")
+    assert rc == 0 and seen == ["Ecoscribe, Göteborg."]
 
 
 def test_vocabulary_setting_round_trips(tmp_path):
-    from dictado.window import Api
+    from ecoscribe.window import Api
     api = Api(data_dir=tmp_path, config_path=tmp_path / "config.toml", signal_reload=lambda: True)
-    assert api.save_settings({"vocabulary": "Dictado\n  pyannote \n\nGöteborg\nDictado"})["ok"]
-    assert api.get_settings()["values"]["vocabulary"] == "Dictado\npyannote\nGöteborg"
+    assert api.save_settings({"vocabulary": "Ecoscribe\n  pyannote \n\nGöteborg\nEcoscribe"})["ok"]
+    assert api.get_settings()["values"]["vocabulary"] == "Ecoscribe\npyannote\nGöteborg"

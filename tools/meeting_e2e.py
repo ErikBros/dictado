@@ -15,9 +15,9 @@ from pathlib import Path
 APP = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(APP))
 
-from dictado import commands, meetings, paths, sessions  # noqa: E402
+from ecoscribe import commands, meetings, paths, sessions  # noqa: E402
 
-CLIP = APP.parent.parent / "dictado-transcription" / "spike" / "sv_real" / "ssp324" / "ssp324_first300s.flac"
+CLIP = APP.parent.parent / "ecoscribe-transcription" / "spike" / "sv_real" / "ssp324" / "ssp324_first300s.flac"
 
 
 def main(argv=None) -> int:

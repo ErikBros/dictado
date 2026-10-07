@@ -1,4 +1,4 @@
-from dictado.detect import Detector, MicUse, app_from_nonpackaged, app_from_packaged, uses_from_entries
+from ecoscribe.detect import Detector, MicUse, app_from_nonpackaged, app_from_packaged, uses_from_entries
 
 
 def use(app, on=True):
@@ -24,7 +24,7 @@ def test_call_app_starts_meeting():
 
 def test_browser_without_second_signal_ignored():
     d = Detector(debounce_polls=1)
-    frames = [([use("chrome")], ["Inbox - Gmail", "Dictado"])] * 900  # 30 min at 2 s
+    frames = [([use("chrome")], ["Inbox - Gmail", "Ecoscribe"])] * 900  # 30 min at 2 s
     assert run(d, frames) == []
 
 
@@ -37,7 +37,7 @@ def test_browser_with_meet_title_starts():
 
 def test_own_process_excluded():
     d = Detector(debounce_polls=1)
-    frames = [([use("dictado"), use("pythonw")], ["Microsoft Teams"])] * 50
+    frames = [([use("ecoscribe"), use("pythonw")], ["Microsoft Teams"])] * 50
     assert run(d, frames) == []
 
 

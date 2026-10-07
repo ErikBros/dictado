@@ -4,9 +4,9 @@ import sys
 
 import pytest
 
-from dictado import crash
-from dictado.supervise import Supervisor
-from dictado.window import Api
+from ecoscribe import crash
+from ecoscribe.supervise import Supervisor
+from ecoscribe.window import Api
 
 
 class MacProcs:
@@ -34,14 +34,14 @@ def mac_crash(tmp_path):
     data = tmp_path / "data"
     data.mkdir()
     (data / "status.json").write_text(json.dumps({"pid": 100, "state": "ready"}))
-    (data / "dictado.log").write_text("INFO dictado: ready\n")
+    (data / "ecoscribe.log").write_text("INFO ecoscribe: ready\n")
     (data / "stderr.log").write_text("libc++abi: terminating due to uncaught exception of type std::runtime_error\n")
     fp = crash.fault_path(data, 100)
     fp.parent.mkdir(parents=True)
     fp.write_text('Fatal Python error: Segmentation fault\n\nCurrent thread 0x1 (most recent call first):\n'
-                  '  File "/x/dictado/platform/macos/mlx_engine.py", line 77 in on_mlx\n')
+                  '  File "/x/ecoscribe/platform/macos/mlx_engine.py", line 77 in on_mlx\n')
     procs, spawned = MacProcs({100}), []
-    sup = Supervisor(data, spawn=spawned.append, proc=procs, log_path=data / "dictado.log", version="1.4.3")
+    sup = Supervisor(data, spawn=spawned.append, proc=procs, log_path=data / "ecoscribe.log", version="1.4.3")
     assert sup.step() == "ok"
     procs.live.discard(100)
     assert sup.step() == "ok" and spawned  # reported and restarted
@@ -69,7 +69,7 @@ def test_debug_info_names_the_platform_and_has_the_crash(mac_crash):
 
 
 def test_open_logs_folder_uses_the_platform_opener(mac_crash, monkeypatch):
-    from dictado import window
+    from ecoscribe import window
     api, data, _ = mac_crash
     opened = []
     monkeypatch.setattr(window, "_startfile", opened.append)

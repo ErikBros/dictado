@@ -1,6 +1,6 @@
 """t0u.27 test first: does putting on-screen names in the dictation prompt help or hurt?
 
-Real read speech with names (FLEURS en test, one clip per sentence, C:\\Temp\\dictado-ctx\\en).
+Real read speech with names (FLEURS en test, one clip per sentence, C:\\Temp\\ecoscribe-ctx\\en).
 Each clip is dictated three ways with the dictation model and settings:
   base     no prompt (today)
   window   names from a simulated window holding this sentence plus 4 other sentences
@@ -8,7 +8,7 @@ Each clip is dictated three ways with the dictation model and settings:
   distract names from a window with 5 other sentences only (names on screen you never say)
 Reports WER, the share of the clip's names spelled exactly, and transcription time.
 
-    python tools/context_bench.py [--dir C:\\Temp\\dictado-ctx\\en] [--n 220] [--out OUT.json]
+    python tools/context_bench.py [--dir C:\\Temp\\ecoscribe-ctx\\en] [--n 220] [--out OUT.json]
 """
 from __future__ import annotations
 
@@ -28,17 +28,17 @@ SR = 16000
 
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--dir", type=Path, default=Path(r"C:\Temp\dictado-ctx\en"))
+    ap.add_argument("--dir", type=Path, default=Path(r"C:\Temp\ecoscribe-ctx\en"))
     ap.add_argument("--n", type=int, default=220)
     ap.add_argument("--model", default="large-v3-turbo")
     ap.add_argument("--lang", default="en")
     ap.add_argument("--out", type=Path)
     a = ap.parse_args(argv)
-    from dictado import winutil
-    from dictado.context import names_from_text
-    from dictado.models import ensure_local
-    from dictado.text import vocab_prompt
-    from dictado.wer import wer
+    from ecoscribe import winutil
+    from ecoscribe.context import names_from_text
+    from ecoscribe.models import ensure_local
+    from ecoscribe.text import vocab_prompt
+    from ecoscribe.wer import wer
     winutil.add_cuda_dll_dirs()
     from faster_whisper import WhisperModel, decode_audio
     m = WhisperModel(str(ensure_local(a.model)), device="cuda", compute_type="float16", local_files_only=True)

@@ -1,7 +1,7 @@
 """Build a long test recording (default 60 min) for the worker's long-file test.
 
 Loops the three meeting fixtures with 2-8 s random silences until N minutes and
-writes 16 kHz mono wav. Not committed: lands in %LOCALAPPDATA%\\dictado\\bench\\.
+writes 16 kHz mono wav. Not committed: lands in %LOCALAPPDATA%\\ecoscribe\\bench\\.
 
     python tools/make_long.py --minutes 60 [--out PATH]
 """
@@ -22,7 +22,7 @@ SR = 16000
 
 
 def default_out() -> Path:
-    from dictado import paths
+    from ecoscribe import paths
     return paths.data_dir() / "bench" / "long_60min.wav"
 
 

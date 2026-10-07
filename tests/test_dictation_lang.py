@@ -1,6 +1,6 @@
 """Swedish dictation (t0u.24): sv routes to large-v3, one active language, settings + tray switch."""
-from dictado.config import TextCfg, WhisperCfg
-from dictado.engine import Engine, dictation_model
+from ecoscribe.config import TextCfg, WhisperCfg
+from ecoscribe.engine import Engine, dictation_model
 from tests.test_engine_recovery import FakeModel
 
 
@@ -33,8 +33,8 @@ def test_dictation_model_names_what_the_status_shows():
 
 
 def test_tray_switch_saves_the_language(tmp_path):
-    from dictado import config
-    from dictado.window import save_dictation_languages
+    from ecoscribe import config
+    from ecoscribe.window import save_dictation_languages
     path = tmp_path / "config.toml"
     assert save_dictation_languages(path, "sv") == ["sv"]
     assert config.load(path).whisper.languages == ["sv"]

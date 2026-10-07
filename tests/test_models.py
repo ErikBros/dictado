@@ -2,7 +2,7 @@ import pytest
 import os
 from pathlib import Path
 
-from dictado import models
+from ecoscribe import models
 
 
 def make_src(tmp_path):
@@ -128,14 +128,14 @@ def test_hf_progress_counts_blobs(tmp_path):
 
 
 def test_models_root_puts_cache_and_mirror_on_root(tmp_path):
-    from dictado.config import TranscribeCfg
+    from ecoscribe.config import TranscribeCfg
     src = make_src(tmp_path)
     seen = {}
 
     def dl(name, cache_dir=None):
         seen["cache_dir"] = cache_dir
         return str(src)
-    root = tmp_path / "E" / "dictado-models"
+    root = tmp_path / "E" / "ecoscribe-models"
     # a repo id that is never in the default dir (KB-Whisper may be, on the user's PC)
     out = models.for_transcribe("Test/never-local", TranscribeCfg(models_root=str(root)), download=dl)
     assert out == root / "Test--never-local"
@@ -143,31 +143,31 @@ def test_models_root_puts_cache_and_mirror_on_root(tmp_path):
 
 
 def test_empty_models_root_uses_default_dir(tmp_path, monkeypatch):
-    from dictado.config import TranscribeCfg
+    from ecoscribe.config import TranscribeCfg
     monkeypatch.setenv("LOCALAPPDATA", str(tmp_path / "lad"))
-    monkeypatch.setenv("DICTADO_DATA_DIR", str(tmp_path / "lad" / "dictado"))  # macOS data dir
+    monkeypatch.setenv("ECOSCRIBE_DATA_DIR", str(tmp_path / "lad" / "ecoscribe"))  # macOS data dir
     src = make_src(tmp_path)
     calls = []
     out = models.for_transcribe("m", TranscribeCfg(), download=lambda n: calls.append(n) or str(src))
-    assert out == tmp_path / "lad" / "dictado" / "models" / "m"
+    assert out == tmp_path / "lad" / "ecoscribe" / "models" / "m"
     assert calls == ["m"]  # no cache_dir passed: the default HF cache
 
 
 def test_models_root_round_trips_in_config(tmp_path):
-    from dictado import tomlw
-    from dictado.config import Config, load
+    from ecoscribe import tomlw
+    from ecoscribe.config import Config, load
     c = Config()
-    c.transcribe.models_root = "E:\\dictado-models"
+    c.transcribe.models_root = "E:\\ecoscribe-models"
     p = tmp_path / "c.toml"
     tomlw.save(c, p)
-    assert load(p).transcribe.models_root == "E:\\dictado-models"
+    assert load(p).transcribe.models_root == "E:\\ecoscribe-models"
 
 
 def test_models_root_reuses_existing_default_mirror(tmp_path, monkeypatch):
     """Dictation's turbo already lives in the default dir: don't download it again to E:."""
-    from dictado.config import TranscribeCfg
+    from ecoscribe.config import TranscribeCfg
     monkeypatch.setenv("LOCALAPPDATA", str(tmp_path / "lad"))
-    monkeypatch.setenv("DICTADO_DATA_DIR", str(tmp_path / "lad" / "dictado"))  # macOS data dir
+    monkeypatch.setenv("ECOSCRIBE_DATA_DIR", str(tmp_path / "lad" / "ecoscribe"))  # macOS data dir
     src = make_src(tmp_path)
     default = models.ensure_local("large-v3-turbo", download=lambda n: str(src))
     out = models.for_transcribe("large-v3-turbo", TranscribeCfg(models_root=str(tmp_path / "E")),

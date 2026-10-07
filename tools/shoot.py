@@ -11,7 +11,7 @@ APP = Path(__file__).resolve().parent.parent
 EDGE = r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"
 OUT = Path(sys.argv[1]) if len(sys.argv) > 1 else APP / "packaging" / "shots"
 OUT.mkdir(parents=True, exist_ok=True)
-index = (APP / "dictado" / "web" / "index.html").as_uri()
+index = (APP / "ecoscribe" / "web" / "index.html").as_uri()
 SHOTS = {
     "inicio": "page=inicio", "historial": "page=historial", "ajustes": "page=ajustes",
     "bienvenida": "page=bienvenida&welcome=1", "detenido": "page=inicio&state=stopped",

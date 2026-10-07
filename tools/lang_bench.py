@@ -15,9 +15,9 @@ sys.path.insert(0, str(APP))
 
 from faster_whisper import decode_audio  # noqa: E402
 
-from dictado import winutil  # noqa: E402
-from dictado.config import Config  # noqa: E402
-from dictado.engine import Engine, dictation_model  # noqa: E402
+from ecoscribe import winutil  # noqa: E402
+from ecoscribe.config import Config  # noqa: E402
+from ecoscribe.engine import Engine, dictation_model  # noqa: E402
 
 winutil.add_cuda_dll_dirs()
 sys.stdout.reconfigure(encoding="utf-8")

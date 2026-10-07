@@ -1,4 +1,4 @@
-from dictado.wer import wer
+from ecoscribe.wer import wer
 
 
 def test_identical_is_zero():

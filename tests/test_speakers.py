@@ -1,6 +1,6 @@
 import numpy as np
 
-from dictado.speakers import label
+from ecoscribe.speakers import label
 
 SR = 16000
 

@@ -1,6 +1,6 @@
 """--transcribe on the real GPU with real fixtures (plan criteria 2, 3, 4).
 
-Every case runs the real worker process (`python -m dictado --transcribe DIR`), one
+Every case runs the real worker process (`python -m ecoscribe --transcribe DIR`), one
 model per process, as in production: in-process runs would pile models up (they
 are never freed, by design) until VRAM and then RAM run out."""
 import json
@@ -12,8 +12,8 @@ from pathlib import Path
 
 import pytest
 
-from dictado import config, paths, sessions
-from dictado.wer import wer
+from ecoscribe import config, paths, sessions
+from ecoscribe.wer import wer
 
 pytestmark = pytest.mark.gpu
 FIX = Path(__file__).parent / "fixtures"
@@ -65,8 +65,8 @@ def _assert_close(tr, name, ceiling=0.3):
 
 
 def _worker_mem_mb() -> int:
-    """macOS: unified memory, so "VRAM" is the Dictado worker processes' own footprint (MB)."""
-    out = subprocess.run(["pgrep", "-f", "dictado --(engine-worker|transcribe|meeting)"], capture_output=True, text=True).stdout
+    """macOS: unified memory, so "VRAM" is the Ecoscribe worker processes' own footprint (MB)."""
+    out = subprocess.run(["pgrep", "-f", "ecoscribe --(engine-worker|transcribe|meeting)"], capture_output=True, text=True).stdout
     total = 0
     for pid in out.split():
         fp = subprocess.run(["footprint", "-p", pid], capture_output=True, text=True).stdout
@@ -86,7 +86,7 @@ def _vram_used_mb() -> int:
 
 
 def _worker(d: Path, env=None) -> subprocess.Popen:
-    return subprocess.Popen([sys.executable, "-m", "dictado", "--transcribe", str(d)], cwd=str(APP), env=env)
+    return subprocess.Popen([sys.executable, "-m", "ecoscribe", "--transcribe", str(d)], cwd=str(APP), env=env)
 
 
 def test_worker_cli_exits_and_frees_vram(tmp_path):
@@ -99,7 +99,7 @@ def test_worker_cli_exits_and_frees_vram(tmp_path):
     assert _vram_used_mb() - before < 300
 
 
-@pytest.mark.skipif(not os.environ.get("DICTADO_LONG"), reason="set DICTADO_LONG=1 for the 60-min run")
+@pytest.mark.skipif(not os.environ.get("ECOSCRIBE_LONG"), reason="set ECOSCRIBE_LONG=1 for the 60-min run")
 def test_long_file_progress(tmp_path):
     long_wav = paths.data_dir() / "bench" / "long_60min.wav"
     assert long_wav.exists(), "run tools/make_long.py first"
@@ -126,7 +126,7 @@ def test_greek_spanish_mixed_file(tmp_path, cfg):
     its own language and script, on large-v3, in one model load."""
     import numpy as np
     from faster_whisper import decode_audio
-    from dictado.flacw import FlacWriter
+    from ecoscribe.flacw import FlacWriter
     sr, gap = 16000, np.zeros(16000 * 2, np.float32)
     el = decode_audio(str(FIX / "el_podcast.flac"), sampling_rate=sr)
     es = decode_audio(str(FIX / "es_climb.wav"), sampling_rate=sr)
@@ -140,8 +140,8 @@ def test_greek_spanish_mixed_file(tmp_path, cfg):
     assert meta["model"] == "Systran/faster-whisper-large-v3" and meta["lang_used"] == "el,es"
     segs = tr["segments"]
     (tmp_path / "mixed.txt").write_text("\n".join(f"{s['t0']:6.1f} {s['lang']} {s['text']}" for s in segs), "utf-8")
-    if os.environ.get("DICTADO_MIXED_OUT"):
-        Path(os.environ["DICTADO_MIXED_OUT"]).write_text((tmp_path / "mixed.txt").read_text("utf-8"), "utf-8")
+    if os.environ.get("ECOSCRIBE_MIXED_OUT"):
+        Path(os.environ["ECOSCRIBE_MIXED_OUT"]).write_text((tmp_path / "mixed.txt").read_text("utf-8"), "utf-8")
     greek = lambda t: any("Ͱ" <= c <= "Ͽ" for c in t)  # noqa: E731
     es_t = " ".join(s["text"] for s in segs if s["lang"] == "es").lower()
     assert "escalar" in es_t and "gracias" in es_t

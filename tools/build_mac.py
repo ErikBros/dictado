@@ -27,10 +27,10 @@ from pathlib import Path
 APP = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(APP))
 OUT = APP / "build" / "mac"
-SIGNING = Path(os.environ.get("DICTADO_SIGNING_DIR", APP / ".signing"))
+SIGNING = Path(os.environ.get("ECOSCRIBE_SIGNING_DIR", APP / ".signing"))
 KEYCHAIN = SIGNING / "dictado-signing.keychain-db"
 IDENTITY = "Dictado Local Signing"
-KC_PASS = "dictado-local"  # protects nothing secret: the key only signs this Mac's own builds
+KC_PASS = "ecoscribe-local"  # protects nothing secret: the key only signs this Mac's own builds
 
 
 def run(cmd, **kw) -> subprocess.CompletedProcess:
@@ -39,7 +39,7 @@ def run(cmd, **kw) -> subprocess.CompletedProcess:
 
 
 def version() -> str:
-    from dictado import __version__
+    from ecoscribe import __version__
     return __version__
 
 
@@ -47,12 +47,12 @@ def build_helper() -> Path:
     out = OUT / "dictado-systap"
     out.parent.mkdir(parents=True, exist_ok=True)
     run(["swiftc", "-O", "-target", "arm64-apple-macos14.4", "-o", out,
-         APP / "dictado" / "platform" / "macos" / "systap.swift"])
+         APP / "ecoscribe" / "platform" / "macos" / "systap.swift"])
     return out
 
 
 def build_icon() -> Path:
-    from dictado.icon import mic_image
+    from ecoscribe.icon import mic_image
     icns = APP / "packaging" / "macos" / "Dictado.icns"
     with tempfile.TemporaryDirectory() as tmp:
         iconset = Path(tmp) / "Dictado.iconset"

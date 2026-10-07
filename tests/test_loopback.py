@@ -1,7 +1,7 @@
 """WASAPI loopback source with fake PyAudioWPatch: resampling, gap fill, device changes."""
 import numpy as np
 
-from dictado.loopback import GapFiller, Loopback
+from ecoscribe.loopback import GapFiller, Loopback
 
 SR = 16000
 

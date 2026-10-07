@@ -4,8 +4,8 @@ import time
 
 import pytest
 
-from dictado import config, status
-from dictado.window import Api
+from ecoscribe import config, status
+from ecoscribe.window import Api
 
 
 class FakeStartup:
@@ -13,7 +13,7 @@ class FakeStartup:
         self.value = None
 
     def app_command(self):
-        return '"C:\\Apps\\Dictado\\Dictado.exe"'
+        return '"C:\\Apps\\Ecoscribe\\Ecoscribe.exe"'
 
     def is_enabled(self):
         return self.value is not None
@@ -74,7 +74,7 @@ def test_save_settings_writes_config_toggles_startup_and_reloads(api):
     c = config.load(api._config_path)
     assert c.hotkey.key == "f13" and c.audio.device == "Headset (Zone Vibe 100)"
     assert c.whisper.languages == ["en", "es"] and c.ui.sounds is False and c.audio.unmute_while_recording is False
-    assert api._startup.value == '"C:\\Apps\\Dictado\\Dictado.exe"'
+    assert api._startup.value == '"C:\\Apps\\Ecoscribe\\Ecoscribe.exe"'
     assert api._signals == [1]
     api.save_settings({"startup": False})
     assert api._startup.value is None
@@ -145,7 +145,7 @@ def test_welcome_flag(api):
     assert api.get_welcome()["done"] is True
 
 
-from dictado.window import pretty_mic
+from ecoscribe.window import pretty_mic
 
 
 def test_pretty_mic():
@@ -185,10 +185,10 @@ class FakeGate:
 
 def _fake_mic(api, monkeypatch, fail_begin=False):
     FakeRec.instances, FakeGate.instances = [], []
-    import dictado.audio
-    import dictado.micgate
-    monkeypatch.setattr(dictado.audio, "Recorder", lambda cfg: FakeRec(cfg, fail_begin))
-    monkeypatch.setattr(dictado.micgate, "MicGate", FakeGate)
+    import ecoscribe.audio
+    import ecoscribe.micgate
+    monkeypatch.setattr(ecoscribe.audio, "Recorder", lambda cfg: FakeRec(cfg, fail_begin))
+    monkeypatch.setattr(ecoscribe.micgate, "MicGate", FakeGate)
 
 
 def test_mic_test_start_stop_restores_gate(api, monkeypatch):
@@ -253,8 +253,8 @@ def test_combo_shortcuts(api):
 
 def test_languages_are_add_ons(tmp_path):
     """dictado-ehs: English + Swedish built in; added languages can be ticked, removed ones drop out."""
-    from dictado import config
-    from dictado.window import Api
+    from ecoscribe import config
+    from ecoscribe.window import Api
     cfg = tmp_path / "config.toml"
     api = Api(data_dir=tmp_path, config_path=cfg, signal_reload=lambda: True)
     s = api.get_settings()

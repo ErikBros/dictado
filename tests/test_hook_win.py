@@ -3,8 +3,8 @@ import time
 
 import pytest
 
-from dictado.hook import HookThread
-from dictado.sendkeys import send_keys
+from ecoscribe.hook import HookThread
+from ecoscribe.sendkeys import send_keys
 
 pytestmark = pytest.mark.win
 R = 0xA3
@@ -86,7 +86,7 @@ def _close_start_if_open():
 def test_cancel_combo_swallows_esc_so_start_menu_stays_closed():
     import win32gui
     from tests.winhelp import Target
-    t = Target("DictadoTargetHook")
+    t = Target("EcoscribeTargetHook")
     got = []
     h = HookThread(got.append, R, 1.0, accept_injected=True, reinstall_s=30, swallow_cancel=lambda: True)
     h.start()
@@ -139,7 +139,7 @@ def test_lost_key_up_recovers_on_timer():
 def test_combo_shortcut_fires_once_and_is_swallowed():
     """Ctrl+L as the shortcut: one toggle per press, plain L doesn't toggle. (That the keys are
     swallowed is ComboMatcher's (fire, swallow) -> return 1, unit-tested in test_hotkeys.)"""
-    from dictado.hotkeys import ComboMatcher
+    from ecoscribe.hotkeys import ComboMatcher
     got = []
     h = HookThread(got.append, 0, 1.0, accept_injected=True, reinstall_s=30, combo=ComboMatcher("ctrl+l"))
     h.start()

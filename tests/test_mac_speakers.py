@@ -1,4 +1,4 @@
-"""The speaker add-on on macOS: where Dictado finds it, and which device the add-on tries (dictado-4yu)."""
+"""The speaker add-on on macOS: where Ecoscribe finds it, and which device the add-on tries (dictado-4yu)."""
 import importlib.util
 import sys
 from pathlib import Path
@@ -6,7 +6,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from dictado.platform.macos import speakers
+from ecoscribe.platform.macos import speakers
 
 MAIN = Path(__file__).resolve().parent.parent / "packaging" / "speakers" / "speakers_main.py"
 
@@ -46,5 +46,5 @@ def test_addon_found_in_applications_or_home(tmp_path, monkeypatch):
 
 @pytest.mark.skipif(sys.platform != "darwin", reason="macOS")
 def test_diarize_uses_the_mac_path():
-    from dictado import diarize
+    from ecoscribe import diarize
     assert diarize.addon_exe is speakers.addon_exe

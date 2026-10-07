@@ -2,9 +2,9 @@
 import json
 from pathlib import Path
 
-from dictado import meetings, meetwatch, sessions
-from dictado.config import Config
-from dictado.detect import MicUse
+from ecoscribe import meetings, meetwatch, sessions
+from ecoscribe.config import Config
+from ecoscribe.detect import MicUse
 
 
 class FakeController:

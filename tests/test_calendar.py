@@ -3,7 +3,7 @@ Every calendar here is made up: tests never read a real one."""
 import json
 from datetime import datetime, timedelta, timezone
 
-from dictado import calendar_ics as cal
+from ecoscribe import calendar_ics as cal
 
 UTC = timezone.utc
 OWNER = "alex@example.com"
@@ -146,7 +146,7 @@ def _ctl(tmp_path, feed):
 
 
 def test_meeting_named_from_the_calendar(tmp_path):
-    from dictado import sessions
+    from ecoscribe import sessions
     [e] = events(ics(RETRO))
     feed = FakeFeed(e)
     c = _ctl(tmp_path, feed)
@@ -157,7 +157,7 @@ def test_meeting_named_from_the_calendar(tmp_path):
 
 
 def test_given_title_and_no_event_keep_their_names(tmp_path):
-    from dictado import sessions
+    from ecoscribe import sessions
     [e] = events(ics(RETRO))
     c = _ctl(tmp_path, FakeFeed(e))
     assert sessions.read_meta(c.start_meeting("sv", title="Mine"))["title"] == "Mine"
@@ -166,7 +166,7 @@ def test_given_title_and_no_event_keep_their_names(tmp_path):
 
 
 def test_broken_calendar_never_stops_a_meeting(tmp_path):
-    from dictado import sessions
+    from ecoscribe import sessions
 
     class Boom:
         def lookup(self, now=None, app=None):
@@ -176,7 +176,7 @@ def test_broken_calendar_never_stops_a_meeting(tmp_path):
 
 
 def test_attendees_join_the_prompt_words(tmp_path):
-    from dictado import sessions
+    from ecoscribe import sessions
     d = sessions.create("x", "sv", "meeting", tmp_path / "t")
     sessions.write_meta(d, calendar={"title": "x", "attendees": ["Ana Ruiz", "Göran"]})
     assert cal.session_words(d, ["Göteborg", "Ana Ruiz"]) == ["Göteborg", "Ana Ruiz", "Göran"]
@@ -185,14 +185,14 @@ def test_attendees_join_the_prompt_words(tmp_path):
 
 
 def test_copy_for_claude_lists_attendees():
-    from dictado import export
+    from ecoscribe import export
     meta = {"title": "Retro", "created": "2026-10-06T10:00:00", "calendar": {"attendees": ["Ana Ruiz", "Johan"]}}
     assert "Attendees: Ana Ruiz, Johan" in export.for_claude(meta, [])
     assert "Attendees" not in export.for_claude({"title": "x"}, [])
 
 
 def _api(tmp_path, fetch=None):
-    from dictado.window import Api
+    from ecoscribe.window import Api
     a = Api(data_dir=tmp_path / "data", config_path=tmp_path / "cfg" / "config.toml", signal_reload=lambda: True)
     if fetch:
         a._calendar_fetch = fetch
@@ -203,7 +203,7 @@ URL = "https://calendar.google.com/calendar/ical/x%40example.com/private-abc/bas
 
 
 def test_settings_saves_and_checks_the_link(tmp_path):
-    from dictado import config
+    from ecoscribe import config
     a = _api(tmp_path)
     assert a.get_settings()["values"]["calendar_url"] == ""
     assert a.save_settings({"calendar_url": "  " + URL + " "})["ok"]
@@ -225,8 +225,8 @@ def test_settings_test_button_downloads_and_says_what_it_found(tmp_path):
 
 def test_background_app_sets_the_feed_only_with_a_link(tmp_path):
     import logging
-    from dictado.__main__ import _calendar_feed
-    from dictado.config import Config
+    from ecoscribe.__main__ import _calendar_feed
+    from ecoscribe.config import Config
     c, ctl = Config(), type("C", (), {"calendar": None})()
     assert _calendar_feed(c, tmp_path, ctl, logging.getLogger()) is None and ctl.calendar is None
     c.meetings.calendar_url = "not a link"

@@ -1,7 +1,7 @@
 """Notes during a call (t0u.30): typed next to the live transcript, saved as notes.md in the
 session, and part of Copy for Claude, the summary prompt and the .md export (Granola's idea:
 your notes steer the summary)."""
-from dictado import export
+from ecoscribe import export
 from tests.test_window_sessions import env, make  # noqa: F401  (fixture)
 
 SEGS = [{"t0": 0.0, "t1": 2.0, "text": "Vi flyttar releasen till fredag.", "speaker": "Others"}]

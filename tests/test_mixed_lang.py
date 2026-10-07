@@ -7,10 +7,10 @@ from types import SimpleNamespace
 
 import numpy as np
 
-from dictado import meeting, sessions, transcribe
-from dictado.config import TranscribeCfg
-from dictado.flacw import FlacWriter
-from dictado.routing import LANG_NAMES, mixed_langs, model_for
+from ecoscribe import meeting, sessions, transcribe
+from ecoscribe.config import TranscribeCfg
+from ecoscribe.flacw import FlacWriter
+from ecoscribe.routing import LANG_NAMES, mixed_langs, model_for
 
 SR = 16000
 GREEK, SPANISH = 0.1, 0.2  # the fake model "hears" the language in the sample value

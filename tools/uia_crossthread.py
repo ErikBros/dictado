@@ -14,7 +14,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 faulthandler.enable(open(sys.argv[1], "w", encoding="utf-8"), all_threads=True)  # noqa: SIM115
 rounds = int(sys.argv[2]) if len(sys.argv) > 2 else 200
 
-from dictado import context  # noqa: E402
+from ecoscribe import context  # noqa: E402
 
 gc.disable()  # collect only when WE say, on the thread we pick
 kept = []

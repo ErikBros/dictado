@@ -1,9 +1,9 @@
 """Languages as add-ons (dictado-ehs)."""
 import pytest
 
-from dictado import languages as L
-from dictado.config import WhisperCfg
-from dictado.engine import dictation_model
+from ecoscribe import languages as L
+from ecoscribe.config import WhisperCfg
+from ecoscribe.engine import dictation_model
 
 
 def test_same_languages_as_whisper():

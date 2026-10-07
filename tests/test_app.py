@@ -5,10 +5,10 @@ import time
 import numpy as np
 import pytest
 
-from dictado.app import App
-from dictado.config import Config
-from dictado.deliver import DeliveryResult
-from dictado.engine import Result
+from ecoscribe.app import App
+from ecoscribe.config import Config
+from ecoscribe.deliver import DeliveryResult
+from ecoscribe.engine import Result
 
 SR = 16000
 
@@ -150,7 +150,7 @@ def test_toggle_ignored_while_loading(tmp_path):
 
 def test_copy_last(tmp_path, monkeypatch):
     copied = []
-    monkeypatch.setattr("dictado.app.set_clipboard_text", lambda s, private=True: copied.append(s))
+    monkeypatch.setattr("ecoscribe.app.set_clipboard_text", lambda s, private=True: copied.append(s))
     app, out = make(tmp_path)
     app.on_action("toggle"); app.on_action("toggle")
     assert wait(lambda: out)

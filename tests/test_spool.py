@@ -4,11 +4,11 @@ import time
 
 import numpy as np
 
-from dictado import spool as spool_mod
-from dictado.app import App
-from dictado.config import Config
-from dictado.deliver import DeliveryResult
-from dictado.spool import Spool
+from ecoscribe import spool as spool_mod
+from ecoscribe.app import App
+from ecoscribe.config import Config
+from ecoscribe.deliver import DeliveryResult
+from ecoscribe.spool import Spool
 from tests.test_app import FakeEngine, FakeGate, FakeUi, wait
 
 SR = 16000

@@ -5,7 +5,7 @@ import time
 import numpy as np
 import pytest
 
-from dictado.config import AudioCfg
+from ecoscribe.config import AudioCfg
 
 pytestmark = pytest.mark.win
 SR = 16000
@@ -13,8 +13,8 @@ SR = 16000
 
 def test_real_loopback_and_mic_stay_on_the_wall_clock(tmp_path):
     from faster_whisper import decode_audio
-    from dictado.loopback import Loopback
-    from dictado.session_rec import MicSource, SessionRecorder
+    from ecoscribe.loopback import Loopback
+    from ecoscribe.session_rec import MicSource, SessionRecorder
     rec = SessionRecorder(tmp_path / "s", mic_factory=lambda: MicSource(AudioCfg()), loop_factory=Loopback)
     t0 = time.monotonic()
     rec.start()
@@ -32,8 +32,8 @@ def test_real_loopback_and_mic_stay_on_the_wall_clock(tmp_path):
 
 def test_dictation_stream_opens_while_a_meeting_holds_the_mic():
     import sounddevice as sd
-    from dictado.choose import pick_device
-    from dictado.session_rec import MicSource
+    from ecoscribe.choose import pick_device
+    from ecoscribe.session_rec import MicSource
     meeting_mic = MicSource(AudioCfg())
     meeting_mic.start()
     got = []

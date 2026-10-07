@@ -1,7 +1,7 @@
 """Real crash check on macOS: the background app is crashed for real; the watchdog (supervise.py) must
 turn it into a report folder and restart it, and must leave it alone when it was quit or killed.
 
-Nothing on screen: a temp data dir (Welcome marked done), no menu bar item (DICTADO_NO_TRAY, inherited by the restarted
+Nothing on screen: a temp data dir (Welcome marked done), no menu bar item (ECOSCRIBE_NO_TRAY, inherited by the restarted
 copy), no overlay, no sounds, hotkey F19 (never pressed), meetings off.
 1. SIGSEGV (a native crash): report folder with fault.log (every thread's stack), restart, the new
    copy logs "restarted after a crash".
@@ -48,13 +48,13 @@ def alive(p):
 
 
 def supervisor_pids(d):
-    out = subprocess.run(["pgrep", "-f", "dictado --supervise"], capture_output=True, text=True).stdout.split()
-    return [int(p) for p in out if f"DICTADO_DATA_DIR={d}" in subprocess.run(
+    out = subprocess.run(["pgrep", "-f", "ecoscribe --supervise"], capture_output=True, text=True).stdout.split()
+    return [int(p) for p in out if f"ECOSCRIBE_DATA_DIR={d}" in subprocess.run(
         ["ps", "eww", "-o", "command=", "-p", p], capture_output=True, text=True).stdout]
 
 
 def start(d, env):
-    subprocess.Popen([PY, "-m", "dictado"], cwd=str(APP), env=env, stdout=subprocess.DEVNULL,
+    subprocess.Popen([PY, "-m", "ecoscribe"], cwd=str(APP), env=env, stdout=subprocess.DEVNULL,
                      stderr=subprocess.DEVNULL, start_new_session=True)
     assert wait(lambda: status(d).get("state") == "ready" and alive(status(d).get("pid")), 60), "app did not start"
     assert wait(lambda: supervisor_pids(d), 20), "watchdog did not start"
@@ -66,7 +66,7 @@ def main():
     (d / "config.toml").write_text('[hotkey]\nkey = "f19"\n[ui]\noverlay = false\nsounds = false\n'
                                    '[meetings]\nmode = "off"\n')
     (d / "welcome_done").write_text("x")  # a fresh data dir would open the Welcome window on screen
-    env = {**os.environ, "DICTADO_DATA_DIR": str(d), "DICTADO_NO_TRAY": "1"}
+    env = {**os.environ, "ECOSCRIBE_DATA_DIR": str(d), "ECOSCRIBE_NO_TRAY": "1"}
     res = {"data": str(d)}
     try:
         old = start(d, env)
@@ -81,7 +81,7 @@ def main():
                           "report_md": bool(rep and (rep / "report.md").exists()),
                           "native_stack": bool(rep and (rep / "fault.log").exists()
                                                and "Segmentation fault" in (rep / "fault.log").read_text()),
-                          "restart_logged": "restarted after a crash" in (d / "dictado.log").read_text()}
+                          "restart_logged": "restarted after a crash" in (d / "ecoscribe.log").read_text()}
         cur = status(d)["pid"]
         os.kill(cur, signal.SIGTERM)
         res["sigterm"] = {"app_gone": wait(lambda: not alive(cur), 15),

@@ -1,0 +1,340 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ecoscribe</title>
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<div class="shell">
+  <aside class="side">
+    <div class="brand">
+      <svg class="mark" viewBox="0 0 64 64" aria-hidden="true">
+        <rect width="64" height="64" rx="14" fill="var(--aegean)"/>
+        <rect x="25" y="12" width="14" height="25" rx="7" fill="var(--paper)"/>
+        <path d="M20.5 32.5a11.5 11.5 0 0 0 23 0" fill="none" stroke="var(--paper)" stroke-width="4.5" stroke-linecap="round"/>
+        <path d="M32 45v6M24 52h16" stroke="var(--paper)" stroke-width="4.5" stroke-linecap="round"/>
+      </svg>
+      <div>
+        <div class="brand-name">Ecoscribe</div>
+        <div class="brand-ver" id="ver">v1.2</div>
+      </div>
+    </div>
+    <nav class="nav" aria-label="Sections">
+      <button class="nav-item" data-page="inicio">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11.5 12 5l8 6.5V19a1 1 0 0 1-1 1h-4.5v-5h-5v5H5a1 1 0 0 1-1-1z"/></svg>Home</button>
+      <button class="nav-item" data-page="reuniones">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10v4M8 7v10M12 4v16M16 8v8M20 11v2"/></svg>Meetings</button>
+      <button class="nav-item" data-page="historial">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 7v5l3 2"/><circle cx="12" cy="12" r="8"/></svg>History</button>
+      <button class="nav-item" data-page="ajustes">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h8M17 7h2M5 17h2M11 17h8"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg>Settings</button>
+    </nav>
+    <div class="side-status" id="side-status">
+      <span class="dot"></span><span class="side-status-text">Checking…</span>
+    </div>
+  </aside>
+
+  <main class="main">
+    <!-- INICIO -->
+    <section class="page" id="page-inicio" hidden>
+      <header class="page-head">
+        <h1>Home</h1>
+      </header>
+      <div class="crash-card card" id="crash-card" hidden>
+        <div class="crash-text"><strong id="crash-title">Ecoscribe crashed</strong>
+          <span class="muted small" id="crash-sub">It restarted by itself. A report with everything needed to find the cause was saved.</span></div>
+        <div class="crash-actions">
+          <button type="button" class="btn btn-sm" id="crash-copy">Copy crash report for Claude</button>
+          <button type="button" class="btn btn-ghost btn-sm" id="crash-dismiss">Dismiss</button></div>
+      </div>
+      <div class="hero card">
+        <div class="hero-state">
+          <span class="state-badge" id="hero-badge"><span class="dot"></span><span id="hero-badge-text">…</span></span>
+          <h2 id="hero-title">Checking Ecoscribe…</h2>
+          <p class="hero-how" id="hero-how">Tap <kbd class="key key-wide">Ctrl</kbd> <span class="key-side">(right)</span>, talk, and tap it again. The text appears wherever the cursor is.</p>
+          <div class="hero-actions" id="hero-actions"></div>
+        </div>
+        <div class="hero-facts">
+          <div class="fact"><span class="fact-label">Mic</span><span class="fact-value" id="fact-mic">…</span></div>
+          <div class="fact"><label class="fact-label" for="fact-lang">Language</label><span class="fact-value" id="fact-lang"></span></div>
+          <div class="fact"><span class="fact-label">Engine</span><span class="fact-value" id="fact-engine">…</span></div>
+        </div>
+      </div>
+
+      <div class="grid2">
+        <div class="card stat-card">
+          <div class="card-title">Today</div>
+          <div class="stat"><span class="stat-num" id="stat-today">0</span><span class="stat-unit">words</span></div>
+          <div class="muted" id="stat-total">0 words in total</div>
+        </div>
+        <div class="card last-card">
+          <div class="card-title">Last dictation</div>
+          <p class="last-text" id="last-text"><span class="muted">You haven't dictated anything yet.</span></p>
+          <div class="last-meta">
+            <span class="muted small" id="last-meta"></span>
+            <button class="btn btn-ghost btn-sm" id="last-copy" hidden>Copy</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card tips">
+        <div class="tip"><svg viewBox="0 0 24 24" class="tip-ico" aria-hidden="true"><rect x="3.5" y="5" width="12" height="9" rx="1.5"/><path d="M8.5 17.5V19a1.5 1.5 0 0 0 1.5 1.5h9A1.5 1.5 0 0 0 20.5 19v-6A1.5 1.5 0 0 0 19 11.5h-1"/></svg><span>While you talk you can switch apps, click or use shortcuts: nothing cuts the recording.</span></div>
+        <div class="tip" id="tip-cancel"><span class="keys"><kbd class="key">Ctrl</kbd><span class="plus">+</span><kbd class="key">Esc</kbd></span><span>Hold Right Ctrl and press Esc to cancel.</span></div>
+        <div class="tip"><svg viewBox="0 0 24 24" class="tip-ico" aria-hidden="true"><path d="M12 7v5l3 2"/><circle cx="12" cy="12" r="8"/></svg><span>Text didn't show up? It's in History, ready to copy.</span></div>
+      </div>
+    </section>
+
+    <!-- REUNIONES -->
+    <section class="page" id="page-reuniones" hidden>
+      <div id="r-list-view">
+        <header class="page-head">
+          <h1>Meetings</h1>
+          <div class="search">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="m16 16 4 4"/></svg>
+            <input id="r-search" type="search" placeholder="Search by title" autocomplete="off">
+          </div>
+        </header>
+        <div class="card r-actions">
+          <div class="r-actions-main">
+            <button class="btn btn-primary" id="r-start">Transcribe meeting now</button>
+            <label class="r-lang"><span class="muted small">Language</span>
+              <select id="r-lang" aria-label="Language"></select></label>
+          </div>
+          <button class="btn btn-ghost" id="r-import">Import file</button>
+        </div>
+        <div class="card r-now" id="r-now" hidden>
+          <span class="r-rec-dot"></span>
+          <div class="r-now-text"><strong id="r-now-title">Recording</strong><span class="muted small" id="r-now-meta"></span></div>
+          <button class="btn btn-ghost btn-sm" id="r-now-open">Watch live</button>
+          <button class="btn btn-sm r-stop" id="r-now-stop">Stop</button>
+        </div>
+        <ol class="history r-list" id="r-list"></ol>
+        <div class="empty" id="r-empty" hidden>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10v4M8 7v10M12 4v16M16 8v8M20 11v2"/></svg>
+          <p id="r-empty-text">Your meetings and the audio you import will show up here.</p>
+          <p class="muted small">Drag an audio or video file onto this window to transcribe it.</p>
+        </div>
+      </div>
+
+      <div id="r-detail-view" hidden>
+        <header class="page-head r-detail-head">
+          <button class="btn btn-ghost btn-sm" id="r-back">Back to Meetings</button>
+          <span class="r-chip" id="r-d-status"></span>
+        </header>
+        <input class="r-title" id="r-d-title" aria-label="Title" maxlength="120">
+        <div class="muted small r-d-meta" id="r-d-meta"></div>
+        <div class="r-d-actions" id="r-d-live-actions" hidden>
+          <span class="r-rec-dot"></span><span class="r-live-note">Transcribing live: the final version comes when you stop.</span>
+          <label class="r-lang"><span class="muted small">Language</span>
+            <select id="r-d-lang" aria-label="Meeting language"></select></label>
+          <button class="btn r-stop" id="r-d-stop">Stop</button>
+        </div>
+        <div class="r-d-actions" id="r-d-done-actions" hidden>
+          <button class="btn btn-primary btn-sm" id="r-copy">Copy all</button>
+          <button class="btn btn-ghost btn-sm" id="r-copy-claude">Copy for Claude</button>
+            <button class="btn btn-ghost btn-sm" id="r-copy-summary" title="The transcript with a request for decisions and action items: paste it into Claude">Copy summary prompt</button>
+          <span class="r-export"><span class="muted small">Download</span>
+            <button class="btn btn-ghost btn-sm" data-fmt="txt">.txt</button>
+            <button class="btn btn-ghost btn-sm" data-fmt="md">.md</button>
+            <button class="btn btn-ghost btn-sm" data-fmt="srt">.srt</button></span>
+          <button class="btn btn-ghost btn-sm" id="r-folder">Open folder</button>
+          <button class="btn btn-ghost btn-sm danger r-delete" id="r-delete">Delete</button>
+        </div>
+        <div class="r-progress" id="r-d-progress" hidden><div class="meter"><div class="meter-fill" id="r-d-progress-fill"></div></div><span class="muted small" id="r-d-progress-text"></span></div>
+        <div class="r-notes" id="r-notes">
+          <div class="r-notes-head"><span class="row-label">Your notes</span><span class="muted small" id="r-notes-state">Saved with this meeting, and part of Copy for Claude and the summary prompt.</span></div>
+          <textarea class="vocab r-notes-text" id="r-notes-text" rows="3" placeholder="Type while you talk: what you want out of the call, things to check, decisions…"></textarea>
+        </div>
+        <div class="r-segs-wrap"><ol class="history r-segs" id="r-segs"></ol><button class="btn r-jump" id="r-jump" hidden>Jump to latest</button></div>
+        <div class="empty" id="r-segs-empty" hidden><p id="r-segs-empty-text">No text yet.</p></div>
+      </div>
+
+      <div class="r-drop" id="r-drop" hidden><div class="r-drop-box">Drop audio or video to transcribe it</div></div>
+    </section>
+
+    <!-- HISTORIAL -->
+    <section class="page" id="page-historial" hidden>
+      <header class="page-head">
+        <h1>History</h1>
+        <div class="search">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="m16 16 4 4"/></svg>
+          <input id="search" type="search" placeholder="Search dictations and meetings" autocomplete="off">
+        </div>
+      </header>
+      <ol class="history" id="history"></ol>
+      <div class="empty" id="history-empty" hidden>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 7v5l3 2"/><circle cx="12" cy="12" r="8"/></svg>
+        <p id="history-empty-text">Everything you dictate will show up here.</p>
+      </div>
+      <footer class="page-foot">
+        <span class="muted small" id="history-count"></span>
+        <button class="btn btn-ghost btn-sm danger" id="history-clear">Clear history</button>
+      </footer>
+    </section>
+
+    <!-- AJUSTES -->
+    <section class="page" id="page-ajustes" hidden>
+      <header class="page-head"><h1>Settings</h1></header>
+      <form id="settings" class="settings" autocomplete="off">
+        <div class="card group">
+          <div class="group-head"><h3>Shortcut</h3><p class="muted">What starts and stops dictation. Click Change and press it.</p></div>
+          <div class="row"><span class="row-label">Shortcut</span>
+            <div class="hk">
+              <kbd class="key hk-key" id="hk-label">Right Ctrl</kbd>
+              <input type="hidden" name="hotkey" id="f-hotkey">
+              <button type="button" class="btn btn-ghost btn-sm" id="hk-change">Change</button>
+            </div></div>
+          <p class="muted small hk-hint" id="hk-hint">Tap a lone key (Right Ctrl, F13-F24, Pause) or press a combo like Ctrl+L.</p>
+          <label class="row toggle-row"><span class="row-text"><span class="row-label">Hold to talk</span><span class="muted small" id="f-hold-help">Hold the key while you speak and let go to stop. A quick tap still starts hands-free dictation.</span></span>
+            <input type="checkbox" class="switch" name="hold_to_talk" id="f-hold"></label>
+        </div>
+
+        <div class="card group">
+          <div class="group-head"><h3>Mic</h3><p class="muted">Ecoscribe finds it by name, so it isn't lost when you plug in other devices.</p></div>
+          <label class="row"><span class="row-label">Mic</span>
+            <select name="mic" id="f-mic"></select></label>
+          <div class="row">
+            <span class="row-label">Test</span>
+            <div class="meter-wrap">
+              <div class="meter" id="meter" aria-label="Mic level"><div class="meter-fill" id="meter-fill"></div></div>
+              <button type="button" class="btn btn-ghost btn-sm" id="mic-test">Test</button>
+            </div>
+          </div>
+          <label class="row toggle-row"><span class="row-text"><span class="row-label">Unmute the mic only while dictating</span>
+            <span class="muted small">Your mic is muted in Windows. Ecoscribe unmutes it while you record and puts it back as it was.</span></span>
+            <input type="checkbox" class="switch" name="unmute" id="f-unmute"></label>
+        </div>
+
+        <div class="card group">
+          <div class="group-head"><h3>Languages you dictate in</h3><p class="muted">Each dictation, Ecoscribe picks among these by itself, and the pill shows which one it heard. Wrong guess? Hold <kbd id="lang-key">Right Ctrl</kbd> and press <kbd>L</kbd> to choose the next dictation's language (or the tray icon: Next dictation in). With Swedish (or most added languages) ticked, dictation uses the larger model: still under a second, about twice as slow.</p></div>
+          <div class="lang-checks" id="f-languages" role="group" aria-label="Languages you dictate in"></div>
+          <div class="lang-add-row"><select id="lang-add" aria-label="Add a language"></select>
+            <span class="muted small">English and Swedish are built in. Added languages also appear for meetings and files; nothing is downloaded.</span></div>
+        </div>
+
+        <div class="card group">
+          <div class="group-head"><h3>Your words</h3><p class="muted">Names and terms Ecoscribe should spell your way, one per line: people, places, products. Used for dictation and meetings.</p></div>
+          <textarea name="vocabulary" id="f-vocabulary" class="vocab" rows="5" spellcheck="false" placeholder="Göteborg&#10;pyannote&#10;Kristineberg"></textarea>
+          <label class="row toggle-row"><span class="row-text"><span class="row-label">Names on your screen</span><span class="muted small">When you start dictating, Ecoscribe reads the names in the window you're typing into (an email's sender, a chat's people) and spells them the same way. Read on this PC, never stored or sent.</span></span>
+            <input type="checkbox" class="switch" name="screen_names" id="f-screen-names"></label>
+        </div>
+
+        <div class="card group">
+          <div class="group-head"><h3>Snippets</h3><p class="muted">Say a snippet's name on its own ("my email.") and Ecoscribe types the saved text instead. Inside a sentence ("what's my email?") it stays as you said it.</p></div>
+          <div id="snips" class="snips"></div>
+          <button type="button" class="btn btn-ghost btn-sm" id="snip-add">Add snippet</button>
+        </div>
+
+        <div class="card group">
+          <div class="group-head"><h3>Meetings</h3><p class="muted">When a call app (Teams, Slack, Zoom, Meet…) starts using the mic.</p></div>
+          <label class="row"><span class="row-label">When a call starts</span>
+            <select name="meet_mode" id="f-meet-mode"></select></label>
+          <label class="row"><span class="row-label">Language when the app doesn't have one yet</span>
+            <select name="meet_lang" id="f-meet-lang"></select></label>
+          <label class="row toggle-row"><span class="row-text"><span class="row-label">Tell the other speakers apart</span>
+            <span class="muted small" id="f-speakers-help"></span></span>
+            <input type="checkbox" class="switch" name="speakers" id="f-speakers"></label>
+          <label class="row toggle-row"><span class="row-text"><span class="row-label">Remember voices</span>
+            <span class="muted small" id="voices-help">Name a speaker once and Ecoscribe recognises that voice in later calls. Voices are kept on this PC only.</span></span>
+            <input type="checkbox" class="switch" name="voice_memory" id="f-voice-memory"></label>
+          <div class="row" id="voices-row" hidden><span class="muted small" id="voices-known"></span>
+            <button type="button" class="btn btn-ghost btn-sm danger" id="voices-forget">Forget all voices</button></div>
+          <div class="row cal-row"><span class="row-text"><span class="row-label">Name meetings from your calendar</span>
+            <span class="muted small">Paste your calendar's secret address in iCal format (Google Calendar: Settings, your calendar, Integrate calendar). A recorded call takes the name of the event happening then, and its attendees help spell names. Read on this PC only; leave empty to turn it off.</span>
+            <span class="cal-field"><input type="password" class="cal-url" id="f-calendar" placeholder="https://calendar.google.com/calendar/ical/.../basic.ics" spellcheck="false" autocomplete="off">
+            <button type="button" class="btn btn-ghost btn-sm" id="cal-test">Test</button></span>
+            <span class="muted small" id="cal-result"></span></span></div>
+          <div class="row"><span class="row-text"><span class="row-label">Claude app</span>
+            <span class="muted small" id="claude-help">Let the Claude desktop app read your meetings: "summarize yesterday's call", "what did Ana say about the budget?". Read-only, through a small server on this PC.</span></span>
+            <button type="button" class="btn btn-ghost btn-sm" id="claude-connect">Connect</button></div>
+        </div>
+
+        <div class="card group">
+          <div class="group-head"><h3>Behaviour</h3></div>
+          <label class="row toggle-row"><span class="row-text"><span class="row-label">Free the GPU when you're not dictating</span>
+            <span class="muted small">The model loads when you tap the key (while you talk) and unloads after 10 minutes without dictating.</span></span>
+            <input type="checkbox" class="switch" name="on_demand" id="f-on-demand"></label>
+          <label class="row toggle-row"><span class="row-text"><span class="row-label">Sounds</span><span class="muted small">A short sound when it starts and stops.</span></span>
+            <input type="checkbox" class="switch" name="sounds" id="f-sounds"></label>
+          <label class="row toggle-row"><span class="row-text"><span class="row-label">Voice commands</span><span class="muted small">Say "new line" or "new paragraph" for a break, and end with "send it" to press Enter after the text (handy in Claude Code). Spanish and Swedish work too: "nueva línea", "envíalo", "ny rad", "skicka".</span></span>
+            <input type="checkbox" class="switch" name="voice_commands" id="f-voice-commands"></label>
+          <details class="vc-list" id="vc-list"><summary>See all commands</summary>
+            <table class="vc-table"><thead><tr><th>What it does</th><th>English</th><th>Spanish</th><th>Swedish</th></tr></thead>
+              <tbody id="vc-rows"></tbody></table>
+            <p class="muted small">A command only counts on its own: at the start, or after a pause or punctuation, and before one or the end. "We need a new line of products" stays text. Saying only "send it" presses Enter on what's already in the box.</p>
+          </details>
+          <label class="row toggle-row"><span class="row-text"><span class="row-label">On-screen pill</span><span class="muted small">"Dictating 0:07" at the bottom center while you record.</span></span>
+            <input type="checkbox" class="switch" name="overlay" id="f-overlay"></label>
+          <label class="row toggle-row" id="row-startup"><span class="row-text"><span class="row-label">Start with Windows</span><span class="muted small" id="startup-hint">Ecoscribe starts by itself when you sign in.</span></span>
+            <input type="checkbox" class="switch" name="startup" id="f-startup"></label>
+        </div>
+
+        <div class="card group">
+          <div class="group-head"><h3>Troubleshooting</h3><p class="muted">When something goes wrong: hand Claude what it needs to find the cause.</p></div>
+          <div class="row"><span class="row-text"><span class="row-label">Debug info</span>
+            <span class="muted small">Version, settings (calendar link removed), the end of every log, recent crashes and freezes. Paste it to Claude.</span></span>
+            <button type="button" class="btn btn-ghost btn-sm" id="dbg-copy">Copy debug info for Claude</button></div>
+          <div class="row"><span class="row-text"><span class="row-label">Logs and crash reports</span>
+            <span class="muted small">The folder with ecoscribe.log, crash reports (crashes) and freeze traces.</span></span>
+            <button type="button" class="btn btn-ghost btn-sm" id="dbg-open">Open folder</button></div>
+          <label class="row toggle-row"><span class="row-text"><span class="row-label">Detailed logging</span>
+            <span class="muted small">Writes much more to the log. Turn it on while chasing a problem, off after.</span></span>
+            <input type="checkbox" class="switch" name="debug_log" id="f-debug-log"></label>
+        </div>
+      </form>
+      <div class="savebar" id="savebar" hidden>
+        <span id="savebar-text">You have unsaved changes.</span>
+        <div class="savebar-actions">
+          <button type="button" class="btn btn-ghost" id="discard">Discard</button>
+          <button type="button" class="btn btn-primary" id="save">Save</button>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<!-- BIENVENIDA -->
+<div class="welcome" id="welcome" hidden>
+  <div class="welcome-card" role="dialog" aria-modal="true" aria-labelledby="w-title">
+    <div class="steps" id="steps"><span class="step-dot"></span><span class="step-dot"></span><span class="step-dot"></span></div>
+
+    <div class="wstep" data-step="0">
+      <div class="w-visual">
+        <kbd class="key key-xl" id="w-key">Ctrl</kbd>
+        <div class="w-caption">right</div>
+      </div>
+      <h2 id="w-title">Ecoscribe is ready</h2>
+      <p>Tap <strong>Right Ctrl</strong> once and talk. Keep using the computer as usual. Tap it again and the text appears wherever your cursor is.</p>
+    </div>
+
+    <div class="wstep" data-step="1">
+      <div class="w-visual">
+        <div class="meter meter-xl"><div class="meter-fill" id="w-meter-fill"></div></div>
+        <div class="w-caption" id="w-mic-name">Looking for the mic…</div>
+      </div>
+      <h2>Test the mic</h2>
+      <p>Say something at a normal volume. The bar should move. If it doesn't, pick another mic in Settings.</p>
+    </div>
+
+    <div class="wstep" data-step="2">
+      <div class="w-visual w-tips">
+        <div class="tip"><span class="keys"><kbd class="key">Ctrl</kbd><span class="plus">+</span><kbd class="key">Esc</kbd></span><span>Cancel</span></div>
+        <div class="tip"><svg viewBox="0 0 24 24" class="tip-ico" aria-hidden="true"><path d="M12 7v5l3 2"/><circle cx="12" cy="12" r="8"/></svg><span>History</span></div>
+      </div>
+      <h2>All set</h2>
+      <p>Ecoscribe stays in the system tray, next to the clock, and starts with Windows. Open it any time from the Start menu.</p>
+    </div>
+
+    <div class="w-actions">
+      <button class="btn btn-ghost" id="w-skip">Skip</button>
+      <button class="btn btn-primary" id="w-next">Next</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+<script src="app.js"></script>
+</body>
+</html>

@@ -76,7 +76,7 @@ def open_mic(tally: Tally, stop: threading.Event):
     """Ecoscribe's mic, opened read-only alongside the loopback. Never unmuted here."""
     import sounddevice as sd
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-    from dictado.choose import pick_device
+    from ecoscribe.choose import pick_device
     idx = pick_device(list(sd.query_devices()), list(sd.query_hostapis()), "Anker PowerConf", "MME")
     stream = sd.InputStream(device=idx, samplerate=16000, channels=1, dtype="float32",
                             callback=lambda data, n, t, s: tally.add(data[:, 0].copy()))

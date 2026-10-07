@@ -1,4 +1,4 @@
-"""Local MCP server (t0u.31): `Dictado.exe --mcp` lets the Claude app read the meetings.
+"""Local MCP server (t0u.31): `Ecoscribe.exe --mcp` lets the Claude app read the meetings.
 Read-only, stdio, newline-delimited JSON-RPC; nothing leaves the PC except what Claude asks for."""
 import io
 import json
@@ -10,7 +10,7 @@ from pathlib import Path
 
 import pytest
 
-from dictado import mcp_server, sessions
+from ecoscribe import mcp_server, sessions
 
 _windows_layout = pytest.mark.skipif(sys.platform == "darwin", reason="Claude's Windows folders; macOS: test_mac_claude_config")
 
@@ -47,7 +47,7 @@ def test_handshake_and_tool_list(tmp_path):
             {"jsonrpc": "2.0", "id": 2, "method": "ping"},
             {"jsonrpc": "2.0", "id": 3, "method": "resources/list"})
     assert len(r) == 4  # the notification gets no answer
-    assert r[0]["result"]["protocolVersion"] == "2025-06-18" and r[0]["result"]["serverInfo"]["name"] == "dictado"
+    assert r[0]["result"]["protocolVersion"] == "2025-06-18" and r[0]["result"]["serverInfo"]["name"] == "ecoscribe"
     names = {t["name"] for t in r[1]["result"]["tools"]}
     assert names == {"list_meetings", "read_meeting", "search_meetings"}
     assert all(t["annotations"]["readOnlyHint"] for t in r[1]["result"]["tools"])
@@ -58,7 +58,7 @@ def test_handshake_and_tool_list(tmp_path):
 def test_list_newest_first_with_a_filter(tmp_path):
     make(tmp_path, "Planering", 3)
     make(tmp_path, "Retro", 5, app="msteams")
-    make(tmp_path, "prueba e2e", 6)  # Dictado's own tests stay out
+    make(tmp_path, "prueba e2e", 6)  # Ecoscribe's own tests stay out
     text = call(tmp_path, "list_meetings")["content"][0]["text"]
     rows = json.loads(text)
     assert [x["title"] for x in rows] == ["Retro", "Planering"]
@@ -98,7 +98,7 @@ def test_runs_as_a_real_process(tmp_path):
     app_dir = Path(__file__).resolve().parent.parent
     msgs = [{"jsonrpc": "2.0", "id": 0, "method": "initialize", "params": {"protocolVersion": "2025-06-18"}},
             {"jsonrpc": "2.0", "id": 1, "method": "tools/call", "params": {"name": "list_meetings", "arguments": {}}}]
-    p = subprocess.run([sys.executable, "-m", "dictado", "--mcp", "--config", str(cfg)], cwd=str(app_dir),
+    p = subprocess.run([sys.executable, "-m", "ecoscribe", "--mcp", "--config", str(cfg)], cwd=str(app_dir),
                        input="".join(json.dumps(m) + "\n" for m in msgs).encode(), capture_output=True, timeout=60,
                        env={**os.environ, "PYTHONIOENCODING": "utf-8"})
     lines = [json.loads(l) for l in p.stdout.decode().splitlines()]
@@ -108,32 +108,47 @@ def test_runs_as_a_real_process(tmp_path):
 
 @_windows_layout
 def test_connect_to_claude_desktop_keeps_the_rest(tmp_path):
-    from dictado import claude_link
+    from ecoscribe import claude_link
     store = tmp_path / "local" / "Packages" / "Claude_pzs8sxrjxfjjc" / "LocalCache" / "Roaming" / "Claude"
     store.mkdir(parents=True)
     (store / "claude_desktop_config.json").write_text(json.dumps({"preferences": {"x": 1}, "mcpServers": {"other": {"command": "a"}}}))
     files = claude_link.config_files(tmp_path / "roaming", tmp_path / "local")
     assert files == [store / "claude_desktop_config.json"]  # the Store build only
     assert not claude_link.is_connected(files)
-    claude_link.connect(files, claude_link.server_entry(r"C:\Apps\Dictado.exe"))
+    claude_link.connect(files, claude_link.server_entry(r"C:\Apps\Ecoscribe.exe"))
     data = json.loads((store / "claude_desktop_config.json").read_text())
     assert data["preferences"] == {"x": 1} and data["mcpServers"]["other"] == {"command": "a"}
-    assert data["mcpServers"]["dictado"] == {"command": r"C:\Apps\Dictado.exe", "args": ["--mcp"]}
+    assert data["mcpServers"]["ecoscribe"] == {"command": r"C:\Apps\Ecoscribe.exe", "args": ["--mcp"]}
     assert (store / "claude_desktop_config.json.bak").exists() and claude_link.is_connected(files)
 
 
 @_windows_layout
 def test_connect_without_any_claude_creates_the_classic_file(tmp_path):
-    from dictado import claude_link
+    from ecoscribe import claude_link
     files = claude_link.config_files(tmp_path / "roaming", tmp_path / "local")
     assert files == [tmp_path / "roaming" / "Claude" / "claude_desktop_config.json"]
     claude_link.connect(files, claude_link.server_entry("D.exe"))
     assert claude_link.is_connected(files)
 
 
+def test_old_dictado_entry_is_renamed(tmp_path):
+    """dictado-c9u: the link from before the rename counts as connected and becomes `ecoscribe` at start."""
+    from ecoscribe import claude_link
+    old, other = tmp_path / "a" / "claude_desktop_config.json", tmp_path / "b" / "claude_desktop_config.json"
+    for f, servers in ((old, {"dictado": {"command": "Dictado.exe", "args": ["--mcp"]}, "x": {"command": "x"}}),
+                       (other, {"x": {"command": "x"}})):
+        f.parent.mkdir()
+        f.write_text(json.dumps({"mcpServers": servers}))
+    assert claude_link.is_connected([old]) and not claude_link.is_connected([other])
+    assert claude_link.relink_old([old, other], claude_link.server_entry("Ecoscribe.exe")) == [old]
+    assert json.loads(old.read_text())["mcpServers"] == {"x": {"command": "x"},
+                                                        "ecoscribe": {"command": "Ecoscribe.exe", "args": ["--mcp"]}}
+    assert json.loads(other.read_text())["mcpServers"] == {"x": {"command": "x"}}  # never linked: untouched
+
+
 def test_broken_config_is_never_overwritten(tmp_path):
     import pytest
-    from dictado import claude_link
+    from ecoscribe import claude_link
     f = tmp_path / "Claude" / "claude_desktop_config.json"
     f.parent.mkdir()
     f.write_text("{not json")
@@ -143,8 +158,8 @@ def test_broken_config_is_never_overwritten(tmp_path):
 
 
 def test_window_api_connect(tmp_path, monkeypatch):
-    from dictado import claude_link
-    from dictado.window import Api
+    from ecoscribe import claude_link
+    from ecoscribe.window import Api
     f = tmp_path / "Claude" / "claude_desktop_config.json"
     monkeypatch.setattr(claude_link, "config_files", lambda *a: [f])
     api = Api(data_dir=tmp_path, config_path=tmp_path / "config.toml", signal_reload=lambda: True)
@@ -155,7 +170,7 @@ def test_window_api_connect(tmp_path, monkeypatch):
 
 @pytest.mark.skipif(sys.platform != "darwin", reason="macOS")
 def test_mac_claude_config(tmp_path):
-    from dictado import claude_link
+    from ecoscribe import claude_link
     files = claude_link.config_files(tmp_path)
     assert files == [tmp_path / "Library" / "Application Support" / "Claude" / "claude_desktop_config.json"]
     files[0].parent.mkdir(parents=True)
@@ -163,6 +178,6 @@ def test_mac_claude_config(tmp_path):
     claude_link.connect(files, claude_link.server_entry("/Applications/Dictado.app/Contents/MacOS/Dictado"))
     data = json.loads(files[0].read_text())
     assert data["mcpServers"]["other"] == {"command": "a"}
-    assert data["mcpServers"]["dictado"] == {"command": "/Applications/Dictado.app/Contents/MacOS/Dictado",
+    assert data["mcpServers"]["ecoscribe"] == {"command": "/Applications/Dictado.app/Contents/MacOS/Dictado",
                                              "args": ["--mcp"]}
     assert claude_link.is_connected(files)

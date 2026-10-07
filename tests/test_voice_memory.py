@@ -1,8 +1,8 @@
 """Local voice memory (t0u.32): a person named once is recognised in later calls.
 
-The speaker add-on (1.1.0) writes one embedding per voice next to its turns. Dictado keeps
+The speaker add-on (1.1.0) writes one embedding per voice next to its turns. Ecoscribe keeps
 them per session (voices.json) and, when the user names a speaker, learns that voice under the
-name in %LOCALAPPDATA%\\dictado\\voices.json. The next call's voices are compared by cosine;
+name in %LOCALAPPDATA%\\ecoscribe\\voices.json. The next call's voices are compared by cosine;
 a match names the speaker by itself. Nothing leaves the PC; [meetings] voice_memory = false
 stores nothing. Threshold from real podcasts (spike/voice_memory, 2026-10-05): the same
 person across recordings 0.75-0.99, different people at most 0.28 -> 0.55, and only voices
@@ -11,7 +11,7 @@ with at least 8 s of speech.
 import json
 from pathlib import Path
 
-from dictado import diarize, sessions, voices
+from ecoscribe import diarize, sessions, voices
 from tests.test_diarize import seg
 
 ANA, TOM, NEW = [1.0, 0.1, 0.0, 0.0], [0.0, 1.0, 0.1, 0.0], [0.0, 0.0, 0.2, 1.0]
@@ -87,7 +87,7 @@ def test_off_or_old_addon_stores_nothing(tmp_path):
 
 
 def test_naming_a_speaker_teaches_the_memory(tmp_path):
-    from dictado.window import Api
+    from ecoscribe.window import Api
     root = tmp_path / "t"
     cfg = tmp_path / "config.toml"
     cfg.write_text(f'[transcribe]\nroot = "{root.as_posix()}"\n', encoding="utf-8")

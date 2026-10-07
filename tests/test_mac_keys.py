@@ -12,7 +12,7 @@ LCMD_BITS = 0x00100000 | 0x08
 
 
 def hook(**kw):
-    from dictado.platform.macos.keyhook import HookThread
+    from ecoscribe.platform.macos.keyhook import HookThread
     acts = []
     h = HookThread(acts.append, RCMD, 1.0, **kw)
     h._consumer.start()
@@ -95,7 +95,7 @@ def test_hold_to_talk_presses_holds_and_releases():
 
 
 def test_combo_fires_once_and_is_swallowed():
-    from dictado.hotkeys import ComboMatcher
+    from ecoscribe.hotkeys import ComboMatcher
     h, acts = hook(combo=ComboMatcher("cmd+shift+d"))
     h.handle("flags", LCMD, LCMD_BITS, False)
     h.handle("flags", LSHIFT, LCMD_BITS | 0x00020000 | 0x02, False)
@@ -106,7 +106,7 @@ def test_combo_fires_once_and_is_swallowed():
 
 
 def test_mac_shortcut_rules():
-    from dictado import hotkeys
+    from ecoscribe import hotkeys
     assert hotkeys.normalize("rcmd") == "rcmd" and hotkeys.label("rcmd") == "Right Command"
     assert hotkeys.normalize("Shift + Cmd + D") == "shift+cmd+d"
     for bad in ("cmd+c", "cmd+q", "alt+2", "ralt", "cmd+tab"):
@@ -149,7 +149,7 @@ def test_plain_l_and_left_command_l_pass_through():
 
 
 def test_no_language_key_with_a_combo_shortcut():
-    from dictado.hotkeys import ComboMatcher
+    from ecoscribe.hotkeys import ComboMatcher
     h, acts = hook(combo=ComboMatcher("cmd+shift+d"))
     h.handle("flags", RCMD, CMD_BITS, False, t=0.0)
     assert not h.handle("down", L, CMD_BITS, False, t=0.05)

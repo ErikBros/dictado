@@ -4,8 +4,8 @@ from datetime import datetime
 
 import pytest
 
-from dictado import meetings, sessions
-from dictado.window import Api
+from ecoscribe import meetings, sessions
+from ecoscribe.window import Api
 
 
 @pytest.fixture
@@ -142,7 +142,7 @@ def test_speakers_setting_round_trips(env):
 
 
 def test_copy_summary_prompt(env):
-    """Deep dive 2026-10-05: every meeting app summarises; Dictado hands Claude a ready prompt."""
+    """Deep dive 2026-10-05: every meeting app summarises; Ecoscribe hands Claude a ready prompt."""
     api, root, _, copied, _ = env
     d = make(root, "Plan", 4, segs=[{"t0": 0, "t1": 2, "text": "Vi kör på fredag", "speaker": "Others"}])
     api.copy_transcript(d.name, "summary")

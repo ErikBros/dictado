@@ -3,7 +3,7 @@ import threading
 import time
 from pathlib import Path
 
-from dictado import commands
+from ecoscribe import commands
 
 
 def test_round_trip(tmp_path):

@@ -1,8 +1,8 @@
 import pytest
 
-from dictado import tomlw
-from dictado.config import TranscribeCfg, load
-from dictado.routing import LANG_NAMES, model_for
+from ecoscribe import tomlw
+from ecoscribe.config import TranscribeCfg, load
+from ecoscribe.routing import LANG_NAMES, model_for
 
 
 def test_routes_default():

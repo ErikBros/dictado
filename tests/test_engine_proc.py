@@ -7,8 +7,8 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from dictado.config import TextCfg, WhisperCfg
-from dictado.engine_proc import EngineProxy
+from ecoscribe.config import TextCfg, WhisperCfg
+from ecoscribe.engine_proc import EngineProxy
 
 HERE = Path(__file__).resolve().parent
 
@@ -91,8 +91,8 @@ def test_hung_worker_killed():
 
 
 def test_app_warms_engine_at_recording_start():
-    from dictado.app import App
-    from dictado.config import Config
+    from ecoscribe.app import App
+    from ecoscribe.config import Config
 
     class Eng:
         warmed = 0

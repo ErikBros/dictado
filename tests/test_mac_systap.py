@@ -7,8 +7,8 @@ import time
 import numpy as np
 import pytest
 
-from dictado.platform.macos import systap
-from dictado.platform.macos.systap import Loopback
+from ecoscribe.platform.macos import systap
+from ecoscribe.platform.macos.systap import Loopback
 
 FAKE = textwrap.dedent('''
     import json, math, os, struct, sys, time
@@ -25,7 +25,7 @@ FAKE = textwrap.dedent('''
         n += 480
         sys.stdout.buffer.write(block[:1000]); sys.stdout.buffer.flush()   # split mid-frame on purpose
         sys.stdout.buffer.write(block[1000:]); sys.stdout.buffer.flush()
-        time.sleep(0.01 * float(os.environ.get("DICTADO_FAKE_SLOW", "1")))  # >1: a slow machine
+        time.sleep(0.01 * float(os.environ.get("ECOSCRIBE_FAKE_SLOW", "1")))  # >1: a slow machine
     sys.exit(3 if mode == "changed" else 0)
 ''')
 
@@ -144,6 +144,6 @@ def test_stop_ends_the_helper(fake):
 
 @pytest.mark.skipif(sys.platform != "darwin", reason="macOS")
 def test_meeting_recorder_uses_the_process_tap_on_macos(tmp_path, monkeypatch):
-    from dictado import meeting
+    from ecoscribe import meeting
     rec = meeting._default_recorder(tmp_path, on_chunk=lambda *a: None)
     assert rec.loop_factory is Loopback

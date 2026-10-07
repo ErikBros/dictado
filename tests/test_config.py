@@ -1,6 +1,6 @@
 import pytest
 
-from dictado import config
+from ecoscribe import config
 
 MAC = config.MAC
 DEF_KEY, DEF_VK = ("rcmd", 54) if MAC else ("rctrl", 0xA3)
@@ -48,7 +48,7 @@ def test_missing_file_gives_defaults(tmp_path):
 
 
 def test_meetings_defaults_and_round_trip(tmp_path):
-    from dictado import tomlw
+    from ecoscribe import tomlw
     c = config.load(None)
     assert (c.meetings.mode, c.meetings.grace_s, c.meetings.silence_stop_s, c.meetings.default_lang) == \
         ("prompt", 20, 180, "sv")

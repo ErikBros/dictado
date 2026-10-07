@@ -5,9 +5,9 @@ import time
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from dictado.audio import Recorder  # noqa: E402
-from dictado.config import AudioCfg  # noqa: E402
-from dictado.micgate import MicGate, list_capture_endpoints  # noqa: E402
+from ecoscribe.audio import Recorder  # noqa: E402
+from ecoscribe.config import AudioCfg  # noqa: E402
+from ecoscribe.micgate import MicGate, list_capture_endpoints  # noqa: E402
 
 
 def state():

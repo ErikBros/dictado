@@ -4,8 +4,8 @@ import pytest
 import time
 import uuid
 
-from dictado import winutil
-from dictado.restart import do_restart
+from ecoscribe import winutil
+from ecoscribe.restart import do_restart
 
 
 def run(spawn_ok=True, failing_step=None):
@@ -49,7 +49,7 @@ def test_single_instance_becomes_free_after_holder_releases():
     """The --restarted copy polls single_instance(); it must not keep the mutex alive itself."""
     import win32api
     import win32event
-    name = f"Local\\DictadoTestMutex-{uuid.uuid4().hex[:6]}"
+    name = f"Local\\EcoscribeTestMutex-{uuid.uuid4().hex[:6]}"
     held = threading.Event()
     release = threading.Event()
 
@@ -81,9 +81,9 @@ def test_single_instance_lock_on_macos(tmp_path, monkeypatch):
     import sys
     if sys.platform != "darwin":
         pytest.skip("macOS lock")
-    monkeypatch.setenv("DICTADO_DATA_DIR", str(tmp_path))
-    from dictado.platform.macos import sysutil
-    name = f"Local\\DictadoTestLock-{uuid.uuid4().hex[:6]}"
+    monkeypatch.setenv("ECOSCRIBE_DATA_DIR", str(tmp_path))
+    from ecoscribe.platform.macos import sysutil
+    name = f"Local\\EcoscribeTestLock-{uuid.uuid4().hex[:6]}"
     assert sysutil.single_instance(name) is True
     assert sysutil.single_instance(name) is False  # a second try in the same process, like CreateMutex
     ctx = mp.get_context("spawn")
@@ -99,6 +99,6 @@ def test_single_instance_lock_on_macos(tmp_path, monkeypatch):
 
 def _try_lock(data_dir, name, q):
     import os
-    os.environ["DICTADO_DATA_DIR"] = data_dir
-    from dictado.platform.macos import sysutil
+    os.environ["ECOSCRIBE_DATA_DIR"] = data_dir
+    from ecoscribe.platform.macos import sysutil
     q.put(sysutil.single_instance(name))

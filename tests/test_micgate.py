@@ -1,4 +1,4 @@
-from dictado.micgate import MicGate
+from ecoscribe.micgate import MicGate
 
 
 class FakeVol:

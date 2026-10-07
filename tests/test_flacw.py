@@ -1,6 +1,6 @@
 import numpy as np
 
-from dictado.flacw import FlacWriter, mix
+from ecoscribe.flacw import FlacWriter, mix
 
 SR = 16000
 
@@ -54,7 +54,7 @@ def test_hard_killed_writer_leaves_a_readable_file(tmp_path):
     app = Path(__file__).resolve().parent.parent
     p = tmp_path / "crash.flac"
     code = ("import sys, os, numpy as np; sys.path.insert(0, sys.argv[1]);"
-            "from dictado.flacw import FlacWriter; w = FlacWriter(sys.argv[2]);"
+            "from ecoscribe.flacw import FlacWriter; w = FlacWriter(sys.argv[2]);"
             "[w.write(np.full(1600, 0.2, np.float32)) for _ in range(50)]; w.flush(); os._exit(0)")
     subprocess.run([sys.executable, "-c", code, str(app), str(p)], check=True)
     back = decode_audio(str(p), sampling_rate=SR)
