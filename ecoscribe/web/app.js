@@ -991,6 +991,10 @@ function macify() {
   for (const el of $$(".tip .keys kbd.key")) if (el.textContent === "Ctrl") el.textContent = "⌘";
   const startup = $("#row-startup .row-label"); if (startup) startup.textContent = "Open at login";
   const unmute = $("#f-unmute"); if (unmute) unmute.closest("label").hidden = true;  // a PC fix (mics muted at 0)
+  for (const el of $$("#page-ajustes .muted")) {  // dictado-p7c: Mac words in Settings
+    el.innerHTML = el.innerHTML.replaceAll("this PC", "this Mac")
+      .replace("(or the tray icon: Next dictation in)", "(or the menu bar icon: Dictation language)");
+  }
   for (const p of $$("#welcome p")) {
     p.innerHTML = p.innerHTML.replace("<strong>Right Ctrl</strong>", "<strong>Right Command</strong>")
       .replace("Ecoscribe stays in the system tray, next to the clock, and starts with Windows. Open it any time from the Start menu.",
