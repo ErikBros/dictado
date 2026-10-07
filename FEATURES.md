@@ -46,12 +46,12 @@ Built once for both. "Check on Mac" = works in tests, still to be tried for real
 | System audio for meetings (the other side of a call) | done (WASAPI loopback) | done (Core Audio process tap; real capture: check on Mac, dictado-tjn) |
 | Call detection (who uses the mic, call windows) | done | done (real-call check: dictado-nhn) |
 | Tray / menu bar, pill and prompt box | done | done (AppKit) |
-| Start at login | done (Run key) | done (LaunchAgent) |
+| Start at login | done (Run key; the old "Dictado" value moves to "Ecoscribe") | done (LaunchAgent com.erikbros.ecoscribe; the old com.erikbros.dictado one moves over) |
 | Single instance | done | done |
 | Settings saved -> restart signal | done | done |
 | Window buttons -> background app (commands) | done | done |
 | Watchdog: watch, restart, kill a frozen app | done | done |
 | A frozen app can't lag the computer's input | done (hooks in their own process) | not needed: macOS times out a stuck event tap by itself |
-| Speakers + Remember voices (add-on) | done | done (Dictado Speakers.app; pyannote on the Apple GPU, same results as CPU, 2x faster) |
+| Speakers + Remember voices (add-on) | done | done (Ecoscribe Speakers.app, the old Dictado Speakers.app still found; pyannote on the Apple GPU, same results as CPU, 2x faster) |
 | Claude app connection (MCP) | done | done (~/Library/Application Support/Claude) |
-| Installer | done (.exe, Inno Setup) | done (.app + .dmg, self-signed: this Mac only; a public build needs a Developer ID) |
+| Installer | done (.exe, Inno Setup) | done (Ecoscribe.app + .dmg, com.erikbros.ecoscribe, self-signed: this Mac only; a public build needs a Developer ID) |

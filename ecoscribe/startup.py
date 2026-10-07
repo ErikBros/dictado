@@ -44,4 +44,4 @@ def disable(name: str = NAME) -> None:
 
 
 if sys.platform == "darwin":  # a LaunchAgent instead of the Run key (ecoscribe/platform/macos/startup.py)
-    from .platform.macos.startup import NAME, app_command, disable, enable, get, is_enabled  # noqa: F811,F401
+    from .platform.macos.startup import NAME, OLD_NAME, app_command, disable, enable, get, is_enabled  # noqa: F811,F401

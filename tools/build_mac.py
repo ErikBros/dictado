@@ -1,10 +1,10 @@
-"""Build Dictado.app and Dictado-<version>.dmg on an Apple Silicon Mac.
+"""Build Ecoscribe.app and Ecoscribe-<version>.dmg on an Apple Silicon Mac.
 
     python tools/build_mac.py [--no-dmg] [--identity NAME]
 
-1. dictado-systap (the system-audio helper) with swiftc
-2. Dictado.icns from icon.mic_image
-3. PyInstaller: packaging/macos/dictado-mac.spec -> build/mac/dist/Dictado.app
+1. ecoscribe-systap (the system-audio helper) with swiftc
+2. Ecoscribe.icns from icon.mic_image
+3. PyInstaller: packaging/macos/ecoscribe-mac.spec -> build/mac/dist/Ecoscribe.app
 4. the helper into Contents/MacOS (next to the app's executable, where systap.helper_path looks)
 5. signing with a stable identity: macOS ties its permission grants (Accessibility, Input
    Monitoring, Microphone, System Audio Recording) to the signing certificate, so a rebuild signed
@@ -44,7 +44,7 @@ def version() -> str:
 
 
 def build_helper() -> Path:
-    out = OUT / "dictado-systap"
+    out = OUT / "ecoscribe-systap"
     out.parent.mkdir(parents=True, exist_ok=True)
     run(["swiftc", "-O", "-target", "arm64-apple-macos14.4", "-o", out,
          APP / "ecoscribe" / "platform" / "macos" / "systap.swift"])
@@ -53,9 +53,9 @@ def build_helper() -> Path:
 
 def build_icon() -> Path:
     from ecoscribe.icon import mic_image
-    icns = APP / "packaging" / "macos" / "Dictado.icns"
+    icns = APP / "packaging" / "macos" / "Ecoscribe.icns"
     with tempfile.TemporaryDirectory() as tmp:
-        iconset = Path(tmp) / "Dictado.iconset"
+        iconset = Path(tmp) / "Ecoscribe.iconset"
         iconset.mkdir()
         for size in (16, 32, 128, 256, 512):
             for scale in (1, 2):
@@ -67,10 +67,10 @@ def build_icon() -> Path:
 
 
 def freeze() -> Path:
-    env = {**os.environ, "DICTADO_VERSION": version()}
+    env = {**os.environ, "ECOSCRIBE_VERSION": version()}
     run([sys.executable, "-m", "PyInstaller", "--noconfirm", "--clean", "--distpath", OUT / "dist",
-         "--workpath", OUT / "work", APP / "packaging" / "macos" / "dictado-mac.spec"], env=env, cwd=APP)
-    return OUT / "dist" / "Dictado.app"
+         "--workpath", OUT / "work", APP / "packaging" / "macos" / "ecoscribe-mac.spec"], env=env, cwd=APP)
+    return OUT / "dist" / "Ecoscribe.app"
 
 
 def ensure_identity() -> str:
@@ -118,7 +118,7 @@ def sign(app: Path, identity: str, keychain: Path | None) -> None:
         # inside out: every Mach-O in the bundle, then the bundle (no hardened runtime: not notarized)
         machos = [p for p in app.rglob("*") if p.is_file() and not p.is_symlink() and _is_macho(p)]
         for p in sorted(machos, key=lambda p: len(p.parts), reverse=True):
-            ident = ["--identifier", "com.erikbros.dictado.systap"] if p.name == "dictado-systap" else []
+            ident = ["--identifier", "com.erikbros.ecoscribe.systap"] if p.name == "ecoscribe-systap" else []
             subprocess.run(["codesign", "--force", "--sign", identity, *ident, "--timestamp=none", str(p)],
                            check=True, capture_output=True)
         run(["codesign", "--force", "--sign", identity, "--timestamp=none", app])
@@ -138,14 +138,14 @@ def _is_macho(p: Path) -> bool:
 
 
 def dmg(app: Path) -> Path:
-    out = OUT / f"Dictado-{version()}.dmg"
+    out = OUT / f"Ecoscribe-{version()}.dmg"
     with tempfile.TemporaryDirectory() as tmp:
-        stage = Path(tmp) / "Dictado"
+        stage = Path(tmp) / "Ecoscribe"
         stage.mkdir()
-        run(["ditto", app, stage / "Dictado.app"])
+        run(["ditto", app, stage / "Ecoscribe.app"])
         (stage / "Applications").symlink_to("/Applications")
         out.unlink(missing_ok=True)
-        run(["hdiutil", "create", "-volname", "Dictado", "-srcfolder", stage, "-ov", "-format", "UDZO", out],
+        run(["hdiutil", "create", "-volname", "Ecoscribe", "-srcfolder", stage, "-ov", "-format", "UDZO", out],
             stdout=subprocess.DEVNULL)
     return out
 
@@ -158,7 +158,7 @@ def main(argv=None) -> int:
     helper = build_helper()
     build_icon()
     app = freeze()
-    shutil.copy2(helper, app / "Contents" / "MacOS" / "dictado-systap")
+    shutil.copy2(helper, app / "Contents" / "MacOS" / "ecoscribe-systap")
     identity = a.identity or ensure_identity()
     print(f"signing with {identity}")
     sign(app, identity, None if a.identity else KEYCHAIN)

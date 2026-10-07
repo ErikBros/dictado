@@ -1,20 +1,20 @@
-// dictado-systap: the system audio for meetings on macOS (the WASAPI loopback of the Mac).
+// ecoscribe-systap: the system audio for meetings on macOS (the WASAPI loopback of the Mac).
 //
-// A Core Audio process tap (macOS 14.4+) on every process's output except Dictado's own (its
+// A Core Audio process tap (macOS 14.4+) on every process's output except Ecoscribe's own (its
 // start/stop tones must not land on the "Others" track), in a private aggregate device clocked by
 // the current output device. stdout: one JSON header line {"rate", "channels", "device"}, then raw
-// interleaved float32 frames. Exits 0 when stdin closes (Dictado went away), 3 when the default
-// output device changes (Dictado starts a new one), 2 on a setup error (message on stderr).
+// interleaved float32 frames. Exits 0 when stdin closes (Ecoscribe went away), 3 when the default
+// output device changes (Ecoscribe starts a new one), 2 on a setup error (message on stderr).
 // Needs "Screen & System Audio Recording" (System Audio Recording Only) for the responsible app.
 //
-// Build: swiftc -O -o dictado-systap systap.swift   (Dictado does it on first use in a dev setup)
-// Usage: dictado-systap [<pid to exclude> ...]
+// Build: swiftc -O -o ecoscribe-systap systap.swift   (Ecoscribe does it on first use in a dev setup)
+// Usage: ecoscribe-systap [<pid to exclude> ...]
 import AudioToolbox
 import CoreAudio
 import Foundation
 
 func fail(_ msg: String, _ status: OSStatus = 0) -> Never {
-    FileHandle.standardError.write("dictado-systap: \(msg)\(status != 0 ? " (OSStatus \(status))" : "")\n".data(using: .utf8)!)
+    FileHandle.standardError.write("ecoscribe-systap: \(msg)\(status != 0 ? " (OSStatus \(status))" : "")\n".data(using: .utf8)!)
     exit(2)
 }
 
@@ -51,7 +51,7 @@ func processObject(pid: pid_t) -> AudioObjectID? {
     return st == noErr && id != kAudioObjectUnknown ? id : nil
 }
 
-// Dictado went away (stdin closed): leave, even while setup still waits for consent. Private taps
+// Ecoscribe went away (stdin closed): leave, even while setup still waits for consent. Private taps
 // and aggregate devices die with the process, so exiting here leaks nothing.
 Thread.detachNewThread {
     while FileHandle.standardInput.availableData.count > 0 {}
@@ -75,7 +75,7 @@ let desc = CATapDescription(stereoGlobalTapButExcludeProcesses: exclude)
 desc.uuid = UUID()
 desc.muteBehavior = .unmuted
 desc.isPrivate = true
-desc.name = "Dictado system audio"
+desc.name = "Ecoscribe system audio"
 
 var tap = AudioObjectID(kAudioObjectUnknown)
 var st = AudioHardwareCreateProcessTap(desc, &tap)
@@ -91,7 +91,7 @@ if fmt.mFormatID != kAudioFormatLinearPCM || fmt.mFormatFlags & kAudioFormatFlag
 }
 
 let aggregate: [String: Any] = [
-    kAudioAggregateDeviceNameKey: "Dictado system audio",
+    kAudioAggregateDeviceNameKey: "Ecoscribe system audio",
     kAudioAggregateDeviceUIDKey: UUID().uuidString,
     kAudioAggregateDeviceMainSubDeviceKey: outputUID,
     kAudioAggregateDeviceIsPrivateKey: true,
@@ -113,7 +113,7 @@ func cleanup() {
 }
 
 let out = FileHandle.standardOutput
-let writer = DispatchQueue(label: "dictado-systap.write")
+let writer = DispatchQueue(label: "ecoscribe-systap.write")
 var started = false  // touched only on `writer`
 st = AudioDeviceCreateIOProcIDWithBlock(&procID, agg, writer) { _, input, _, _, _ in
     guard started else { return }
@@ -127,14 +127,14 @@ if st != noErr { cleanup(); fail("IO proc not created", st) }
 st = AudioDeviceStart(agg, procID)
 if st != noErr { cleanup(); fail("device not started", st) }
 // The header only now: while macOS waits for the user's consent, IOProc creation above blocks and
-// Dictado sees no header (it keeps the mic going and says which permission is missing).
+// Ecoscribe sees no header (it keeps the mic going and says which permission is missing).
 let header: [String: Any] = ["rate": fmt.mSampleRate, "channels": Int(fmt.mChannelsPerFrame), "device": outputName]
 writer.sync {
     out.write(try! JSONSerialization.data(withJSONObject: header) + "\n".data(using: .utf8)!)
     started = true
 }
 
-// ---- leave when Dictado goes away or the output device changes -----------------------------------
+// ---- leave when Ecoscribe goes away or the output device changes -----------------------------------
 var outAddr = address(kAudioHardwarePropertyDefaultOutputDevice)
 AudioObjectAddPropertyListenerBlock(system, &outAddr, DispatchQueue.main) { _, _ in
     if getID(system, kAudioHardwarePropertyDefaultOutputDevice) != output { cleanup(); exit(3) }

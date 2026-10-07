@@ -1,4 +1,4 @@
-# PyInstaller spec for Dictado.app (macOS, Apple Silicon). Build with: python tools/build_mac.py
+# PyInstaller spec for Ecoscribe.app (macOS, Apple Silicon). Build with: python tools/build_mac.py
 import os
 from pathlib import Path
 
@@ -6,9 +6,9 @@ from PyInstaller.utils.hooks import collect_data_files, collect_dynamic_libs, co
 
 HERE = Path(SPECPATH)
 APP = HERE.parent.parent
-VERSION = os.environ.get("DICTADO_VERSION", "0.0.0")
+VERSION = os.environ.get("ECOSCRIBE_VERSION", "0.0.0")
 
-binaries = collect_dynamic_libs("mlx")  # dictado-systap goes into Contents/MacOS after the build
+binaries = collect_dynamic_libs("mlx")  # ecoscribe-systap goes into Contents/MacOS after the build
 datas = (collect_data_files("mlx") + collect_data_files("mlx_whisper") + collect_data_files("faster_whisper")
          + collect_data_files("webview") + [(str(APP / "ecoscribe" / "web"), "ecoscribe/web"),
                                              (str(APP / "ecoscribe" / "platform" / "macos" / "systap.swift"),
@@ -30,24 +30,24 @@ a = Analysis(
     noarchive=False,
 )
 pyz = PYZ(a.pure)
-exe = EXE(pyz, a.scripts, [], exclude_binaries=True, name="Dictado", console=False, argv_emulation=False,
+exe = EXE(pyz, a.scripts, [], exclude_binaries=True, name="Ecoscribe", console=False, argv_emulation=False,
           target_arch="arm64", codesign_identity=None)
-coll = COLLECT(exe, a.binaries, a.datas, name="Dictado")
+coll = COLLECT(exe, a.binaries, a.datas, name="Ecoscribe")
 app = BUNDLE(
     coll,
-    name="Dictado.app",
-    icon=str(HERE / "Dictado.icns") if (HERE / "Dictado.icns").exists() else None,
-    bundle_identifier="com.erikbros.dictado",
+    name="Ecoscribe.app",
+    icon=str(HERE / "Ecoscribe.icns") if (HERE / "Ecoscribe.icns").exists() else None,
+    bundle_identifier="com.erikbros.ecoscribe",
     version=VERSION,
     info_plist={
-        "CFBundleName": "Dictado",
-        "CFBundleDisplayName": "Dictado",
+        "CFBundleName": "Ecoscribe",
+        "CFBundleDisplayName": "Ecoscribe",
         "CFBundleShortVersionString": VERSION,
         "CFBundleVersion": VERSION,
         "LSUIElement": True,  # menu bar only, no Dock icon
         "LSMinimumSystemVersion": "14.4",  # Core Audio process taps (meetings' system audio)
         "NSHighResolutionCapable": True,
-        "NSMicrophoneUsageDescription": "Dictado listens while you dictate and records your side of meetings.",
-        "NSAudioCaptureUsageDescription": "Dictado records the other people in your meetings from the computer's audio.",
+        "NSMicrophoneUsageDescription": "Ecoscribe listens while you dictate and records your side of meetings.",
+        "NSAudioCaptureUsageDescription": "Ecoscribe records the other people in your meetings from the computer's audio.",
     },
 )

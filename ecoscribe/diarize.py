@@ -29,7 +29,7 @@ def addon_exe() -> Path:
     return Path(os.environ.get("LOCALAPPDATA", "")) / "Programs" / "Dictado Speakers" / "DictadoSpeakers.exe"
 
 
-if sys.platform == "darwin":  # /Applications/Dictado Speakers.app (ecoscribe/platform/macos/speakers.py)
+if sys.platform == "darwin":  # /Applications/Ecoscribe Speakers.app (ecoscribe/platform/macos/speakers.py)
     from .platform.macos.speakers import addon_exe  # noqa: F811
 
 

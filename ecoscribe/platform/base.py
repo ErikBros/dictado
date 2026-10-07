@@ -47,7 +47,7 @@ CAPABILITIES: dict[str, dict] = {
     },
     "System audio for meetings (the other side of a call)": {
         "windows": "ecoscribe.loopback:Loopback",
-        "macos": "ecoscribe.platform.macos.systap:Loopback",  # Core Audio process tap (dictado-systap helper)
+        "macos": "ecoscribe.platform.macos.systap:Loopback",  # Core Audio process tap (ecoscribe-systap helper)
     },
     "Call detection (who uses the mic, call windows)": {
         "windows": "ecoscribe.detect:read_consent,window_titles,running_apps",
@@ -83,7 +83,7 @@ CAPABILITIES: dict[str, dict] = {
     },
     "Speakers + Remember voices (add-on)": {
         "windows": "file:packaging/speakers/speakers_main.py",
-        "macos": "ecoscribe.platform.macos.speakers:addon_exe",  # Dictado Speakers.app, pyannote on MPS
+        "macos": "ecoscribe.platform.macos.speakers:addon_exe",  # Ecoscribe Speakers.app (the old Dictado Speakers.app still found), pyannote on MPS
     },
     "Claude app connection (MCP)": {
         "windows": "ecoscribe.claude_link:config_files,connect",
@@ -91,6 +91,6 @@ CAPABILITIES: dict[str, dict] = {
     },
     "Installer": {
         "windows": "file:packaging/ecoscribe.iss",
-        "macos": "file:tools/build_mac.py",  # Dictado.app + .dmg, signed so permissions survive updates
+        "macos": "file:tools/build_mac.py",  # Ecoscribe.app + .dmg, signed so permissions survive updates
     },
 }

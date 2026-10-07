@@ -48,3 +48,15 @@ def test_addon_found_in_applications_or_home(tmp_path, monkeypatch):
 def test_diarize_uses_the_mac_path():
     from ecoscribe import diarize
     assert diarize.addon_exe is speakers.addon_exe
+
+
+def test_old_dictado_addon_still_found(tmp_path, monkeypatch):
+    sysapps = tmp_path / "sys"
+    monkeypatch.setattr(speakers, "Path", lambda *a: Path(*a) if a != ("/Applications",) else sysapps)
+    home = tmp_path / "home"
+    (sysapps / speakers.OLD_BINARY).parent.mkdir(parents=True)
+    (sysapps / speakers.OLD_BINARY).write_text("")
+    assert speakers.addon_exe(home) == sysapps / speakers.OLD_BINARY  # only the old one: use it
+    (home / "Applications" / speakers.BINARY).parent.mkdir(parents=True)
+    (home / "Applications" / speakers.BINARY).write_text("")
+    assert speakers.addon_exe(home) == home / "Applications" / speakers.BINARY  # the new one wins

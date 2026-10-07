@@ -1,7 +1,7 @@
 """System audio for meetings on macOS: loopback.Loopback's contract on a Core Audio process tap.
 
-The tap lives in a small Swift helper (systap.swift -> dictado-systap) that streams the mix of every
-app's output, Dictado's own tones excluded, as interleaved float32 after a JSON header line. This
+The tap lives in a small Swift helper (systap.swift -> ecoscribe-systap) that streams the mix of every
+app's output, Ecoscribe's own tones excluded, as interleaved float32 after a JSON header line. This
 side reuses the Windows pieces: the same mono fold + resampler to 16 kHz and the same GapFiller, so
 the system track sits on the wall clock next to the mic exactly like on the PC.
 
@@ -26,7 +26,7 @@ from ...loopback import SR, Loopback as _Loopback
 
 log = logging.getLogger(__name__)
 SOURCE = Path(__file__).with_name("systap.swift")
-NAME = "dictado-systap"
+NAME = "ecoscribe-systap"
 NO_AUDIO_S = 10.0  # no header this long after a start: say which permission is missing (once)
 RETRY_S = 30.0  # a helper that failed (exit 2) is tried again this often, not in a tight loop
 CHANGED = 3  # exit code: the default output device changed
@@ -93,8 +93,8 @@ class Loopback(_Loopback):
         self._started_at = self.clock()
         self._proc = proc = subprocess.Popen(argv, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                                              stderr=subprocess.PIPE, bufsize=0)
-        threading.Thread(target=self._reader, args=(proc, gen), name="dictado-systap", daemon=True).start()
-        threading.Thread(target=self._errors, args=(proc,), name="dictado-systap-err", daemon=True).start()
+        threading.Thread(target=self._reader, args=(proc, gen), name="ecoscribe-systap", daemon=True).start()
+        threading.Thread(target=self._errors, args=(proc,), name="ecoscribe-systap-err", daemon=True).start()
 
     def _reader(self, proc: subprocess.Popen, gen: int) -> None:
         line = proc.stdout.readline()
@@ -152,7 +152,7 @@ class Loopback(_Loopback):
         if p is not None and p.poll() is None:
             if not self._got_header and not self._warned and now - self._started_at > NO_AUDIO_S:
                 self._warned = True
-                log.warning("no system audio after %.0f s: allow Dictado in System Settings > Privacy & Security > "
+                log.warning("no system audio after %.0f s: allow Ecoscribe in System Settings > Privacy & Security > "
                             "Screen & System Audio Recording (System Audio Recording Only). Recording the mic.",
                             now - self._started_at)
             return
