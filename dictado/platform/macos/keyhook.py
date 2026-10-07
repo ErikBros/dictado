@@ -3,7 +3,8 @@
 Same contract as the Windows hook: the tap callback only timestamps the event, queues it and lets it
 through; a consumer thread runs the same KeyState machine (tap, hold-to-talk, Esc cancel) and the same
 ComboMatcher. Two things are swallowed, as on Windows: the Esc of the cancel combo while recording, and
-a combo shortcut (the app under the cursor never sees it).
+a combo shortcut (the app under the cursor never sees it). Dictation key + L picks the next dictation's
+language ("lang", once per press; the L is swallowed so no app sees Cmd+L), as on Windows.
 
 Mac specifics:
 - Modifier keys (Right Command, Fn...) arrive as flagsChanged; down/up comes from their device bit.
@@ -25,6 +26,7 @@ from ...keystate import KeyState
 from . import keymap
 
 log = logging.getLogger(__name__)
+KC_LANG = 37  # the L key (a key position: the same key on Swedish, Spanish and US layouts)
 
 
 class HookThread(threading.Thread):
@@ -46,12 +48,25 @@ class HookThread(threading.Thread):
         self.ready = threading.Event()
         self._toggle_down = False
         self._eat_esc_up = False
+        self._lang_held = False  # L went down with the dictation key held: swallowed until it's up
         self._q: queue.SimpleQueue = queue.SimpleQueue()
         self._tap = None
         self._loop = None
         self._consumer = threading.Thread(target=self._consume, name="dictado-keys", daemon=True)
 
     # --- pure part of the callback, testable without a real tap ---
+    def lang_key(self, keycode: int, down: bool, t: float) -> bool:
+        """Dictation key + L: emit "lang" once per press (auto-repeat doesn't cycle again) and swallow the L,
+        down and up. Lone keys only: a combo shortcut has no language key (same as Windows)."""
+        if self.combo is not None or keycode != KC_LANG or not (self._toggle_down or self._lang_held):
+            return False
+        if down and not self._lang_held:
+            self._lang_held = True
+            self._q.put(("lang", keymap.to_vk(keycode), t))
+        elif not down:
+            self._lang_held = False
+        return True
+
     def would_swallow(self, vk: int, down: bool) -> bool:
         if vk != keymap.VK_ESCAPE:
             return False
@@ -89,6 +104,8 @@ class HookThread(threading.Thread):
         if vk == self.toggle_vk:
             self._toggle_down = down
         self._q.put(("down" if down else "up", vk, t))
+        if kind != "flags" and self.lang_key(keycode, down, t):
+            return True  # the app under the cursor never sees this L
         return self.would_swallow(vk, down)
 
     # --- the real tap ---
@@ -178,7 +195,7 @@ class HookThread(threading.Thread):
                 return
             try:
                 if ev:
-                    action = "toggle" if ev[0] == "combo" else self.keys.feed(*ev)
+                    action = {"combo": "toggle", "lang": "lang"}.get(ev[0]) or self.keys.feed(*ev)
                     if action:
                         self.on_action(action)
                 action = self.keys.tick(time.monotonic())

@@ -113,3 +113,44 @@ def test_mac_shortcut_rules():
         with pytest.raises(ValueError):
             hotkeys.normalize(bad)
     assert hotkeys.normalize("ctrl+alt+d") == "ctrl+alt+d"  # no AltGr on the Mac
+
+
+L = 37
+
+
+def test_right_command_plus_l_picks_the_next_language_and_swallows_the_l():
+    h, acts = hook()
+    assert not h.handle("flags", RCMD, CMD_BITS, False, t=0.0)
+    assert h.handle("down", L, CMD_BITS, False, t=0.05)  # swallowed: no app sees Cmd+L
+    assert h.handle("down", L, CMD_BITS, False, t=0.10)  # auto-repeat: swallowed, no second "lang"
+    assert h.handle("up", L, CMD_BITS, False, t=0.15)
+    h.handle("flags", RCMD, 0, False, t=0.2)
+    assert settle(acts, 1, 0.3) == ["lang"]  # and no dictation toggle from that Right Command press
+
+
+def test_l_with_command_released_first_is_still_swallowed_on_the_way_up():
+    h, acts = hook()
+    h.handle("flags", RCMD, CMD_BITS, False, t=0.0)
+    assert h.handle("down", L, CMD_BITS, False, t=0.05)
+    h.handle("flags", RCMD, 0, False, t=0.1)  # Command up before L
+    assert h.handle("up", L, 0, False, t=0.15)
+    assert settle(acts, 1, 0.3) == ["lang"]
+
+
+def test_plain_l_and_left_command_l_pass_through():
+    h, acts = hook()
+    assert not h.handle("down", L, 0, False, t=0.0)  # typing an l
+    assert not h.handle("up", L, 0, False, t=0.05)
+    h.handle("flags", LCMD, LCMD_BITS, False, t=0.1)  # Left Cmd+L: the browser's address bar
+    assert not h.handle("down", L, LCMD_BITS, False, t=0.15)
+    assert not h.handle("up", L, LCMD_BITS, False, t=0.2)
+    h.handle("flags", LCMD, 0, False, t=0.25)
+    assert settle(acts, 1, 0.3) == []
+
+
+def test_no_language_key_with_a_combo_shortcut():
+    from dictado.hotkeys import ComboMatcher
+    h, acts = hook(combo=ComboMatcher("cmd+shift+d"))
+    h.handle("flags", RCMD, CMD_BITS, False, t=0.0)
+    assert not h.handle("down", L, CMD_BITS, False, t=0.05)
+    assert "lang" not in settle(acts, 1, 0.3)
