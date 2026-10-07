@@ -19,6 +19,7 @@ Built once for both. "Check on Mac" = works in tests, still to be tried for real
 | Pill with timer, level and cancel hint | done | done |
 | Window: Home, History, Meetings, Settings | done | done |
 | Languages: English + Swedish built in, "Add a language" for any of Whisper's 100; dictation auto-detects among the ticked ones | done | done (auto-detect: English + Spanish at the Mac desktop, 100 % recall; "Add a language": German + Finnish added in the real Settings page, saved, in the menu bar and meeting lists, removed again (tools/mac_lang_check.py); dictated at the desktop, 100 % recall, Finnish moves dictation to large-v3) |
+| Several languages in one dictation (Spanish + Greek...): each piece between pauses in its own language | done (a breath at the switch is enough; +0.1-0.6 s) | check on Mac (dictado-1tw: shared code, mlx detects each piece the full way) |
 | Pill shows the language it heard, tray "Next dictation in" | done | check on Mac |
 | Your words (spelling list) | done | done |
 | Snippets | done | done |

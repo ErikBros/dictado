@@ -351,7 +351,7 @@ class App:
             self.press_enter()
         stop_to_paste = int((time.monotonic() - t_stop) * 1000)
         self.last_text = res.text
-        if res.lang:
+        if res.lang and "+" not in res.lang:  # a mixed one ("es+el") says nothing about the next
             self.last_lang = res.lang
         if multi and dr.pasted:  # which language it heard, for a second
             self.ui.flash(f"✓ {str(res.lang).upper()}", 1.2)
