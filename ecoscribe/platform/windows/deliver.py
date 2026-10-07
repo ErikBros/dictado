@@ -21,6 +21,12 @@ import win32con
 from .sendkeys import send_keys
 from .win32types import kernel32, user32
 
+
+def focus_kind() -> str:
+    """"text" / "other" / "unknown" for whatever has keyboard focus (UI Automation, ~10 ms)."""
+    from .context import focus_kind as _kind
+    return _kind()
+
 log = logging.getLogger(__name__)
 MODIFIERS = (0x10, 0x11, 0x12, 0x5B, 0x5C)  # shift, ctrl, alt, lwin, rwin
 VK_LCONTROL, VK_V = 0xA2, 0x56
@@ -179,6 +185,10 @@ def deliver(text: str, restore_delay_s: float = 0.8) -> DeliveryResult:
         return DeliveryResult(False, exe, "modifier_held", waited)
     _wait_clipboard_quiet()
     exe = foreground_exe() or exe
+    if focus_kind() == "other":
+        # dictado-bhe: no text box under the cursor (the desktop, a file list, a button): Ctrl+V would
+        # fire a shortcut there. The text stays on the clipboard and the pill says so.
+        return DeliveryResult(False, exe, "no_text_box", waited)
     if not _we_are_elevated() and _is_elevated_pid(foreground_pid()):
         # Windows blocks synthetic input into admin windows: leave it on the clipboard.
         return DeliveryResult(False, exe, "elevated", waited)

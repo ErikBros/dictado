@@ -39,6 +39,7 @@ Built once for both. "Check on Mac" = works in tests, still to be tried for real
 | Hotkey (tap / hold / combo, Esc cancel) | done (low-level keyboard hook) | done (CGEventTap, Right Command) |
 | Language key (dictation key + L picks the next language) | done (Right Ctrl + L, swallowed) | done (Right Command + L, swallowed; real desktop run) |
 | Numpad Enter as a second dictation key | done (Settings > Numpad Enter dictates too; swallowed, the main Enter untouched) | to do (dictado-1k7) |
+| No text box at the stop: keep it on the clipboard, say so | done (UI Automation: desktop, file lists, buttons; unknown windows still get the paste) | to do (dictado-cd2) |
 | Paste text where the cursor is | done (clipboard + Ctrl+V) | done (NSPasteboard + Cmd+V) |
 | Names on your screen | done (UI Automation, one COM thread) | done (Accessibility API) |
 | Speech engine on the GPU | done (faster-whisper, CUDA) | done (mlx-whisper, Metal) |

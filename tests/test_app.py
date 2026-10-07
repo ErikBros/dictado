@@ -320,3 +320,16 @@ def test_no_live_text_when_the_pill_cannot_show_it(tmp_path, monkeypatch):
     time.sleep(0.3)
     app.on_action("toggle")
     assert wait(lambda: out) and eng.previews == []
+
+
+def test_no_text_box_says_where_the_text_is(tmp_path):
+    cfg = Config()
+    ui = FakeUi()
+    app = App(cfg, FakeRecorder(), FakeEngine(), lambda t: DeliveryResult(False, "explorer.exe", "no_text_box"), ui,
+              history_path=tmp_path / "h.jsonl")
+    app.start()
+    app.on_action("toggle")
+    app.on_action("toggle")
+    assert wait(lambda: ("flash", "No text box here: copied, paste with Ctrl+V", 4.0) in ui.events)
+    rec = json.loads((tmp_path / "h.jsonl").read_text(encoding="utf-8").splitlines()[-1])
+    assert rec["pasted"] is False  # Home's Last dictation says "not pasted: copy it from here"

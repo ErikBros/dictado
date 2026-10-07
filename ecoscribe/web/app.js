@@ -268,7 +268,8 @@ async function renderInicio() {
   const copyBtn = $("#last-copy");
   if (last) {
     $("#last-text").textContent = last.text.trim();
-    $("#last-meta").textContent = [when(last.ts), appName(last.target)].filter(Boolean).join(" · ");
+    $("#last-meta").textContent = [when(last.ts), last.pasted === false ? "not pasted: copy it from here" : appName(last.target)]
+      .filter(Boolean).join(" · ");  // dictado-bhe: no text box under the cursor at the stop
     copyBtn.hidden = false;
     copyBtn.onclick = () => copy(last.text, copyBtn);
   } else {
