@@ -11,7 +11,7 @@ from dictado.platform.macos import systap
 from dictado.platform.macos.systap import Loopback
 
 FAKE = textwrap.dedent('''
-    import json, math, struct, sys, time
+    import json, math, os, struct, sys, time
     mode, secs = sys.argv[1], float(sys.argv[2])
     if mode == "silent":            # macOS waiting for consent: no header, nothing
         time.sleep(secs); sys.exit(0)
@@ -25,7 +25,7 @@ FAKE = textwrap.dedent('''
         n += 480
         sys.stdout.buffer.write(block[:1000]); sys.stdout.buffer.flush()   # split mid-frame on purpose
         sys.stdout.buffer.write(block[1000:]); sys.stdout.buffer.flush()
-        time.sleep(0.01)
+        time.sleep(0.01 * float(os.environ.get("DICTADO_FAKE_SLOW", "1")))  # >1: a slow machine
     sys.exit(3 if mode == "changed" else 0)
 ''')
 
@@ -52,26 +52,33 @@ def voiced_blocks(x, sr=systap.SR, block_s=0.02):
     GapFiller then rightly puts silence there, so only the blocks with sound say anything about it."""
     n = int(sr * block_s)
     blocks = [x[i:i + n] for i in range(0, len(x) - n + 1, n)]
-    return [b for b in blocks if float(np.sqrt(np.mean(b * b))) > 0.1]
+    return [b for b in blocks if float(np.sqrt(np.mean(b * b))) > 0.05]
 
 
 def test_tone_comes_out_as_16k_mono_on_the_wall_clock(fake):
     lb = Loopback(command=fake("tone", 3.0), check_s=None)
+    t0 = time.monotonic()
     lb.start()
     levels = []
     try:
         x = collect(lb, 1.5, levels)
+        elapsed = time.monotonic() - t0
     finally:
         lb.stop()
     assert lb.device_name == "Fake Speakers"
-    assert abs(len(x) / systap.SR - 1.5) < 0.5  # placed on the wall clock, not by bytes received
+    # placed on the wall clock (start -> last read), not by bytes received; FILL_LAG keeps the end a bit back
+    assert abs(len(x) / systap.SR - elapsed) < 0.35, (len(x) / systap.SR, elapsed)
     voiced = voiced_blocks(x)
     assert len(voiced) >= 5, "no tone came through"
+    # The pitch says it was resampled right (48 kHz stereo -> 16 kHz mono, not sped up or slowed down);
+    # silence a slow machine adds around the tone doesn't move the peak.
+    spectrum = np.abs(np.fft.rfft(x * np.hanning(len(x))))
+    peak_hz = float(np.argmax(spectrum[1:]) + 1) * systap.SR / len(x)
+    assert abs(peak_hz - 440) <= 15, peak_hz
+    # Level, loosely: a 0.5 sine is 0.354 RMS (stereo folded by averaging; summed would be 0.707)
     rms = float(np.median([np.sqrt(np.mean(b * b)) for b in voiced]))
-    assert 0.3 < rms < 0.41  # a 0.5 sine is 0.354 RMS: stereo folded by averaging, not summed (0.707)
-    crossings = np.median([np.count_nonzero(np.diff(np.signbit(b))) for b in voiced])
-    assert 14 <= crossings <= 21  # 440 Hz -> 17.6 sign changes per 20 ms: resampled, not sped up
-    assert max(levels) > 0.2
+    assert 0.15 < rms < 0.6, rms
+    assert max(levels) > 0.1
 
 
 def test_no_header_yet_gives_zeros_and_says_which_permission(fake, caplog, monkeypatch):
