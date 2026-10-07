@@ -12,6 +12,9 @@ Everything is worked out here, on this computer, from the dictation history (his
   short note on the pill right after such a message: immediate feedback cuts fillers without making
   people anxious. Neutral on purpose: fillers are normal discourse markers in speech; in writing to
   someone, hedges ("maybe", "I think", "kind of") can read as unsure.
+- Pace and pauses (9jc.4): words per minute of speech (after the voice detector) and the share of the
+  recording that was pauses, to people vs to AI apps. Listeners follow best at about 130-160 words a
+  minute: shown as information, not as a goal.
 """
 from __future__ import annotations
 
@@ -263,3 +266,41 @@ def markers_summary(rows: list[dict], now: datetime | None = None, top: int = 5)
             "hedges_per_100": per_100(sum(h.values()), n), "weeks": weeks,
             "top_fillers": [{"word": w, "count": k} for w, k in f.most_common(top)],
             "top_hedges": [{"word": w, "count": k} for w, k in h.most_common(top)]}
+
+
+PACE_RANGE = (130, 160)  # words a minute where comprehension peaks (information, not a goal)
+PACE_MIN_WORDS, PACE_MIN_SPEECH_S = 8, 4.0  # shorter dictations say nothing about pace
+PACE_BINS = (80, 220, 10)  # histogram: 10 wpm wide, the ends gather the rest
+
+
+def _paced_rows(rows):
+    for r in rows:
+        speech, audio = float(r.get("speech_s") or 0), float(r.get("audio_s") or 0)
+        n = len(WORD.findall(str(r.get("text", ""))))
+        if speech >= PACE_MIN_SPEECH_S and n >= PACE_MIN_WORDS and audio >= speech:
+            yield r, n, speech, audio
+
+
+def pace_summary(rows: list[dict]) -> dict:
+    """Pace (words a minute of speech) and pauses (% of the recording) for dictations to people and to
+    AI apps, the share of them in PACE_RANGE, and a histogram of the ones to people."""
+    groups: dict[str, list] = {"people": [], "ai": []}
+    for r, n, speech, audio in _paced_rows(rows):
+        to = row_audience(r)
+        if to in groups:
+            groups[to].append((n, speech, audio))
+    lo, hi = PACE_RANGE
+
+    def summary(g):
+        if not g:
+            return None
+        words, speech, audio = (sum(x[i] for x in g) for i in range(3))
+        each = [60 * n / s for n, s, _ in g]
+        return {"dictations": len(g), "wpm": round(60 * words / speech), "pauses": round(100 * (1 - speech / audio)),
+                "in_range": round(100 * sum(lo <= w <= hi for w in each) / len(g))}
+    start, end, width = PACE_BINS
+    hist = []
+    if groups["people"]:
+        counts = Counter(min(max(int(60 * n / s // width * width), start), end) for n, s, _ in groups["people"])
+        hist = [{"from": b, "dictations": counts.get(b, 0)} for b in range(start, end + width, width)]
+    return {"people": summary(groups["people"]), "ai": summary(groups["ai"]), "range": [lo, hi], "histogram": hist}

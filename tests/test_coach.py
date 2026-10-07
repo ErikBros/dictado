@@ -147,3 +147,25 @@ def test_the_pill_note_setting_round_trips_and_is_off_by_default(tmp_path):
     assert api.get_settings()["values"]["speech_feedback"] is False
     assert api.save_settings({"speech_feedback": True})["ok"]
     assert api.get_settings()["values"]["speech_feedback"] is True
+
+
+def _paced(ts, n_words, speech_s, audio_s, to):
+    return {"ts": ts, "text": " ".join(["word"] * n_words), "lang": "en", "speech_s": speech_s, "audio_s": audio_s,
+            "to": to}
+
+
+def test_pace_is_words_per_minute_of_speech_and_pauses_are_the_rest_split_by_who_it_was_for():
+    rows = [
+        _paced("2026-10-06T10:00:00", 50, 20.0, 25.0, "people"),  # 150 wpm, 20% pauses
+        _paced("2026-10-06T11:00:00", 40, 20.0, 40.0, "people"),  # 120 wpm, 50% pauses
+        _paced("2026-10-06T12:00:00", 60, 20.0, 20.0, "ai"),  # 180 wpm, no pauses
+        _paced("2026-10-06T13:00:00", 3, 2.0, 3.0, "people"),  # too short to say anything
+        {"ts": "2026-10-06T14:00:00", "text": "No speech_s saved before 9jc.1. " * 5, "audio_s": 9.0, "to": "people"},
+    ]
+    p = coach.pace_summary(rows)
+    assert p["people"] == {"dictations": 2, "wpm": 135, "pauses": 38, "in_range": 50}  # 90 words in 40 s of 65
+    assert p["ai"] == {"dictations": 1, "wpm": 180, "pauses": 0, "in_range": 0}
+    assert p["range"] == [130, 160]
+    hist = {b["from"]: b["dictations"] for b in p["histogram"]}
+    assert hist[120] == 1 and hist[150] == 1 and sum(hist.values()) == 2  # people only
+    assert coach.pace_summary(rows[3:]) == {"people": None, "ai": None, "range": [130, 160], "histogram": []}

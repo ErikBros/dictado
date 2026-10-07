@@ -113,6 +113,8 @@ async function load(query) {
   check(doc.querySelectorAll("#i-unsure .i-chip").length === 4 && doc.querySelector("#i-unsure .i-chip").title === "Unsure 4 of the 6 times you said it", "words it wasn't sure of, per language");
   check(doc.querySelector("#i-hedges").textContent === "2.4" && doc.querySelectorAll("#i-markers-weeks path.bar").length === 5
     && doc.querySelectorAll("#i-top-hedges .i-chip").length === 3, "hedges and fillers in messages to people (9jc.3)");
+  check(doc.querySelectorAll("#i-pace-rows .i-habit").length === 2 && doc.querySelector("#i-pace-rows .i-habit-num").textContent === "148"
+    && doc.querySelectorAll("#i-pace-hist path.bar:not(.dim)").length === 3, "pace to people and to AI apps, the 130-160 band marked (9jc.4)");
   check(!doc.querySelector("#i-coach").disabled && doc.querySelector("#i-coach").title.startsWith("64 messages to people"), "Coach me ready with messages to people (9jc.2)");
   const add = doc.querySelector("#i-suggest li button");
   add.click(); await sleep(30);

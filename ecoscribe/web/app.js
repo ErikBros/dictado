@@ -46,6 +46,8 @@ function demoInsights(days) {  // invented numbers and text for the demo and scr
       }),
       top_fillers: [{ word: "like", count: 22 }, { word: "basically", count: 9 }],
       top_hedges: [{ word: "maybe", count: 31 }, { word: "i think", count: 24 }, { word: "kind of", count: 12 }] },
+    pace: { people: { dictations: Math.round(64 * k), wpm: 148, pauses: 22, in_range: 58 }, ai: { dictations: Math.round(150 * k), wpm: 163, pauses: 31, in_range: 35 },
+      range: [130, 160], histogram: [0, 1, 1, 3, 5, 8, 12, 14, 9, 5, 3, 2, 1, 0, 0].map((n, i) => ({ from: 80 + 10 * i, dictations: n })) },
   };
 }
 
@@ -320,6 +322,27 @@ function renderMarkers(m) {  // dictado-9jc.3: fillers and hedges in messages to
   for (const h of m.top_hedges) chips.append(iChip(h.word, h.count));
   if (!m.top_hedges.length) chips.append(iChip("None so far"));
 }
+function renderPace(p) {  // dictado-9jc.4
+  const has = !!(p && (p.people || p.ai));
+  $("#i-pace-empty").hidden = has; $("#i-pace-body").hidden = !has;
+  if (!has) return;
+  const rows = $("#i-pace-rows"); rows.textContent = "";
+  for (const [key, who] of [["people", "to people"], ["ai", "to AI apps"]]) {
+    const g = p[key]; if (!g) continue;
+    const row = document.createElement("div"); row.className = "i-habit";
+    const num = document.createElement("span"); num.className = "i-habit-num"; num.textContent = String(g.wpm);
+    const lab = document.createElement("span"); lab.className = "muted";
+    lab.textContent = `words a minute ${who}, ${g.pauses}% of the time pausing (${fmtNum(g.dictations)} ${g.dictations === 1 ? "dictation" : "dictations"})`;
+    row.append(num, lab); rows.append(row);
+  }
+  const [lo, hi] = p.range, last = p.histogram.length - 1;
+  $("#i-pace-hist").hidden = !p.histogram.length;
+  columns($("#i-pace-hist"), p.histogram.map((b, i) => {
+    const name = i === 0 ? `under ${b.from + 10}` : i === last ? `${b.from}+` : `${b.from}-${b.from + 9}`;
+    return { value: b.dictations, dim: b.from < lo || b.from >= hi, label: i === last ? `${b.from}+` : String(b.from),
+      tipValue: `${b.dictations} ${b.dictations === 1 ? "message" : "messages"}`, tipLabel: `${name} words a minute` };
+  }), (i) => i === 0 || i === last || p.histogram[i].from === lo || p.histogram[i].from === hi);
+}
 function renderClarity(c) {  // dictado-9jc.1
   const has = !!(c && c.dictations);
   $("#i-clarity-empty").hidden = has; $("#i-clarity-body").hidden = !has;
@@ -384,6 +407,7 @@ async function renderInsights() {
   if (!d.habits.length) hab.textContent = "A few more dictations and your filler words show up here.";
   renderClarity(d.clarity);
   renderMarkers(d.markers);
+  renderPace(d.pace);
   const people = d.coach ? d.coach.people : 0;  // dictado-9jc.2
   $("#i-coach").disabled = !people;
   $("#i-coach").title = people ? `${people} ${people === 1 ? "message" : "messages"} to people in the last ${d.coach.days} days`
