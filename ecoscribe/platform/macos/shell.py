@@ -37,6 +37,7 @@ from ... import palette as P
 log = logging.getLogger(__name__)
 W, H = 210, 44
 MW, MH = 380, 56
+LW, LH = 460, 84  # the dictating pill with live text under it (dictado-ayq, like Windows)
 NSStatusWindowLevel = 25
 BOTTOM_GAP = 80
 
@@ -135,18 +136,22 @@ class PillView(NSView):
         if not spec:
             return
         w, h = spec["w"], spec["h"]
-        r = h / 2
+        r = spec.get("radius", h / 2)
         color(P.INK, 0.93).setFill()
         NSBezierPath.bezierPathWithRoundedRect_xRadius_yRadius_(NSMakeRect(0, 0, w, h), r, r).fill()
         if spec.get("dot"):
             color(spec["dot"]).setFill()
-            NSBezierPath.bezierPathWithOvalInRect_(NSMakeRect(spec.get("dot_x", 16), r - 6, 12, 12)).fill()
+            NSBezierPath.bezierPathWithOvalInRect_(NSMakeRect(spec.get("dot_x", 16), spec.get("dot_y", r) - 6, 12, 12)).fill()
         for text, x, y, size, bold, col, center in spec.get("texts", []):
             attrs = {NSFontAttributeName: font(size, bold), NSForegroundColorAttributeName: color(col)}
             s = NSString.stringWithString_(text)
             sz = s.sizeWithAttributes_(attrs)
             tx = (w - sz.width) / 2 if center else x
             s.drawAtPoint_withAttributes_((tx, y - sz.height / 2), attrs)
+        if spec.get("para"):  # wrapped text in a box (the live transcript)
+            text, x, y, pw, ph, size, col = spec["para"]
+            attrs = {NSFontAttributeName: font(size), NSForegroundColorAttributeName: color(col)}
+            NSString.stringWithString_(text).drawInRect_withAttributes_(NSMakeRect(x, y, pw, ph), attrs)
         for x, top, bottom, on in spec.get("bars", []):
             color(P.PAPER if on else P.PILL_OFF).setFill()
             NSBezierPath.fillRect_(NSMakeRect(x, top, 5, bottom - top))
@@ -180,6 +185,7 @@ class Overlay:
         self._drawn = None
         self.visible = False
         self.cancel_hint = hint or "Tap ⌘ again to finish · Hold ⌘ + Esc to cancel"  # cancel_hint() below
+        self.live_text = ""  # what the live transcript has heard so far (dictado-ayq)
 
     # drawing primitives
     def _size(self, w: int, h: int) -> None:
@@ -225,8 +231,11 @@ class Overlay:
         self._drawn = key
 
     def _recording_pill(self, label: str, lvl: float) -> None:
-        """Two lines while dictating: the timer, and how to cancel."""
+        """Two lines while dictating: the timer, and how to cancel. With live text, a wider box:
+        timer and hint on top, what it has heard so far under them (two lines, the newest words)."""
         hint = self.cancel_hint
+        if self.live_text:
+            return self._live_pill(label, hint, lvl)
         tw = max(NSString.stringWithString_(t).sizeWithAttributes_({NSFontAttributeName: font(12)}).width
                  for t in (label, hint))
         w = max(W, int(tw * 1.06) + 42 + 80)  # bold label is wider; room for the level bars
@@ -238,6 +247,25 @@ class Overlay:
             bars.append((w - 62 + i * 9, MH / 2 - hgt / 2, MH / 2 + hgt / 2, lvl > (i + 0.5) / 5))
         texts = [(label, 42, 18, 12, True, P.PAPER, False), (hint, 42, 38, 12, False, P.LINE, False)]
         self._set({"w": w, "h": MH, "dot": P.TILE, "dot_x": 18, "texts": texts, "bars": bars})
+
+    def _live_pill(self, label: str, hint: str, lvl: float) -> None:
+        lw = NSString.stringWithString_("Dictating 88:88").sizeWithAttributes_({NSFontAttributeName: font(12, True)}).width  # fixed: the hint doesn't move as the timer ticks
+        hx = 42 + int(lw) + 14
+        hw = NSString.stringWithString_(hint).sizeWithAttributes_({NSFontAttributeName: font(11)}).width
+        w = max(LW, hx + int(hw) + 80)  # hint never runs into the level bars
+        grew = (w, LH) != (self.w, self.h)
+        self._size(w, LH)
+        if grew:
+            self._place_and_show()  # stay centred at the new size
+        self._drawn = None
+        bars = []
+        for i in range(5):
+            hgt = 6 + i * 3
+            bars.append((w - 62 + i * 9, 20 - hgt / 2, 20 + hgt / 2, lvl > (i + 0.5) / 5))
+        texts = [(label, 42, 20, 12, True, P.PAPER, False), (hint, hx, 20, 11, False, P.LINE, False)]
+        para = (self.live_text, 18, 36, w - 36, LH - 40, 13, P.PAPER)
+        self._set({"w": w, "h": LH, "radius": 22, "dot": P.TILE, "dot_x": 18, "dot_y": 20,
+                   "texts": texts, "bars": bars, "para": para})
 
     # the ui.Overlay API
     def _show_layer(self) -> None:
@@ -254,16 +282,24 @@ class Overlay:
 
     def recording(self, t0: float) -> None:
         self.mode, self._t0 = "recording", t0
+        self.live_text = ""
         self._place_and_show()
         self.tick()
 
+    def live(self, text: str) -> None:
+        """ui.Overlay.live: the live transcript so far; drawn at the next tick."""
+        if self.mode == "recording":
+            self.live_text = text or ""
+
     def busy(self) -> None:
         self.mode = "busy"
+        self.live_text = ""
         self._pill(P.AEGEAN_SOFT, "Transcribing…")
         self._place_and_show()
 
     def idle(self) -> None:
         self.mode = "hidden"
+        self.live_text = ""
         if time.monotonic() >= self._flash_until:
             self._show_layer()
 
