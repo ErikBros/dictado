@@ -49,7 +49,7 @@ class MicSource:
             try:
                 self.device_name = self.sd.query_devices(kind="input")["name"]
             except Exception:
-                self.device_name = "predeterminado"
+                self.device_name = "Windows default mic"
 
         def cb(indata, frames, t, status):
             block = np.array(indata[:, 0], np.float32, copy=True)

@@ -70,7 +70,7 @@ class Recorder:
             if not self.fell_back:
                 self.on_warning(f"Mic '{self.cfg.device}' not found, using the default")
             self.fell_back = True
-            return None, "predeterminado"
+            return None, "Windows default mic"
         self.fell_back = False
         return idx, devices[idx]["name"]
 
