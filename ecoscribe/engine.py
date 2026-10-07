@@ -23,6 +23,7 @@ SR = 16000
 # dictado-1tw: a dictation in more than one of your languages. Cut at short pauses, detect each piece
 # (the quick way, then the full way for a piece that disagrees), transcribe each run in its language.
 MIX_PAUSE_MS = 200  # a breath can switch language
+MIX_PAD_MS = 30  # Silero pads 400 ms each side by default: a pause under ~1 s vanished, so a switch after a breath never split (Mac, 2026-10-07: 0/6 at 400 ms, 6/6 at 30 ms for 0.3 s pauses; runs keep a 0.1 s margin)
 MIX_MIN_S = 1.5  # a shorter piece joins the next one: too little to tell the language
 MIX_FROM_S = 3.0  # shorter dictations are one language
 _GPU_ERRORS = ("cuda", "cublas", "cudnn", "out of memory", "metal")  # metal: the Mac GPU
@@ -112,6 +113,8 @@ class Engine:
             f = np.pad(f, ((0, 0), (0, n - f.shape[-1])))
             res = m.model.detect_language(get_ctranslate2_storage(f[None].astype(np.float32)))[0]
             probs = [(tok[2:-2], pr) for tok, pr in res]
+        elif not full and hasattr(m, "detect_language_piece"):  # mlx (macOS): the same quick way
+            _, _, probs = m.detect_language_piece(chunk)
         else:
             _, _, probs = m.detect_language(chunk)
         p = {k: v for k, v in probs if k in langs}
@@ -123,7 +126,7 @@ class Engine:
         from faster_whisper.vad import VadOptions, get_speech_timestamps
 
         from .transcribe import pieces
-        ts = get_speech_timestamps(audio, VadOptions(min_silence_duration_ms=MIX_PAUSE_MS))
+        ts = get_speech_timestamps(audio, VadOptions(min_silence_duration_ms=MIX_PAUSE_MS, speech_pad_ms=MIX_PAD_MS))
         return pieces([(t["start"] / SR, t["end"] / SR) for t in ts], gap_s=MIX_PAUSE_MS / 1000, min_s=MIX_MIN_S)
 
     def language_runs(self, audio: np.ndarray, langs: list[str]) -> list[tuple[float, float, str]] | None:

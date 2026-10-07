@@ -79,3 +79,44 @@ def test_no_mixing_when_forced_single_language_short_or_preview():
     e = engine()
     e.preview(recording())  # the live text stays one quick pass
     assert len(e.model.calls) == 1 and e.model.calls[0][2] == 1
+
+
+def test_the_mac_quick_piece_check_is_used_and_full_still_pads():
+    """dictado-1tw on the Mac: mlx has no faster-whisper internals; its detect_language_piece is the quick way."""
+    seen = []
+
+    class MlxLike(FakeModel):
+        def detect_language_piece(self, audio):
+            seen.append(("quick", round(len(audio) / SR, 1)))
+            return self.detect_language(audio)
+
+        def detect_language(self, audio, **kw):
+            seen.append(("full", round(len(audio) / SR, 1)))
+            return FakeModel.detect_language(self, audio, **kw)
+
+    e = engine(("es", "el"))
+    e.model = MlxLike()
+    a = recording((("es", 5),))
+    assert e._detect(a, ["es", "el"]) == "es" and seen[0] == ("quick", 5.0)
+    seen.clear()
+    assert e._detect(a, ["es", "el"], full=True) == "es" and seen == [("full", 5.0)]
+
+
+def test_a_short_pause_between_languages_still_splits():
+    """Silero's default 400 ms pad each side swallowed pauses under ~0.8 s, so a switch after a breath
+    was never cut (measured on the Mac 2026-10-07: 1 of 8 Greek -> Spanish joins split; 8 of 8 at 100 ms)."""
+    import wave
+    from pathlib import Path
+    fx = Path(__file__).parent / "fixtures"
+
+    def wav(name):
+        with wave.open(str(fx / name)) as w:
+            return np.frombuffer(w.readframes(w.getnframes()), np.int16).astype(np.float32) / 32768
+    def trim(a):  # the clips' own silence at the ends would widen the gap
+        loud = np.flatnonzero(np.abs(a) > 0.02)
+        return a[loud[0]:loud[-1] + 1]
+    es, en = trim(wav("es_climb.wav")), trim(wav("en_fox.wav"))
+    for gap_s in (0.3, 0.5):
+        audio = np.concatenate([es, np.zeros(int(gap_s * SR), np.float32), en])
+        ps = Engine._pieces(audio)
+        assert len(ps) >= 2, (gap_s, ps)

@@ -117,6 +117,37 @@ class MlxWhisperModel:
         ranked = sorted(probs.items(), key=lambda kv: kv[1], reverse=True)
         return ranked[0][0], float(ranked[0][1]), [(k, float(v)) for k, v in ranked]
 
+    def detect_language_piece(self, audio):
+        """detect_language on a short piece without padding it to 30 s (dictado-1tw on the Mac): the
+        encoder runs on the piece's own frames (its first n positions), the same trick faster-whisper's
+        quick path uses on Windows. Returns what detect_language returns."""
+        return on_mlx(self._detect_piece, np.asarray(audio, np.float32))
+
+    def _detect_piece(self, audio):
+        import mlx.core as mx
+        import mlx.nn as nn
+        from mlx_whisper.audio import N_FRAMES, N_SAMPLES, log_mel_spectrogram
+        from mlx_whisper.tokenizer import get_tokenizer
+        m = self.model
+        mel = log_mel_spectrogram(audio[:N_SAMPLES], n_mels=m.dims.n_mels)  # (frames, n_mels), no padding
+        n = min(N_FRAMES, max(200, mel.shape[0] + mel.shape[0] % 2))  # even, like faster-whisper's 200-frame floor
+        mel = mx.pad(mel[:n], [(0, n - min(n, mel.shape[0])), (0, 0)]).astype(self.dtype)
+        enc = m.encoder
+        x = nn.gelu(enc.conv1(mel[None]))
+        x = nn.gelu(enc.conv2(x))
+        x = x + enc._positional_embedding[: x.shape[1]]
+        for block in enc.blocks:
+            x, _, _ = block(x)
+        x = enc.ln_post(x)
+        tok = get_tokenizer(m.is_multilingual, num_languages=m.num_languages)
+        logits = m.logits(mx.array([[tok.sot]]), x)[:, 0]
+        mask = mx.full(logits.shape[-1], -mx.inf, dtype=mx.float32)
+        mask[list(tok.all_language_tokens)] = 0.0
+        p = np.array(mx.softmax(logits.astype(mx.float32) + mask, axis=-1))[0]
+        ranked = sorted(((c, float(p[j])) for j, c in zip(tok.all_language_tokens, tok.all_language_codes)),
+                        key=lambda kv: kv[1], reverse=True)
+        return ranked[0][0], ranked[0][1], ranked
+
     def transcribe(self, audio, language: str | None = None, beam_size: int = 5, vad_filter: bool = False,
                    vad_parameters=None, condition_on_previous_text: bool = True, without_timestamps: bool = False,
                    initial_prompt: str | None = None, **_ignored):
