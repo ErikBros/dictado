@@ -207,7 +207,7 @@ class Detector:
 
     def __init__(self, grace_s: float = 20.0, own_apps=("dictado", "python", "pythonw"), debounce_polls: int = 2):
         self.grace_s = grace_s
-        # python/pythonw are excluded because Dictado runs as Python in development; neither is a
+        # python/pythonw are excluded because Ecoscribe runs as Python in development; neither is a
         # call app nor a browser, so this can never hide a real meeting.
         self.own = {a.lower() for a in own_apps}
         self.debounce = max(1, debounce_polls)

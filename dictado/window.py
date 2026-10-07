@@ -1,4 +1,4 @@
-"""The Dictado window (its own process: Dictado.exe --ui).
+"""The Ecoscribe window (its own process: Dictado.exe --ui).
 
 pywebview + WebView2 renders dictado/web/. The Api below is what the page calls
 (window.pywebview.api.*). It talks to the background app only through files
@@ -425,10 +425,10 @@ class Api:
                 "frozen": bool(getattr(sys, "frozen", False))}
 
     def connect_claude_app(self) -> dict:
-        """Settings > Meetings > Claude app: add Dictado's read-only MCP server to Claude desktop."""
+        """Settings > Meetings > Claude app: add Ecoscribe's read-only MCP server to Claude desktop."""
         from . import claude_link
         if not getattr(sys, "frozen", False):
-            return {"ok": False, "error": "Only from the installed Dictado"}
+            return {"ok": False, "error": "Only from the installed Ecoscribe"}
         try:
             done = claude_link.connect(claude_link.config_files(), claude_link.server_entry())
         except (OSError, ValueError) as e:
@@ -638,7 +638,7 @@ class Api:
             pass
         reps = crash.reports(d)[:5]
         live = sorted((crash.crashes_dir(d) / "live").glob("freeze-*.log")) if (crash.crashes_dir(d) / "live").exists() else []
-        parts = [f"Dictado debug info. Please find what's wrong. Data folder: {d}", "",
+        parts = [f"Ecoscribe debug info. Please find what's wrong. Data folder: {d}", "",
                  f"Version: {__version__}", f"Status: {json.dumps(status.read(d / 'status.json') or {}, ensure_ascii=False)}", "",
                  "Recent crashes: " + (", ".join(p.name for p in reps) or "none"),
                  "Freezes recorded: " + (", ".join(p.name for p in live[-5:]) or "none"), "",

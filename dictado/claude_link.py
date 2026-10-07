@@ -1,4 +1,4 @@
-"""Hook Dictado's MCP server into the Claude desktop app (t0u.31).
+"""Hook Ecoscribe's MCP server into the Claude desktop app (t0u.31).
 
 Claude desktop reads `claude_desktop_config.json`: in %APPDATA%\\Claude for the classic
 installer, under %LOCALAPPDATA%\\Packages\\Claude_*\\LocalCache\\Roaming\\Claude for the

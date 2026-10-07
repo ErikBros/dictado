@@ -60,7 +60,7 @@ class PidProc:
 
 
 def attach_pid(pid: int):
-    """A PidProc if `pid` is still a Dictado (or dev Python) process, else None."""
+    """A PidProc if `pid` is still a Ecoscribe (or dev Python) process, else None."""
     if not pid or exe_of_pid(pid) not in ("dictado", "python"):
         return None
     return PidProc(pid) if alive(pid) else None

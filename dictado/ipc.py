@@ -14,7 +14,7 @@ if sys.platform != "darwin":
 log = logging.getLogger(__name__)
 RELOAD_EVENT = "Local\\DictadoReload"
 UI_MUTEX = "Local\\DictadoUI"
-UI_TITLE = "Dictado"
+UI_TITLE = "Ecoscribe"
 
 
 def signal_reload(name: str = RELOAD_EVENT) -> bool:
@@ -68,7 +68,7 @@ def spawn(args: list[str]) -> subprocess.Popen:
 
 
 def focus_ui() -> bool:
-    """Bring an already open Dictado window to the front. True if there was one."""
+    """Bring an already open Ecoscribe window to the front. True if there was one."""
     import win32gui
     hwnd = win32gui.FindWindow(None, UI_TITLE)
     if not hwnd:

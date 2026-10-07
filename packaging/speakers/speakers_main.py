@@ -1,11 +1,11 @@
-"""DictadoSpeakers.exe <audio> <out.json>: who spoke when, for Dictado's speakers pass (t0u.22).
+"""DictadoSpeakers.exe <audio> <out.json>: who spoke when, for Ecoscribe's speakers pass (t0u.22).
 
 pyannote speaker-diarization-community-1 with its weights bundled in model/ (no Hugging
 Face token at runtime), on CUDA when there is one. Writes [[t0, t1, "SPEAKER_00"], ...]
 atomically; exit 0 = done, 2 = bad arguments, 1 = failed (traceback on stderr).
 1.1.0 (t0u.32, voice memory): also <out stem>.voices.json = {"SPEAKER_00": [256 floats], ...},
-pyannote's centroid embedding per speaker, so Dictado can recognise a voice it was told the
-name of. A sidecar, so Dictado 1.3 (which reads only out.json) keeps working.
+pyannote's centroid embedding per speaker, so Ecoscribe can recognise a voice it was told the
+name of. A sidecar, so Ecoscribe 1.3 (which reads only out.json) keeps working.
 """
 from __future__ import annotations
 
@@ -16,7 +16,7 @@ import time
 from pathlib import Path
 
 # pyannote 4 sends usage telemetry (model name, audio duration) to otel.pyannote.ai unless this
-# is false: Dictado keeps everything on the PC. Set before pyannote is imported.
+# is false: Ecoscribe keeps everything on the PC. Set before pyannote is imported.
 os.environ["PYANNOTE_METRICS_ENABLED"] = "false"
 os.environ["HF_HUB_OFFLINE"] = "1"  # the weights are bundled: never reach for the Hub
 

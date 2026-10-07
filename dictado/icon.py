@@ -1,4 +1,4 @@
-"""Dictado's mark: a mic glyph, drawn with Pillow at any size (app icon + tray states)."""
+"""Ecoscribe's mark: a mic glyph, drawn with Pillow at any size (app icon + tray states)."""
 from __future__ import annotations
 
 from PIL import Image, ImageDraw

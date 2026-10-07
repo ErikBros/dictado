@@ -121,7 +121,7 @@ class HookThread(threading.Thread):
         tap = Q.CGEventTapCreate(Q.kCGSessionEventTap, Q.kCGHeadInsertEventTap, Q.kCGEventTapOptionDefault,
                                  mask, self._callback, None)
         if tap is None:
-            log.error("key tap not created: Dictado needs Input Monitoring and Accessibility (System Settings > "
+            log.error("key tap not created: Ecoscribe needs Input Monitoring and Accessibility (System Settings > "
                       "Privacy & Security)")
             return False
         self._tap = tap

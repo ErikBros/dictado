@@ -1,4 +1,4 @@
-"""Killed-meeting recovery E2E against the RUNNING (installed) Dictado (t0u.18): start a
+"""Killed-meeting recovery E2E against the RUNNING (installed) Ecoscribe (t0u.18): start a
 meeting over the command channel, hard-kill its worker the way the 1.2.2 installer did
 (taskkill /F), and check the background app turns what was recorded into a finished,
 labelled transcript on its own. Plays no sound; the test session is deleted afterwards.

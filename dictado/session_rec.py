@@ -28,7 +28,7 @@ FLUSH_EVERY = 10  # pumps (~1 s): what a crash can lose
 
 
 class MicSource:
-    """The Dictado mic (by name, MME, 16 kHz mono), opened for the whole session."""
+    """The Ecoscribe mic (by name, MME, 16 kHz mono), opened for the whole session."""
 
     def __init__(self, audio_cfg, sd_module=None):
         if sd_module is None:

@@ -1,4 +1,4 @@
-"""The Dictado palette. Every Dictado surface uses only these."""
+"""The Ecoscribe palette. Every Ecoscribe surface uses only these."""
 PAPER = "#fbfaf6"
 INK = "#232a33"
 AEGEAN = "#2e6187"

@@ -1,4 +1,4 @@
-/* Dictado window logic. Talks to Python through window.pywebview.api (see dictado/window.py).
+/* Ecoscribe window logic. Talks to Python through window.pywebview.api (see dictado/window.py).
    ?demo=1 swaps in a fake API so the page can be screenshotted and smoke-tested anywhere. */
 "use strict";
 
@@ -194,7 +194,7 @@ const STATE_TEXT = {
   loading: ["Loading", "Loading the model…"],
   restarting: ["Restarting", "Applying your settings…"],
   error: ["Error", "Something failed at startup"],
-  stopped: ["Stopped", "Dictado isn't running"],
+  stopped: ["Stopped", "Ecoscribe isn't running"],
 };
 let lastStatus = null;
 async function refreshStatus() {
@@ -217,8 +217,8 @@ function paintHero(s, state, short, long) {
   actions.innerHTML = "";
   if (state === "stopped") {
     const b = document.createElement("button");
-    b.className = "btn btn-primary"; b.textContent = "Start Dictado";
-    b.onclick = async () => { b.disabled = true; await api.start_app(); toast("Starting Dictado…"); };
+    b.className = "btn btn-primary"; b.textContent = "Start Ecoscribe";
+    b.onclick = async () => { b.disabled = true; await api.start_app(); toast("Starting Ecoscribe…"); };
     actions.append(b);
   } else if (state === "error") {
     const b = document.createElement("button");
@@ -250,7 +250,7 @@ async function crashCard() {  // t0u.37: a crash is never silent
   card.hidden = !x && !c.gave_up;
   if (card.hidden) return;
   const more = c.items.length > 1 ? ` (${c.items.length} crashes)` : "";
-  $("#crash-title").textContent = c.gave_up ? "Dictado crashed 3 times and stopped" : `Dictado crashed${x ? " " + x.when.slice(11, 13) + ":" + x.when.slice(13, 15) : ""} and restarted${more}`;
+  $("#crash-title").textContent = c.gave_up ? "Ecoscribe crashed 3 times and stopped" : `Ecoscribe crashed${x ? " " + x.when.slice(11, 13) + ":" + x.when.slice(13, 15) : ""} and restarted${more}`;
   $("#crash-sub").textContent = c.gave_up ? "Start it again from the Start menu. The reports say where it failed."
     : `${x.exit}. A report with everything needed to find the cause was saved.`;
   $("#crash-copy").hidden = !x;
@@ -750,7 +750,7 @@ async function renderSettings() {
   $("#f-sounds").checked = s.values.sounds; $("#f-overlay").checked = s.values.overlay;
   $("#f-unmute").checked = s.values.unmute; $("#f-startup").checked = s.values.startup;
   $("#f-startup").disabled = !s.can_startup;
-  $("#startup-hint").textContent = s.can_startup ? "Dictado starts by itself when you sign in." : "Available in the installed version.";
+  $("#startup-hint").textContent = s.can_startup ? "Ecoscribe starts by itself when you sign in." : "Available in the installed version.";
   saved = formValues();
   dirty();
 }
@@ -772,8 +772,8 @@ async function save() {
   saved = v;
   $("#savebar").hidden = true;
   const needsRestart = Object.keys(changed).some((k) => k !== "startup");
-  toast(!needsRestart ? "Saved." : r.restarting ? "Saved. Dictado restarts, a few seconds."
-    : "Saved. It applies the next time Dictado starts.");
+  toast(!needsRestart ? "Saved." : r.restarting ? "Saved. Ecoscribe restarts, a few seconds."
+    : "Saved. It applies the next time Ecoscribe starts.");
   refreshStatus();
 }
 /* One mic-test controller for Ajustes and the welcome. `on` flips synchronously so a
@@ -856,7 +856,7 @@ async function voicesRow() {
   $("#voices-row").hidden = !v.count;
   $("#voices-known").textContent = v.count ? `Knows ${v.count} voice${v.count > 1 ? "s" : ""}: ${v.names.join(", ")}` : "";
   $("#voices-forget").onclick = async () => {
-    if (!confirm("Forget every voice Dictado has learned? Names already in transcripts stay.")) return;
+    if (!confirm("Forget every voice Ecoscribe has learned? Names already in transcripts stay.")) return;
     await api.forget_voices(); toast("Voices forgotten."); voicesRow();
   };
 }
@@ -955,7 +955,7 @@ async function boot() {
   hkWire();
   $("#search").addEventListener("input", () => { clearTimeout(searchTimer); searchTimer = setTimeout(renderHistory, 120); });
   $("#history-clear").onclick = async () => {
-    if (!confirm("Clear the whole history? A backup copy is kept in the Dictado folder.")) return;
+    if (!confirm("Clear the whole history? A backup copy is kept in the Ecoscribe folder.")) return;
     await api.clear_history(); renderHistory(); toast("History cleared.");
   };
   $("#settings").addEventListener("change", dirty);
@@ -993,8 +993,8 @@ function macify() {
   const unmute = $("#f-unmute"); if (unmute) unmute.closest("label").hidden = true;  // a PC fix (mics muted at 0)
   for (const p of $$("#welcome p")) {
     p.innerHTML = p.innerHTML.replace("<strong>Right Ctrl</strong>", "<strong>Right Command</strong>")
-      .replace("Dictado stays in the system tray, next to the clock, and starts with Windows. Open it any time from the Start menu.",
-               "Dictado lives in the menu bar (the mic at the top right) and opens at login. Open this window any time from that menu or from Applications.");
+      .replace("Ecoscribe stays in the system tray, next to the clock, and starts with Windows. Open it any time from the Start menu.",
+               "Ecoscribe lives in the menu bar (the mic at the top right) and opens at login. Open this window any time from that menu or from Applications.");
   }
 }
 

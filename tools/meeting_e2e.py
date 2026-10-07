@@ -1,4 +1,4 @@
-"""Meeting E2E against the RUNNING (installed) Dictado: the window's command channel starts a
+"""Meeting E2E against the RUNNING (installed) Ecoscribe: the window's command channel starts a
 meeting, a real clip plays through the default output, the command channel stops it, and the
 finished session is checked. Plays sound: only with the user's OK.
 

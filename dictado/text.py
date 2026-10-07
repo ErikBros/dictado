@@ -34,7 +34,7 @@ VOCAB_MAX_CHARS = 400  # Whisper's prompt is at most half its 448-token window: 
 
 
 def vocab_prompt(words) -> str | None:
-    """The user's word list as a Whisper prompt ("Dictado, pyannote, Göteborg."), or None when empty.
+    """The user's word list as a Whisper prompt ("Ecoscribe, pyannote, Göteborg."), or None when empty.
     A prompt steers spelling without forcing words in (faster-whisper's `hotwords` broke large-v3)."""
     seen, out = set(), []
     for w in words or []:

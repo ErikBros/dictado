@@ -79,7 +79,7 @@ CAPABILITIES: dict[str, dict] = {
     },
     "A frozen app can't lag the computer's input": {
         "windows": "dictado.hook:HookClient",  # hooks in their own process
-        "macos": ("not_needed", "macOS times out a stuck event tap by itself and Dictado re-enables it"),
+        "macos": ("not_needed", "macOS times out a stuck event tap by itself and Ecoscribe re-enables it"),
     },
     "Speakers + Remember voices (add-on)": {
         "windows": "file:packaging/speakers/speakers_main.py",

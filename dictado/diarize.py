@@ -108,7 +108,7 @@ READABLE = {".flac", ".wav", ".ogg", ".mp3"}  # what the add-on's soundfile open
 
 
 def _to_flac(src: Path, dst: Path) -> None:
-    """16 kHz mono FLAC of any file Dictado can decode (m4a, mp4, webm...)."""
+    """16 kHz mono FLAC of any file Ecoscribe can decode (m4a, mp4, webm...)."""
     from faster_whisper import decode_audio
     from .flacw import FlacWriter
     w = FlacWriter(dst)

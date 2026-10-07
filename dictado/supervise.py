@@ -66,13 +66,13 @@ class Supervisor:
                 h = self.proc.open(pid)
                 if h is not None and self.proc.alive(h):
                     self.pid, self.handle, self.waiting_since = pid, h, None
-                    log.info("watching Dictado pid=%s", pid)
+                    log.info("watching Ecoscribe pid=%s", pid)
                     return "ok"
             if self.waiting_since is not None and st.get("state") == "stopped" and pid != self.pid:
-                log.info("Dictado pid=%s quit before the watchdog picked it up: watchdog ends", pid)
+                log.info("Ecoscribe pid=%s quit before the watchdog picked it up: watchdog ends", pid)
                 return "quit"  # the restarted copy was quit within a second of starting
             if self.waiting_since is not None and self.clock() - self.waiting_since > RESTART_WAIT_S:
-                log.warning("no new Dictado after %d s; starting it", RESTART_WAIT_S)
+                log.warning("no new Ecoscribe after %d s; starting it", RESTART_WAIT_S)
                 self.waiting_since = None
                 self.spawn(["--restarted"])
             return "ok"
@@ -82,17 +82,17 @@ class Supervisor:
         old, self.handle = self.pid, None
         state = st.get("state") if st.get("pid") == old else "replaced"
         if state == "stopped":
-            log.info("Dictado quit (pid=%s): watchdog ends", old)
+            log.info("Ecoscribe quit (pid=%s): watchdog ends", old)
             return "quit"
         if state in ("restarting", "replaced"):
-            log.info("Dictado restarting (pid=%s): waiting for the new copy", old)
+            log.info("Ecoscribe restarting (pid=%s): waiting for the new copy", old)
             self.waiting_since = self.clock()
             return "ok"
         fp = crash.fault_path(self.data, old)
         fault = fp.read_text(encoding="utf-8", errors="replace") if fp.exists() else ""
         tail = crash._tail(self.log_path, 60)
         if not crash.is_crash(code, fault, tail):
-            log.info("Dictado ended pid=%s exit=%s (killed, not a crash): watchdog ends", old, crash.exit_name(code))
+            log.info("Ecoscribe ended pid=%s exit=%s (killed, not a crash): watchdog ends", old, crash.exit_name(code))
             return "killed"
         return self._crashed(old, code)
 
@@ -113,7 +113,7 @@ class Supervisor:
             return "ok"
         self._frozen_seen = None
         old = self.pid
-        log.error("Dictado pid=%s frozen for %.0f s (watched): killing it", old, self.hang_s)
+        log.error("Ecoscribe pid=%s frozen for %.0f s (watched): killing it", old, self.hang_s)
         self.proc.kill(self.handle)
         self.handle = None
         m.unlink(missing_ok=True)
@@ -128,7 +128,7 @@ class Supervisor:
             with open(report / "report.md", "a", encoding="utf-8") as f:
                 f.write(f"\nFrozen (no answer from the main thread for {self.hang_s:.0f} s): killed by the watchdog. "
                         "The freeze-*.log files here hold every thread's stack.\n")
-        log.error("Dictado %s pid=%s exit=%s report=%s", "froze" if frozen else "crashed", old,
+        log.error("Ecoscribe %s pid=%s exit=%s report=%s", "froze" if frozen else "crashed", old,
                   crash.exit_name(code), report)
         if gave_up:
             self._mark_crashed(report)
@@ -140,7 +140,7 @@ class Supervisor:
     def _mark_crashed(self, report: Path) -> None:
         p = self.data / "status.json"
         st = self._status()
-        st.update(state="crashed", error=f"Dictado crashed {MAX_CRASHES} times in 10 minutes", crash=str(report),
+        st.update(state="crashed", error=f"Ecoscribe crashed {MAX_CRASHES} times in 10 minutes", crash=str(report),
                   ts=time.time())
         tmp = p.with_suffix(".sup.tmp")
         tmp.write_text(json.dumps(st, ensure_ascii=False), encoding="utf-8")
@@ -188,7 +188,7 @@ class WinProc:
             finally:
                 win32api.CloseHandle(t)
         except Exception:
-            log.exception("could not end the frozen Dictado")
+            log.exception("could not end the frozen Ecoscribe")
 
 
 class MacProc:

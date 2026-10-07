@@ -1,4 +1,4 @@
-"""Deploy Dictado to %USERPROFILE%\\dictado and (re)start it. Run with Windows Python.
+"""Deploy Ecoscribe to %USERPROFILE%\\dictado and (re)start it. Run with Windows Python.
 
     python deploy.py            copy, add Startup shortcut, restart, wait for ready
     python deploy.py --uninstall  stop it and remove the Startup shortcut
@@ -47,7 +47,7 @@ def shortcut() -> None:
     sc.TargetPath = str(PYTHONW)
     sc.Arguments = "-m dictado"
     sc.WorkingDirectory = str(DEST)
-    sc.Description = "Dictado: dictado por voz (toca Ctrl derecho)"
+    sc.Description = "Ecoscribe: dictado por voz (toca Ctrl derecho)"
     sc.Save()
     print("startup shortcut", STARTUP)
 
@@ -69,7 +69,7 @@ def launch() -> None:
             if "ready model=" in new:
                 return
         time.sleep(0.5)
-    raise SystemExit("Dictado did not report ready within 180 s; see " + str(log))
+    raise SystemExit("Ecoscribe did not report ready within 180 s; see " + str(log))
 
 
 def main() -> None:

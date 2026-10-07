@@ -1,9 +1,9 @@
 """End-to-end dictation on the real Mac desktop (uat.4/uat.13): the real key tap, the real paste.
 
-Starts a throwaway text window (tests/targets.py) and Dictado in --test mode with a fixture clip as the
+Starts a throwaway text window (tests/targets.py) and Ecoscribe in --test mode with a fixture clip as the
 mic, taps Right Command with tagged synthetic events, and checks what lands in the window.
 Never while the user works: waits for 45 s of idle (HIDIdleTime) and aborts (exit 3) on any real key or
-click during the run (a listen-only tap counts events without Dictado's tag).
+click during the run (a listen-only tap counts events without Ecoscribe's tag).
 
     .venv/bin/python tools/mac_e2e.py [--scenario basic|navigate|cancel|all]
 """
@@ -36,7 +36,7 @@ def idle_s() -> float:
 
 
 class RealInputGuard(threading.Thread):
-    """Listen-only tap: any key/click without Dictado's tag is the user."""
+    """Listen-only tap: any key/click without Ecoscribe's tag is the user."""
 
     def __init__(self):
         super().__init__(daemon=True)

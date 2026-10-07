@@ -310,7 +310,7 @@ def valid_url(url: str) -> bool:
 # -- the feed ------------------------------------------------------------------------------------
 def _fetch(url: str, timeout: float) -> bytes:
     import urllib.request
-    req = urllib.request.Request(url, headers={"User-Agent": "Dictado"})
+    req = urllib.request.Request(url, headers={"User-Agent": "Ecoscribe"})
     with urllib.request.urlopen(req, timeout=timeout) as r:  # noqa: S310 (https only, see valid_url)
         return r.read(MAX_BYTES)
 

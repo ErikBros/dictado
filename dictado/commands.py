@@ -19,7 +19,7 @@ from pathlib import Path
 
 log = logging.getLogger(__name__)
 EVENT = "Local\\DictadoCommand"
-NOT_RUNNING = "Dictado isn't running"
+NOT_RUNNING = "Ecoscribe isn't running"
 
 
 def _dir(data_dir: Path) -> Path:

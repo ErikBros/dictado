@@ -133,11 +133,11 @@ def make_report(data: Path, pid: int, code: int | None, log_path: Path, config_p
         (d / "config.toml").write_text(re.sub(r'(?m)^(calendar_url\s*=\s*).*$', r'\1"<removed>"', cfg), encoding="utf-8")
     last = [l for l in tail.splitlines() if l.strip()][-1:] or ["(empty log)"]
     where = _where(fault)
-    lines = [f"# Dictado crash {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(now))}", "",
+    lines = [f"# Ecoscribe crash {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(now))}", "",
              f"- Version: {version or '?'}", f"- Process: {pid}", f"- Exit: {exit_name(code)}",
              f"- Crashed in: {where or 'no Python frame (see fault.log)'}",
              f"- Last log line: `{last[0][:300]}`",
-             f"- Restarted: {'no, 3 crashes in 10 minutes: Dictado stopped restarting itself' if gave_up else 'yes'}",
+             f"- Restarted: {'no, 3 crashes in 10 minutes: Ecoscribe stopped restarting itself' if gave_up else 'yes'}",
              "", "Files here: fault.log (native trace, every thread), log-tail.txt (last 300 log lines), "
              "status.json, config.toml (calendar link removed).", ""]
     if fault.strip():
@@ -171,7 +171,7 @@ def for_claude(d: Path) -> str:
     d = Path(d)
     text = (d / "report.md").read_text(encoding="utf-8", errors="replace")
     tail = (d / "log-tail.txt").read_text(encoding="utf-8", errors="replace") if (d / "log-tail.txt").exists() else ""
-    return (f"Dictado crashed. Please find the cause. Report folder: {d}\n\n{text}\n"
+    return (f"Ecoscribe crashed. Please find the cause. Report folder: {d}\n\n{text}\n"
             f"## Last log lines\n\n```\n{tail[-8000:]}\n```\n")
 
 
@@ -191,7 +191,7 @@ def clean_live(data: Path, alive_pids: set[int]) -> None:
 
 class FreezeWatch:
     """Notices the app's main (tk) thread not answering: today's crashes froze first and
-    Windows offered to force-close Dictado, while every key on the PC lagged behind the hook.
+    Windows offered to force-close Ecoscribe, while every key on the PC lagged behind the hook.
     The main loop calls beat() every 0.5 s; if no beat comes for `limit_s`, every thread's
     stack goes to crashes/live/freeze-<pid>-<n>.log and the log says so. Once per freeze."""
 

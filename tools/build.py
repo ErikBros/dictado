@@ -1,7 +1,7 @@
 """Build Dictado.exe (and optionally the installer). Run with Windows Python.
 
     python build.py              -> %USERPROFILE%\\dictado-build\\dist\\Dictado\\Dictado.exe
-    python build.py --installer  -> also Dictado-Setup-<ver>.exe (copied to Downloads)
+    python build.py --installer  -> also Ecoscribe-Setup-<ver>.exe (copied to Downloads)
 """
 from __future__ import annotations
 
@@ -40,7 +40,7 @@ def installer() -> Path:
     v = version()
     subprocess.run([str(ISCC), f"/DAppVersion={v}", f"/DDistDir={OUT / 'dist' / 'Dictado'}",
                     f"/O{OUT}", str(PKG / "dictado.iss")], check=True)
-    setup = OUT / f"Dictado-Setup-{v}.exe"
+    setup = OUT / f"Ecoscribe-Setup-{v}.exe"
     dl = Path(os.environ["USERPROFILE"]) / "Downloads" / setup.name
     shutil.copy2(setup, dl)
     print(f"installer {setup}  ({setup.stat().st_size / 1e9:.2f} GB) -> {dl}")

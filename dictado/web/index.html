@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Dictado</title>
+<title>Ecoscribe</title>
 <link rel="stylesheet" href="app.css">
 </head>
 <body>
@@ -17,7 +17,7 @@
         <path d="M32 45v6M24 52h16" stroke="var(--paper)" stroke-width="4.5" stroke-linecap="round"/>
       </svg>
       <div>
-        <div class="brand-name">Dictado</div>
+        <div class="brand-name">Ecoscribe</div>
         <div class="brand-ver" id="ver">v1.2</div>
       </div>
     </div>
@@ -43,7 +43,7 @@
         <h1>Home</h1>
       </header>
       <div class="crash-card card" id="crash-card" hidden>
-        <div class="crash-text"><strong id="crash-title">Dictado crashed</strong>
+        <div class="crash-text"><strong id="crash-title">Ecoscribe crashed</strong>
           <span class="muted small" id="crash-sub">It restarted by itself. A report with everything needed to find the cause was saved.</span></div>
         <div class="crash-actions">
           <button type="button" class="btn btn-sm" id="crash-copy">Copy crash report for Claude</button>
@@ -52,7 +52,7 @@
       <div class="hero card">
         <div class="hero-state">
           <span class="state-badge" id="hero-badge"><span class="dot"></span><span id="hero-badge-text">…</span></span>
-          <h2 id="hero-title">Checking Dictado…</h2>
+          <h2 id="hero-title">Checking Ecoscribe…</h2>
           <p class="hero-how" id="hero-how">Tap <kbd class="key key-wide">Ctrl</kbd> <span class="key-side">(right)</span>, talk, and tap it again. The text appears wherever the cursor is.</p>
           <div class="hero-actions" id="hero-actions"></div>
         </div>
@@ -192,7 +192,7 @@
         </div>
 
         <div class="card group">
-          <div class="group-head"><h3>Mic</h3><p class="muted">Dictado finds it by name, so it isn't lost when you plug in other devices.</p></div>
+          <div class="group-head"><h3>Mic</h3><p class="muted">Ecoscribe finds it by name, so it isn't lost when you plug in other devices.</p></div>
           <label class="row"><span class="row-label">Mic</span>
             <select name="mic" id="f-mic"></select></label>
           <div class="row">
@@ -203,26 +203,26 @@
             </div>
           </div>
           <label class="row toggle-row"><span class="row-text"><span class="row-label">Unmute the mic only while dictating</span>
-            <span class="muted small">Your mic is muted in Windows. Dictado unmutes it while you record and puts it back as it was.</span></span>
+            <span class="muted small">Your mic is muted in Windows. Ecoscribe unmutes it while you record and puts it back as it was.</span></span>
             <input type="checkbox" class="switch" name="unmute" id="f-unmute"></label>
         </div>
 
         <div class="card group">
-          <div class="group-head"><h3>Languages you dictate in</h3><p class="muted">Each dictation, Dictado picks among these by itself, and the pill shows which one it heard. Wrong guess? Hold <kbd id="lang-key">Right Ctrl</kbd> and press <kbd>L</kbd> to choose the next dictation's language (or the tray icon: Next dictation in). With Swedish (or most added languages) ticked, dictation uses the larger model: still under a second, about twice as slow.</p></div>
+          <div class="group-head"><h3>Languages you dictate in</h3><p class="muted">Each dictation, Ecoscribe picks among these by itself, and the pill shows which one it heard. Wrong guess? Hold <kbd id="lang-key">Right Ctrl</kbd> and press <kbd>L</kbd> to choose the next dictation's language (or the tray icon: Next dictation in). With Swedish (or most added languages) ticked, dictation uses the larger model: still under a second, about twice as slow.</p></div>
           <div class="lang-checks" id="f-languages" role="group" aria-label="Languages you dictate in"></div>
           <div class="lang-add-row"><select id="lang-add" aria-label="Add a language"></select>
             <span class="muted small">English and Swedish are built in. Added languages also appear for meetings and files; nothing is downloaded.</span></div>
         </div>
 
         <div class="card group">
-          <div class="group-head"><h3>Your words</h3><p class="muted">Names and terms Dictado should spell your way, one per line: people, places, products. Used for dictation and meetings.</p></div>
+          <div class="group-head"><h3>Your words</h3><p class="muted">Names and terms Ecoscribe should spell your way, one per line: people, places, products. Used for dictation and meetings.</p></div>
           <textarea name="vocabulary" id="f-vocabulary" class="vocab" rows="5" spellcheck="false" placeholder="Göteborg&#10;pyannote&#10;Kristineberg"></textarea>
-          <label class="row toggle-row"><span class="row-text"><span class="row-label">Names on your screen</span><span class="muted small">When you start dictating, Dictado reads the names in the window you're typing into (an email's sender, a chat's people) and spells them the same way. Read on this PC, never stored or sent.</span></span>
+          <label class="row toggle-row"><span class="row-text"><span class="row-label">Names on your screen</span><span class="muted small">When you start dictating, Ecoscribe reads the names in the window you're typing into (an email's sender, a chat's people) and spells them the same way. Read on this PC, never stored or sent.</span></span>
             <input type="checkbox" class="switch" name="screen_names" id="f-screen-names"></label>
         </div>
 
         <div class="card group">
-          <div class="group-head"><h3>Snippets</h3><p class="muted">Say a snippet's name on its own ("my email.") and Dictado types the saved text instead. Inside a sentence ("what's my email?") it stays as you said it.</p></div>
+          <div class="group-head"><h3>Snippets</h3><p class="muted">Say a snippet's name on its own ("my email.") and Ecoscribe types the saved text instead. Inside a sentence ("what's my email?") it stays as you said it.</p></div>
           <div id="snips" class="snips"></div>
           <button type="button" class="btn btn-ghost btn-sm" id="snip-add">Add snippet</button>
         </div>
@@ -237,7 +237,7 @@
             <span class="muted small" id="f-speakers-help"></span></span>
             <input type="checkbox" class="switch" name="speakers" id="f-speakers"></label>
           <label class="row toggle-row"><span class="row-text"><span class="row-label">Remember voices</span>
-            <span class="muted small" id="voices-help">Name a speaker once and Dictado recognises that voice in later calls. Voices are kept on this PC only.</span></span>
+            <span class="muted small" id="voices-help">Name a speaker once and Ecoscribe recognises that voice in later calls. Voices are kept on this PC only.</span></span>
             <input type="checkbox" class="switch" name="voice_memory" id="f-voice-memory"></label>
           <div class="row" id="voices-row" hidden><span class="muted small" id="voices-known"></span>
             <button type="button" class="btn btn-ghost btn-sm danger" id="voices-forget">Forget all voices</button></div>
@@ -267,7 +267,7 @@
           </details>
           <label class="row toggle-row"><span class="row-text"><span class="row-label">On-screen pill</span><span class="muted small">"Dictating 0:07" at the bottom center while you record.</span></span>
             <input type="checkbox" class="switch" name="overlay" id="f-overlay"></label>
-          <label class="row toggle-row" id="row-startup"><span class="row-text"><span class="row-label">Start with Windows</span><span class="muted small" id="startup-hint">Dictado starts by itself when you sign in.</span></span>
+          <label class="row toggle-row" id="row-startup"><span class="row-text"><span class="row-label">Start with Windows</span><span class="muted small" id="startup-hint">Ecoscribe starts by itself when you sign in.</span></span>
             <input type="checkbox" class="switch" name="startup" id="f-startup"></label>
         </div>
 
@@ -305,7 +305,7 @@
         <kbd class="key key-xl" id="w-key">Ctrl</kbd>
         <div class="w-caption">right</div>
       </div>
-      <h2 id="w-title">Dictado is ready</h2>
+      <h2 id="w-title">Ecoscribe is ready</h2>
       <p>Tap <strong>Right Ctrl</strong> once and talk. Keep using the computer as usual. Tap it again and the text appears wherever your cursor is.</p>
     </div>
 
@@ -324,7 +324,7 @@
         <div class="tip"><svg viewBox="0 0 24 24" class="tip-ico" aria-hidden="true"><path d="M12 7v5l3 2"/><circle cx="12" cy="12" r="8"/></svg><span>History</span></div>
       </div>
       <h2>All set</h2>
-      <p>Dictado stays in the system tray, next to the clock, and starts with Windows. Open it any time from the Start menu.</p>
+      <p>Ecoscribe stays in the system tray, next to the clock, and starts with Windows. Open it any time from the Start menu.</p>
     </div>
 
     <div class="w-actions">

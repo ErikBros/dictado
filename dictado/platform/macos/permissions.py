@@ -1,4 +1,4 @@
-"""Which macOS privacy permissions Dictado has (pre-mortem #3: never fail silently after a rebuild).
+"""Which macOS privacy permissions Ecoscribe has (pre-mortem #3: never fail silently after a rebuild).
 
 Each entry: key -> (label the user sees in System Settings, the Settings pane URL, granted?).
 """
