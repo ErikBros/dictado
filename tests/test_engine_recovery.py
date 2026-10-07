@@ -81,3 +81,27 @@ def test_reload_never_destroys_the_old_model():
     e.transcribe(np.zeros(16000, np.float32))
     assert e.model is not first
     assert first in e._retired
+
+
+def test_preview_is_greedy_and_never_waits_for_a_dictation():
+    """dictado-live: the live text's quick pass is beam 1, and skipped while a dictation runs."""
+    import threading
+    factory, made = factory_with([])
+    e = Engine(WhisperCfg(device="cuda"), TextCfg(), model_factory=factory)
+    assert e.preview(np.zeros(16000, np.float32)) is None  # no model yet: skipped, not loaded
+    e.load()
+    seen = []
+    real = made[0].transcribe
+    made[0].transcribe = lambda audio, **kw: (seen.append(kw["beam_size"]), real(audio, **kw))[1]
+    assert e.preview(np.zeros(16000, np.float32)).text == "Hello there "
+    assert seen == [1]
+    gate, inside = threading.Event(), threading.Event()
+    made[0].transcribe = lambda audio, **kw: (inside.set(), gate.wait(5), real(audio, **kw))[2]
+    t = threading.Thread(target=e.transcribe, args=(np.zeros(16000, np.float32),))
+    t.start()
+    assert inside.wait(5)
+    t0 = __import__("time").monotonic()
+    assert e.preview(np.zeros(16000, np.float32)) is None  # the dictation has the model
+    assert __import__("time").monotonic() - t0 < 0.5
+    gate.set()
+    t.join(5)

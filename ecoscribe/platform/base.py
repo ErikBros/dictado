@@ -57,6 +57,10 @@ CAPABILITIES: dict[str, dict] = {
         "windows": "ecoscribe.platform.windows.shell:Tray,Overlay,PromptWindow",
         "macos": "ecoscribe.platform.macos.shell:Tray,Overlay,PromptWindow",
     },
+    "Live text on the pill while dictating": {
+        "windows": "ecoscribe.platform.windows.shell:Overlay",  # Overlay.live: two lines under the timer
+        "macos": ("ticket", "dictado-ayq"),
+    },
     "Start at login": {
         "windows": "ecoscribe.platform.windows.startup:enable,disable,is_enabled",
         "macos": "ecoscribe.platform.macos.startup:enable,disable,is_enabled",

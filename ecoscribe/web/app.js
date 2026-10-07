@@ -17,7 +17,7 @@ function demoApi() {
   const now = new Date();
   const iso = (mins) => new Date(now - mins * 60000).toISOString().slice(0, 19);
   let settings = {
-    values: { hotkey: "rctrl", mic: "Anker PowerConf", languages: "en", sounds: true, overlay: true, unmute: true, startup: true,
+    values: { hotkey: "rctrl", mic: "Anker PowerConf", languages: "en", sounds: true, overlay: true, live_text: true, unmute: true, startup: true,
       meet_mode: "prompt", meet_lang: "sv", on_demand: true, speakers: true, vocabulary: "Göteborg\npyannote", voice_commands: false, screen_names: true, hold_to_talk: false, voice_memory: true,
       snippets: [{ trigger: "my email", text: "alex@example.com" }] },
     options: {
@@ -638,7 +638,7 @@ function formValues() {
     hotkey: $("#f-hotkey").value, mic: $("#f-mic").value,
     languages: $$("#f-languages input:checked").map((i) => i.value).join(",") || "en",
     extra_languages: [...extraLangs],
-    sounds: $("#f-sounds").checked, overlay: $("#f-overlay").checked, unmute: $("#f-unmute").checked, startup: $("#f-startup").checked,
+    sounds: $("#f-sounds").checked, overlay: $("#f-overlay").checked, live_text: $("#f-live-text").checked, unmute: $("#f-unmute").checked, startup: $("#f-startup").checked,
     meet_mode: $("#f-meet-mode").value, meet_lang: $("#f-meet-lang").value, on_demand: $("#f-on-demand").checked,
     speakers: $("#f-speakers").checked, voice_commands: $("#f-voice-commands").checked,
     screen_names: $("#f-screen-names").checked, hold_to_talk: $("#f-hold").checked,
@@ -747,7 +747,7 @@ async function renderSettings() {
   baseLangs = s.options.base_languages || ["en", "sv"];
   langCard(new Set(String(s.values.languages || "en").split(",")));
   $("#lang-key").textContent = hotkeyLabel(s.values.hotkey || "rctrl");
-  $("#f-sounds").checked = s.values.sounds; $("#f-overlay").checked = s.values.overlay;
+  $("#f-sounds").checked = s.values.sounds; $("#f-overlay").checked = s.values.overlay; $("#f-live-text").checked = s.values.live_text !== false;
   $("#f-unmute").checked = s.values.unmute; $("#f-startup").checked = s.values.startup;
   $("#f-startup").disabled = !s.can_startup;
   $("#startup-hint").textContent = s.can_startup ? "Ecoscribe starts by itself when you sign in." : "Available in the installed version.";

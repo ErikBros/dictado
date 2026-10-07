@@ -129,6 +129,11 @@ class Ui:
         if self.overlay:
             self._post(self.overlay.recording, t0)
 
+    def live(self, text: str):
+        """What the live transcript has heard so far (dictado-live); the pill's own, if it has one."""
+        if self.overlay and hasattr(self.overlay, "live"):
+            self._post(self.overlay.live, text)
+
     def busy(self):
         self._post(self._tray, "busy")
         if self.overlay:

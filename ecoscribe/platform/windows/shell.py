@@ -39,6 +39,7 @@ SWP_NOSIZE, SWP_NOACTIVATE = 0x1, 0x10
 W, H = 210, 44
 RW, RH = 230, 54  # the dictating pill: timer + how to cancel (t0u.36)
 MW, MH = 380, 56  # the meeting pill: label + latest live line
+LW, LH = 460, 84  # the dictating pill with live text under it (dictado-live)
 KEY = "#010203"  # transparent color key, gives the pill round ends
 
 
@@ -71,6 +72,7 @@ class Overlay:
         self.w, self.h = W, H
         self.meeting: dict | None = None  # meetui.meeting_view(); shown whenever dictation isn't
         self._drawn = None  # what the meeting layer last drew (no redraw, no flicker)
+        self.live_text = ""  # what the live transcript has heard so far (this recording)
 
     def ex_style(self) -> int:
         return u32.GetWindowLongW(self.hwnd, GWL_EXSTYLE)
@@ -109,22 +111,42 @@ class Overlay:
                       font=("Segoe UI", 11), anchor="w" if dot else "center")
 
     def _dictating_pill(self, secs: int, level: float) -> None:
-        """Two lines: the timer, and how to cancel; level bars on the right."""
-        self._size(RW, RH)
+        """The timer and how to cancel, level bars on the right; with live text, a wider box
+        whose second part is what it has heard so far (two lines, the newest words)."""
+        live = self.live_text
+        w_, h_ = (LW, LH) if live else (RW, RH)
+        grew = (w_, h_) != (self.w, self.h)
+        self._size(w_, h_)
+        if grew:
+            self._place_and_show()  # stay centered above the taskbar at the new size
         self._drawn = None
         c = self.c
         c.delete("all")
-        r, bg = RH // 2, P.INK
-        c.create_oval(0, 0, RH, RH, fill=bg, outline=bg)
-        c.create_oval(RW - RH, 0, RW, RH, fill=bg, outline=bg)
-        c.create_rectangle(r, 0, RW - r, RH, fill=bg, outline=bg)
+        bg = P.INK
+        if live:
+            r = 22
+            c.create_oval(0, 0, 2 * r, 2 * r, fill=bg, outline=bg)
+            c.create_oval(w_ - 2 * r, 0, w_, 2 * r, fill=bg, outline=bg)
+            c.create_oval(0, h_ - 2 * r, 2 * r, h_, fill=bg, outline=bg)
+            c.create_oval(w_ - 2 * r, h_ - 2 * r, w_, h_, fill=bg, outline=bg)
+            c.create_rectangle(r, 0, w_ - r, h_, fill=bg, outline=bg)
+            c.create_rectangle(0, r, w_, h_ - r, fill=bg, outline=bg)
+        else:
+            r = h_ // 2
+            c.create_oval(0, 0, h_, h_, fill=bg, outline=bg)
+            c.create_oval(w_ - h_, 0, w_, h_, fill=bg, outline=bg)
+            c.create_rectangle(r, 0, w_ - r, h_, fill=bg, outline=bg)
         c.create_oval(17, 13, 29, 25, fill=P.TILE, outline=P.TILE)
         c.create_text(40, 19, text=f"Dictating {secs // 60}:{secs % 60:02d}", fill=P.PAPER,
                       font=("Segoe UI", 11), anchor="w")
-        c.create_text(40, 38, text=self.hint, fill=P.LINE, font=("Segoe UI", 9), anchor="w")
+        if live:
+            c.create_text(150, 19, text=self.hint, fill=P.LINE, font=("Segoe UI", 9), anchor="w")
+            c.create_text(18, 36, text=live, fill=P.PAPER, font=("Segoe UI", 10), anchor="nw", width=w_ - 36)
+        else:
+            c.create_text(40, 38, text=self.hint, fill=P.LINE, font=("Segoe UI", 9), anchor="w")
         for i in range(5):
             on = level > (i + 0.5) / 5
-            x = RW - 62 + i * 9
+            x = w_ - 62 + i * 9
             hgt = 6 + i * 3
             c.create_rectangle(x, 19 + hgt // 2, x + 5, 19 - hgt // 2, fill=P.PAPER if on else P.PILL_OFF, outline="")
 
@@ -162,18 +184,25 @@ class Overlay:
         if self.mode == "hidden" and time.monotonic() >= self._flash_until:
             self._show_layer()
 
+    def live(self, text: str) -> None:
+        if self.mode == "recording":
+            self.live_text = text or ""
+
     def recording(self, t0: float) -> None:
         self.mode, self._t0 = "recording", t0
+        self.live_text = ""
         self._place_and_show()
         self.tick()
 
     def busy(self) -> None:
         self.mode = "busy"
+        self.live_text = ""
         self._pill(P.AEGEAN_SOFT, "Transcribing…")
         self._place_and_show()
 
     def idle(self) -> None:
         self.mode = "hidden"
+        self.live_text = ""
         if time.monotonic() >= self._flash_until:
             self._show_layer()
 

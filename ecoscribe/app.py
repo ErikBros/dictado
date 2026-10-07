@@ -13,7 +13,10 @@ import time
 from dataclasses import replace
 from pathlib import Path
 
+import numpy as np
+
 from .deliver import set_clipboard_text
+from .quality import dropout_seconds, too_short
 
 log = logging.getLogger(__name__)
 from .routing import LANG_NAMES  # any language or mix (dictado-ehs)
@@ -21,6 +24,7 @@ SR = 16000
 
 
 class App:
+    LIVE_EVERY_S = 2.0  # dictado-live: one quick pass this often while recording
     def __init__(self, cfg, recorder, engine, deliver_fn, ui, gate=None, history_path: Path | None = None,
                  press_enter=None, screen=None, spool=None):
         self.cfg = cfg
@@ -34,6 +38,7 @@ class App:
         self.spool = spool  # t0u.37: the recording on disk while it happens, for crash recovery
         self._screen_factory = screen  # None: ecoscribe.context.ScreenNames (read lazily, Windows only)
         self._screen = None
+        self._live = None  # dictado-live: the pill's live transcript for the recording in progress
         self._quiet = False  # hold mode: the mic is on since the key went down, not announced yet
         self._by_hold = False  # this recording stops when the key is let go
         self.state = "idle"
@@ -183,6 +188,7 @@ class App:
         self.state = "recording"
         self._t_start = time.monotonic()
         self._quiet, self._by_hold = quiet, False
+        self._start_live()
         if not quiet:
             self.ui.sound("start")
             self.ui.recording(self._t_start)
@@ -191,6 +197,30 @@ class App:
         self._timer.start()
         log.info("recording started%s", " (key down)" if quiet else "")
 
+    def _start_live(self) -> None:
+        """The pill shows what it has heard so far (dictado-live): a quick pass every 2 s that
+        steps aside whenever the model is loading or busy, so the paste never waits for it."""
+        ui_cfg = getattr(self.cfg, "ui", None)
+        if not (getattr(ui_cfg, "live_text", False) and getattr(ui_cfg, "overlay", True)
+                and hasattr(self.engine, "preview") and hasattr(self.recorder, "chunks_since")
+                and hasattr(self.ui, "live")):
+            return
+        from .live import LivePreview
+        multi = len(getattr(self.cfg.whisper, "languages", []) or []) > 1
+
+        def preview(audio):
+            r = self.engine.preview(audio, lang=self.next_lang, prefer=self.last_lang if multi else None)
+            return r.text if r is not None else None
+
+        def show(text):
+            if not self._quiet:  # a held key that may still turn out to be a shortcut: stay quiet
+                self.ui.live(text)
+        try:
+            self._live = LivePreview(self.recorder.chunks_since, preview, show, every_s=self.LIVE_EVERY_S).start()
+        except Exception:
+            log.exception("live text unavailable for this recording")
+            self._live = None
+
     def _autostop(self) -> None:
         with self._lock:
             if self.state == "recording" and time.monotonic() - self._t_start >= self.cfg.limits.max_record_s - 0.05:
@@ -198,6 +228,9 @@ class App:
                 self._stop()
 
     def _end_recording(self):
+        if self._live is not None:
+            self._live.stop()
+            self._live = None
         if self._timer:
             self._timer.cancel()
             self._timer = None
@@ -320,11 +353,32 @@ class App:
             self.last_lang = res.lang
         if multi and dr.pasted:  # which language it heard, for a second
             self.ui.flash(f"✓ {str(res.lang).upper()}", 1.2)
-        log.info("delivered chars=%d lang=%s audio_s=%.2f transcribe_ms=%d stop_to_paste_ms=%d target=%s pasted=%s reason=%s",
-                 len(res.text), res.lang, len(audio) / SR, res.ms, stop_to_paste, dr.target_exe, dr.pasted, dr.reason)
+        dropout_s = dropout_seconds(audio)
+        log.info("delivered chars=%d lang=%s audio_s=%.2f speech_s=%.2f dropout_s=%.2f transcribe_ms=%d "
+                 "stop_to_paste_ms=%d target=%s pasted=%s reason=%s", len(res.text), res.lang, len(audio) / SR,
+                 res.speech_s, dropout_s, res.ms, stop_to_paste, dr.target_exe, dr.pasted, dr.reason)
+        if too_short(res.text, len(audio) / SR):
+            self._keep_suspect(audio, res, dropout_s)
         self._history(res, audio, dr)
         if not dr.pasted:
             self.ui.flash("Copied: paste with Ctrl+V" if dr.reason != "clipboard_busy" else "Couldn't paste")
+
+    def _keep_suspect(self, audio, res, dropout_s: float) -> None:
+        """Much less text than talking (50 s -> one sentence, 2026-10-07): keep the audio on this
+        PC so the cause can be found (dropouts? the voice detector? the model?). Last 5 only."""
+        base = self.spool.dir.parent if self.spool is not None else (self.history_path.parent if self.history_path else None)
+        log.warning("short result: chars=%d audio_s=%.1f speech_s=%.1f dropout_s=%.1f lang=%s",
+                    len(res.text), len(audio) / SR, res.speech_s, dropout_s, res.lang)
+        if base is None:
+            return
+        try:
+            d = base / "suspect"
+            d.mkdir(parents=True, exist_ok=True)
+            np.asarray(audio, np.float32).tofile(d / f"{time.strftime('%Y%m%d-%H%M%S')}-{res.lang}.f32")
+            for old in sorted(d.glob("*.f32"))[:-5]:
+                old.unlink()
+        except Exception:
+            log.exception("could not keep the short dictation's audio")
 
     def recover(self) -> int:
         """At start: dictations a crash cut off (left in the spool) go to History as

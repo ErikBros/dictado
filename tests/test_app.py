@@ -237,3 +237,72 @@ def test_cpu_fallback_flashes_once(tmp_path):
     assert wait(lambda: len(out) == 2)
     assert sum("GPU" in f for f in flashes(app)) == 1
     app.shutdown()
+
+
+class StreamingRecorder(FakeRecorder):
+    """Hands out 0.1 s chunks while recording, like the real one (for the live text)."""
+
+    def __init__(self, seconds=1.0):
+        super().__init__(seconds)
+        self.chunks = []
+
+    def begin(self):
+        super().begin()
+        self.chunks = []
+
+        def feed():
+            while self.recording:
+                self.chunks.append(np.full(SR // 10, 0.1, np.float32))
+                time.sleep(0.02)
+        threading.Thread(target=feed, daemon=True).start()
+
+    def chunks_since(self, i):
+        return list(self.chunks[i:]), len(self.chunks)
+
+
+class PreviewEngine(FakeEngine):
+    def __init__(self):
+        super().__init__()
+        self.previews = []
+
+    def preview(self, audio, lang=None, prefer=None):
+        self.previews.append(len(audio))
+        return Result(text=f"oigo {len(self.previews)}", lang="es", speech_s=1.0, ms=1)
+
+
+def test_live_text_while_recording_then_the_real_paste(tmp_path, monkeypatch):
+    monkeypatch.setattr(App, "LIVE_EVERY_S", 0.05)
+    eng = PreviewEngine()
+    app, out = make(tmp_path, rec=StreamingRecorder(), eng=eng)
+    app.on_action("toggle")
+    assert wait(lambda: any(e[0] == "live" for e in app.ui.events))
+    app.on_action("toggle")
+    assert wait(lambda: out)
+    n = len(eng.previews)
+    time.sleep(0.2)
+    assert len(eng.previews) == n  # stopped with the recording
+    assert out == ["text 1 "]  # the careful pass is what gets pasted, never the preview
+    assert [e for e in app.ui.events if e[0] == "live"][0][1] == "oigo 1"
+
+
+def test_live_text_off_in_settings(tmp_path, monkeypatch):
+    monkeypatch.setattr(App, "LIVE_EVERY_S", 0.05)
+    eng = PreviewEngine()
+    app, out = make(tmp_path, rec=StreamingRecorder(), eng=eng)
+    app.cfg.ui.live_text = False
+    app.on_action("toggle")
+    time.sleep(0.3)
+    app.on_action("toggle")
+    assert wait(lambda: out) and eng.previews == []
+
+
+def test_a_much_too_short_result_keeps_its_audio(tmp_path):
+    class Terse(FakeEngine):
+        def transcribe(self, audio):
+            return Result(text="Una frase. ", lang="es", speech_s=30.0, ms=5)
+    app, out = make(tmp_path, rec=FakeRecorder(seconds=30.0), eng=Terse())
+    app.on_action("toggle")
+    app.on_action("toggle")
+    assert wait(lambda: out)
+    kept = list((tmp_path / "suspect").glob("*-es.f32"))
+    assert len(kept) == 1 and kept[0].stat().st_size == 30 * SR * 4
