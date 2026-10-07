@@ -67,7 +67,7 @@ def make(tmp_path, rec=None, eng=None, **limits):
         return DeliveryResult(True, "x.exe", "ok")
 
     app = App(cfg, rec or FakeRecorder(), eng or FakeEngine(), deliver, FakeUi(), gate=FakeGate(),
-              history_path=tmp_path / "h.jsonl")
+              history_path=tmp_path / "h.jsonl", window_title=lambda: "")
     app.start()
     return app, delivered
 
@@ -389,4 +389,16 @@ def test_the_pill_is_not_kept_busy_by_the_clarity_pass(tmp_path):
     app.cfg.ui.insights = True
     app.on_action("toggle"); app.on_action("toggle")
     assert wait(lambda: seen) and seen == [0]
+    app.shutdown()
+
+
+def test_who_it_was_for_is_saved_but_never_the_window_title(tmp_path):
+    """dictado-9jc.2: a browser tab on a mail site is a message to a person; the title isn't kept."""
+    app = App(Config(), FakeRecorder(), FakeEngine(), lambda t: DeliveryResult(True, "chrome.exe", "ok"), FakeUi(),
+              history_path=tmp_path / "h.jsonl", window_title=lambda: "Invented subject - Inbox - Gmail - Google Chrome")
+    app.start()
+    app.on_action("toggle"); app.on_action("toggle")
+    assert wait(lambda: (tmp_path / "h.jsonl").exists())
+    line = (tmp_path / "h.jsonl").read_text(encoding="utf-8")
+    assert json.loads(line)["to"] == "people" and "Invented subject" not in line
     app.shutdown()

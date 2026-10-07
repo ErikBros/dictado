@@ -351,6 +351,16 @@ class Api:
         self._copy(text)
         return {"ok": True, "chars": len(text)}
 
+    def coach_me(self) -> dict:
+        """Insights > Coach me (dictado-9jc.2): recent dictations to people as a coaching prompt, copied."""
+        from . import coach
+        rows = self._history_rows()
+        if not coach.people_count(rows):
+            return {"ok": False, "error": "no dictations to people in the last two weeks"}
+        text = coach.coach_prompt(rows)
+        self._copy(text)
+        return {"ok": True, "chars": len(text)}
+
     def copy_text(self, text: str) -> dict:
         self._copy(text)
         return {"ok": True}

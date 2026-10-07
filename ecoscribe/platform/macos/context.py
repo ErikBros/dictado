@@ -25,6 +25,20 @@ def _attr(el, name):
     return val if err == 0 else None
 
 
+def foreground_title() -> str:
+    """The focused window's title of the frontmost app (Accessibility, 50 ms messaging timeout)."""
+    from AppKit import NSWorkspace
+    from ApplicationServices import AXUIElementCreateApplication, AXUIElementSetMessagingTimeout
+    app = NSWorkspace.sharedWorkspace().frontmostApplication()
+    if app is None:
+        return ""
+    ax_app = AXUIElementCreateApplication(app.processIdentifier())
+    AXUIElementSetMessagingTimeout(ax_app, 0.05)
+    win = _attr(ax_app, "AXFocusedWindow")
+    title = _attr(win, "AXTitle") if win is not None else None
+    return str(title) if title else ""
+
+
 def window_texts(max_elems: int = 1500, budget_s: float = 0.25) -> list[str]:
     from AppKit import NSWorkspace
     from ApplicationServices import (AXUIElementCreateApplication, AXUIElementCreateSystemWide,

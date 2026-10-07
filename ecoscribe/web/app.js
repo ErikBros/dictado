@@ -38,6 +38,7 @@ function demoInsights(days) {  // invented numbers and text for the demo and scr
       }),
       words: [{ lang: "en", words: [{ word: "particularly", unsure: 4, said: 6 }, { word: "Kristineberg", unsure: 3, said: 3 }, { word: "rural", unsure: 2, said: 5 }] },
         { lang: "sv", words: [{ word: "sjuksköterska", unsure: 2, said: 2 }] }] },
+    coach: { people: Math.round(64 * k), days: 14 },
   };
 }
 
@@ -149,6 +150,7 @@ function demoApi() {
     get_insights: async (days) => demoInsights(days),
     add_word: async (w) => { settings.values.vocabulary += "\n" + w; window.__added = w; return { ok: true }; },
     insights_for_claude: async () => ({ ok: true, chars: 5120 }),
+    coach_me: async () => ({ ok: true, chars: 3900 }),
     clear_history: async () => { history.length = 0; return { ok: true }; },
     open_log: async () => ({ ok: true }),
     get_welcome: async () => ({ done: params.get("welcome") !== "1" }),
@@ -356,6 +358,10 @@ async function renderInsights() {
   }
   if (!d.habits.length) hab.textContent = "A few more dictations and your filler words show up here.";
   renderClarity(d.clarity);
+  const people = d.coach ? d.coach.people : 0;  // dictado-9jc.2
+  $("#i-coach").disabled = !people;
+  $("#i-coach").title = people ? `${people} ${people === 1 ? "message" : "messages"} to people in the last ${d.coach.days} days`
+    : "Nothing dictated to people (messages, email) in the last two weeks yet";
   const ph = $("#i-phrases"); ph.textContent = "";
   for (const p of d.phrases) ph.append(iChip(p.phrase, p.count));
   if (!d.phrases.length) ph.append(iChip("Nothing repeated three times yet"));
@@ -1143,6 +1149,10 @@ async function boot() {
   for (const b of $$(".nav-item")) b.onclick = () => { if (b.dataset.page === "reuniones") r.open = null; show(b.dataset.page); };
   try { $("#nav-insights").hidden = !(await api.get_settings()).values.insights; } catch {}
   for (const b of $$("#i-range .seg")) b.onclick = () => { iDays = b.dataset.days || null; renderInsights(); };
+  $("#i-coach").onclick = async () => {
+    const r = await api.coach_me();
+    toast(r.ok ? "Copied: paste it into Claude." : "Nothing dictated to people in the last two weeks yet.");
+  };
   $("#i-claude").onclick = async () => {
     const r = await api.insights_for_claude();
     if (r.ok) toast("Copied: paste it into Claude.");

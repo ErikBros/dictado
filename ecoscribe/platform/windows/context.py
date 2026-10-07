@@ -122,20 +122,33 @@ def _read(hwnd: int, max_elems: int) -> list[str]:
 def window_texts(max_elems: int = 1500, hwnd: int | None = None, timeout: float = 2.0) -> list[str]:
     """Title + control names of the foreground window (or `hwnd`) + the text you are writing in.
     One cached FindAll: 5-25 ms on the user's windows (Terminal, Chrome, Explorer, Discord, 2026-10-05)."""
+    hwnd = hwnd or _user32().GetForegroundWindow()
+    if not hwnd:
+        return []
+    return [foreground_title(hwnd)] + com_thread().call(lambda: _read(hwnd, max_elems), timeout)
+
+
+def _user32():
     import ctypes
     from ctypes import wintypes as w
     user32 = ctypes.WinDLL("user32", use_last_error=True)  # own instance: never touch windll's shared argtypes
     user32.GetForegroundWindow.restype = w.HWND
     user32.GetWindowTextLengthW.argtypes = (w.HWND,)
     user32.GetWindowTextW.argtypes = (w.HWND, w.LPWSTR, ctypes.c_int)
+    return user32
+
+
+def foreground_title(hwnd: int | None = None) -> str:
+    """The foreground window's (or `hwnd`'s) title: one GetWindowText, under a millisecond."""
+    import ctypes
+    user32 = _user32()
     hwnd = hwnd or user32.GetForegroundWindow()
     if not hwnd:
-        return []
+        return ""
     n = user32.GetWindowTextLengthW(hwnd)
     buf = ctypes.create_unicode_buffer(n + 1)
     user32.GetWindowTextW(hwnd, buf, n + 1)
-    title = buf.value
-    return [title] + com_thread().call(lambda: _read(hwnd, max_elems), timeout)
+    return buf.value
 
 
 # ---------- is there a text box under the cursor? (dictado-bhe) ----------
