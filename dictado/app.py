@@ -16,6 +16,7 @@ from pathlib import Path
 from .deliver import set_clipboard_text
 
 log = logging.getLogger(__name__)
+LANG_NAMES = {"en": "English", "es": "Spanish", "sv": "Swedish", "el": "Greek"}
 SR = 16000
 
 
@@ -36,6 +37,8 @@ class App:
         self._quiet = False  # hold mode: the mic is on since the key went down, not announced yet
         self._by_hold = False  # this recording stops when the key is let go
         self.state = "idle"
+        self.next_lang: str | None = None  # dictation-languages: forced for the next dictation (key + L)
+        self.last_lang: str | None = None  # what the last dictation was in: close calls stay with it
         self.ready = True
         self.last_text = ""
         self._lock = threading.RLock()
@@ -71,6 +74,29 @@ class App:
                     self._stop()
             elif action == "cancel" and self.state == "recording":
                 self._cancel()
+            elif action == "lang":
+                self.cycle_language()
+
+    def set_next_language(self, code: str | None) -> None:
+        """The tray's 'Next dictation in': same as the key, picked directly (None = auto)."""
+        with self._lock:
+            self.next_lang = code or None
+            which = "This dictation" if self.state == "recording" else "Next dictation"
+            self.ui.flash(f"{which}: {LANG_NAMES.get(self.next_lang, 'auto')}", 2.5)
+
+    def cycle_language(self) -> str | None:
+        """Dictation key + L (or the tray): the next dictation's language, Auto -> each of your
+        languages -> Auto. While recording it applies to this one (it's read at the stop)."""
+        langs = list(getattr(self.cfg.whisper, "languages", []) or [])
+        if len(langs) < 2:
+            self.ui.flash("One language set: add more in Settings", 2.5)
+            return self.next_lang
+        order = [None, *langs]
+        self.next_lang = order[(order.index(self.next_lang) + 1) % len(order)] if self.next_lang in order else None
+        which = "This dictation" if self.state == "recording" else "Next dictation"
+        self.ui.flash(f"{which}: {LANG_NAMES.get(self.next_lang, 'auto')}" if self.next_lang else f"{which}: auto", 2.5)
+        log.info("next dictation language -> %s", self.next_lang or "auto")
+        return self.next_lang
 
     def _hold_action(self, action: str) -> None:
         """Hold-to-talk (t0u.28): see keystate.py for what each action means."""
@@ -202,7 +228,8 @@ class App:
             self._refresh_ui()
             return
         self._pending += 1
-        self._jobs.put((audio, t_stop, self._screen, spooled))
+        forced, self.next_lang = self.next_lang, None  # one dictation only
+        self._jobs.put((audio, t_stop, self._screen, spooled, forced))
         self._screen = None
         self._refresh_ui()
 
@@ -242,9 +269,9 @@ class App:
             job = self._jobs.get()
             if job is None:
                 return
-            audio, t_stop, screen, spooled = job
+            audio, t_stop, screen, spooled, forced = job
             try:
-                self._process(audio, t_stop, screen)
+                self._process(audio, t_stop, screen, forced)
             except Exception:
                 log.exception("transcription/delivery failed")
                 self.ui.flash("Error, see the log")
@@ -255,9 +282,15 @@ class App:
                     self._pending -= 1
                     self._refresh_ui()
 
-    def _process(self, audio, t_stop: float, screen=None) -> None:
+    def _process(self, audio, t_stop: float, screen=None, forced: str | None = None) -> None:
         words = screen.get(wait_s=0.15) if screen is not None else None
-        res = self.engine.transcribe(audio, words=words) if words else self.engine.transcribe(audio)
+        multi = len(getattr(self.cfg.whisper, "languages", []) or []) > 1
+        kw = {"words": words} if words else {}
+        if forced:
+            kw["lang"] = forced
+        elif multi and self.last_lang:
+            kw["prefer"] = self.last_lang
+        res = self.engine.transcribe(audio, **kw)
         if getattr(self.engine, "device", "cuda") == "cpu" and not self._warned_cpu:
             self._warned_cpu = True
             self.ui.flash("No GPU: slow mode")
@@ -283,6 +316,10 @@ class App:
             self.press_enter()
         stop_to_paste = int((time.monotonic() - t_stop) * 1000)
         self.last_text = res.text
+        if res.lang:
+            self.last_lang = res.lang
+        if multi and dr.pasted:  # which language it heard, for a second
+            self.ui.flash(f"✓ {str(res.lang).upper()}", 1.2)
         log.info("delivered chars=%d lang=%s audio_s=%.2f transcribe_ms=%d stop_to_paste_ms=%d target=%s pasted=%s reason=%s",
                  len(res.text), res.lang, len(audio) / SR, res.ms, stop_to_paste, dr.target_exe, dr.pasted, dr.reason)
         self._history(res, audio, dr)

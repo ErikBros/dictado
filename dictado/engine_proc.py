@@ -81,12 +81,15 @@ def serve(engine, inp, out) -> None:
             return  # the app closed our stdin (it quit, or retired us)
         req = json.loads(head)
         n, words = req["n"], req.get("words")
+        kw = {k: req[k] for k in ("lang", "prefer") if req.get(k)}  # dictation-languages
         raw = _recv(inp)
         if raw is None:
             return
         audio = np.frombuffer(raw, dtype=np.float32, count=n)
         try:
-            r = engine.transcribe(audio, words=words) if words else engine.transcribe(audio)
+            if words:
+                kw["words"] = words
+            r = engine.transcribe(audio, **kw)
             reply = {"text": r.text, "lang": r.lang, "speech_s": r.speech_s, "ms": r.ms,
                      "device": engine.device, "fallback": engine.fallback_reason}
         except Exception as e:
@@ -207,7 +210,7 @@ class EngineProxy:
         except Exception:
             log.exception("could not start the engine worker")
 
-    def _ask(self, w: _Worker, audio: np.ndarray, timeout: float, words=None) -> dict | None:
+    def _ask(self, w: _Worker, audio: np.ndarray, timeout: float, words=None, extra=None) -> dict | None:
         if not w.ready.wait(self.ready_timeout_s) or not w.alive() and w.replies.empty():
             return None
         if w.info.get("device"):
@@ -216,7 +219,7 @@ class EngineProxy:
 
         def send():  # a worker that stopped reading would block this write forever
             try:
-                head = {"n": len(audio), **({"words": list(words)} if words else {})}
+                head = {"n": len(audio), **({"words": list(words)} if words else {}), **(extra or {})}
                 _send(w.proc.stdin, json.dumps(head, ensure_ascii=False).encode())
                 _send(w.proc.stdin, np.ascontiguousarray(audio, np.float32).tobytes())
                 sent.set()
@@ -232,13 +235,13 @@ class EngineProxy:
         except queue.Empty:
             return None
 
-    def transcribe(self, audio: np.ndarray, words=None) -> Result:
+    def transcribe(self, audio: np.ndarray, words=None, lang: str | None = None, prefer: str | None = None) -> Result:
         audio = np.asarray(audio, np.float32)
         timeout = self.reply_timeout_s or max(30.0, 3 * len(audio) / SR)
         with self._lock:
             for attempt in (1, 2):
                 w = self._ensure()
-                reply = self._ask(w, audio, timeout, words)
+                reply = self._ask(w, audio, timeout, words, {k: v for k, v in (("lang", lang), ("prefer", prefer)) if v})
                 if reply is not None and "error" not in reply:
                     self._last = self.clock()
                     self.device, self.fallback_reason = reply.get("device", self.device), reply.get("fallback")

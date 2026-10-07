@@ -251,12 +251,12 @@ def test_combo_shortcuts(api):
     assert api.get_settings()["values"]["hotkey_label"] == "Ctrl+Shift+D"
 
 
-def test_swedish_is_a_dictation_language_on_its_own(tmp_path):
-    """t0u.24: Swedish alone is allowed; Swedish mixed with others is not (one model per language set)."""
+def test_any_mix_of_dictation_languages(tmp_path):
+    """dictado-bvf: tick any mix of English, Spanish, Swedish, Greek (was: Swedish only alone)."""
     from dictado.window import Api, LANGUAGES
     cfg = tmp_path / "config.toml"
     api = Api(data_dir=tmp_path, config_path=cfg, signal_reload=lambda: True)
-    assert ("sv", "Swedish") in LANGUAGES
-    assert api.save_settings({"languages": "sv"})["ok"]
-    assert api.get_settings()["values"]["languages"] == "sv"
-    assert not api.save_settings({"languages": "en,sv"})["ok"]
+    assert [c for c, _ in LANGUAGES] == ["en", "es", "sv", "el"]
+    assert api.save_settings({"languages": "el,sv,en,es"})["ok"]
+    assert api.get_settings()["values"]["languages"] == "en,es,sv,el"
+    assert not api.save_settings({"languages": "fr"})["ok"]

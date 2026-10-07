@@ -58,7 +58,7 @@
         </div>
         <div class="hero-facts">
           <div class="fact"><span class="fact-label">Mic</span><span class="fact-value" id="fact-mic">…</span></div>
-          <div class="fact"><label class="fact-label" for="fact-lang">Language</label><select class="fact-value fact-select" id="fact-lang" aria-label="Dictation language"></select></div>
+          <div class="fact"><label class="fact-label" for="fact-lang">Language</label><span class="fact-value" id="fact-lang"></span></div>
           <div class="fact"><span class="fact-label">Engine</span><span class="fact-value" id="fact-engine">…</span></div>
         </div>
       </div>
@@ -208,8 +208,8 @@
         </div>
 
         <div class="card group">
-          <div class="group-head"><h3>Language</h3><p class="muted">With a single language, Dictado is faster.</p></div>
-          <div class="segmented" id="f-languages" role="radiogroup" aria-label="Language"></div>
+          <div class="group-head"><h3>Languages you dictate in</h3><p class="muted">Each dictation, Dictado picks among these by itself, and the pill shows which one it heard. Wrong guess? Hold <kbd id="lang-key">Right Ctrl</kbd> and press <kbd>L</kbd> to choose the next dictation's language (or the tray icon: Next dictation in). With Swedish or Greek ticked, dictation uses the larger model: still under a second, about twice as slow.</p></div>
+          <div class="lang-checks" id="f-languages" role="group" aria-label="Languages you dictate in"></div>
         </div>
 
         <div class="card group">

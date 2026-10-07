@@ -5,7 +5,7 @@
 const $ = (s, el = document) => el.querySelector(s);
 const $$ = (s, el = document) => [...el.querySelectorAll(s)];
 const params = new URLSearchParams(location.search);
-const LANG_LABEL = { en: "English", "en,es": "English and Spanish", es: "Spanish", sv: "Swedish" };
+const LANG_LABEL = { en: "English", "en,es": "English and Spanish", es: "Spanish", sv: "Swedish", el: "Greek" };
 // macOS (WKWebView): ?mac=1 forces it for screenshots. Windows wording stays the default everywhere else.
 const MAC = /Mac/.test(navigator.platform || "") || new URLSearchParams(location.search).get("mac") === "1";
 const HOTKEY_LABEL = { rctrl: MAC ? "Right Control" : "Right Ctrl", scrolllock: "Scroll Lock", pause: "Pause", rcmd: "Right Command", fn: "Fn" };
@@ -23,7 +23,7 @@ function demoApi() {
     options: {
       hotkeys: [{ value: "rctrl", label: "Right Ctrl (recommended)" }, { value: "scrolllock", label: "Scroll Lock" }, { value: "pause", label: "Pause" }, { value: "f13", label: "F13" }],
       mics: [{ value: "", label: DEFAULT_MIC }, { value: "Headset (Zone Vibe 100)", label: "Zone Vibe 100" }, { value: "Anker PowerConf", label: "Anker PowerConf C20" }],
-      languages: [{ value: "en", label: "English" }, { value: "sv", label: "Swedish" }, { value: "es", label: "Spanish" }, { value: "en,es", label: "English and Spanish" }],
+      languages: [{ value: "en", label: "English" }, { value: "es", label: "Spanish" }, { value: "sv", label: "Swedish" }, { value: "el", label: "Greek" }],
       meet_modes: [{ value: "prompt", label: "Ask" }, { value: "auto", label: "Start by itself" }, { value: "off", label: "Don't detect" }],
       meet_langs: [{ value: "sv", label: "Swedish" }, { value: "en", label: "English" }, { value: "es", label: "Spanish" }, { value: "el", label: "Greek" }, { value: "el,es", label: "Greek + Spanish" }, { value: "auto", label: "Detect" }],
     },
@@ -231,29 +231,15 @@ function paintHero(s, state, short, long) {
   const none = state === "stopped" ? "—" : "…";
   $("#fact-mic").textContent = s.mic ? (s.fell_back ? DEFAULT_MIC : prettyMic(s.mic)) : none;
   $("#fact-mic").title = s.mic || "";
-  const fl = $("#fact-lang"), cur = s.languages ? s.languages.join(",") : "";
-  if (document.activeElement !== fl && !fl.dataset.pending) {  // don't fight a choice being made or applied
-    fl.innerHTML = "";
-    const opts = Object.entries(DICT_LANGS);
-    if (cur && !DICT_LANGS[cur]) opts.push([cur, LANG_LABEL[cur] || cur]);  // a hand-edited config.toml
-    if (!cur) opts.unshift(["", none]);
-    for (const [v, l] of opts) { const o = document.createElement("option"); o.value = v; o.textContent = l; fl.append(o); }
-    fl.value = cur;
-  }
-  fl.disabled = state === "stopped" || !cur;
+  const langs = s.languages || [];
+  $("#fact-lang").textContent = !langs.length ? none
+    : langs.length === 1 ? (DICT_LANGS[langs[0]] || langs[0]) : langs.map((l) => l.toUpperCase()).join(" · ") + " (auto)";
+  $("#fact-lang").title = langs.map((l) => DICT_LANGS[l] || l).join(", ");
   $("#fact-engine").textContent = s.device ? (s.device === "cuda" ? "GPU · fast" : "CPU · slow") : none;
 }
 
-// dictation languages (t0u.24): Swedish alone runs on large-v3, so it doesn't mix with the others
-const DICT_LANGS = { en: "English", sv: "Swedish", es: "Spanish", "en,es": "English + Spanish" };
-async function switchDictLang() {
-  const fl = $("#fact-lang"), v = fl.value;
-  fl.dataset.pending = "1";
-  const out = await api.save_settings({ languages: v });
-  if (out.ok) toast(`Dictating in ${DICT_LANGS[v] || v}. Dictado restarts, a few seconds.`);
-  else toast(out.error || "Couldn't change the language.");
-  setTimeout(() => { delete fl.dataset.pending; refreshStatus(); }, 4000);
-}
+// dictation languages (dictado-bvf): any mix, auto-detected among them; set in Settings
+const DICT_LANGS = { en: "English", es: "Spanish", sv: "Swedish", el: "Greek" };
 
 /* ---------------------------------------------------------------- inicio */
 async function crashCard() {  // t0u.37: a crash is never silent
@@ -534,7 +520,6 @@ function rWire() {
   $("#r-start").onclick = rStart;
   $("#r-now-stop").onclick = rStop;
   $("#r-d-stop").onclick = rStop;
-  $("#fact-lang").onchange = switchDictLang;
   $("#r-segs").addEventListener("scroll", () => { if (atBottom($("#r-segs"))) $("#r-jump").hidden = true; });
   $("#r-jump").onclick = () => { const l = $("#r-segs"); l.scrollTop = l.scrollHeight; $("#r-jump").hidden = true; };
   const dl = $("#r-d-lang");
@@ -647,7 +632,7 @@ let saved = null;   // values as last loaded/saved
 function formValues() {
   return {
     hotkey: $("#f-hotkey").value, mic: $("#f-mic").value,
-    languages: $(".seg[aria-checked=true]")?.dataset.value || "en",
+    languages: $$("#f-languages input:checked").map((i) => i.value).join(",") || "en",
     sounds: $("#f-sounds").checked, overlay: $("#f-overlay").checked, unmute: $("#f-unmute").checked, startup: $("#f-startup").checked,
     meet_mode: $("#f-meet-mode").value, meet_lang: $("#f-meet-lang").value, on_demand: $("#f-on-demand").checked,
     speakers: $("#f-speakers").checked, voice_commands: $("#f-voice-commands").checked,
@@ -716,15 +701,15 @@ async function renderSettings() {
   $("#f-speakers-help").textContent = s.speakers_addon
     ? "After a call, the other side is split into Speaker 1, 2, 3… Click a name in a transcript to rename that person."
     : "Needs the speaker add-on (Dictado-Speakers-Setup), which isn't installed.";
-  const seg = $("#f-languages");
-  seg.innerHTML = "";
+  const box = $("#f-languages"), on = new Set(String(s.values.languages || "en").split(","));
+  box.innerHTML = "";
   for (const o of s.options.languages) {
-    const b = document.createElement("button");
-    b.type = "button"; b.className = "seg"; b.role = "radio"; b.dataset.value = o.value; b.textContent = o.label;
-    b.setAttribute("aria-checked", String(o.value === s.values.languages));
-    b.onclick = () => { for (const x of $$(".seg", seg)) x.setAttribute("aria-checked", String(x === b)); dirty(); };
-    seg.append(b);
+    const l = document.createElement("label"); l.className = "lang-check";
+    const i = document.createElement("input"); i.type = "checkbox"; i.value = o.value; i.checked = on.has(o.value);
+    i.onchange = () => { if (!$$("#f-languages input:checked").length) i.checked = true; dirty(); };  // at least one
+    l.append(i, document.createTextNode(o.label)); box.append(l);
   }
+  $("#lang-key").textContent = hotkeyLabel(s.values.hotkey || "rctrl");
   $("#f-sounds").checked = s.values.sounds; $("#f-overlay").checked = s.values.overlay;
   $("#f-unmute").checked = s.values.unmute; $("#f-startup").checked = s.values.startup;
   $("#f-startup").disabled = !s.can_startup;

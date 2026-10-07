@@ -21,6 +21,10 @@ CAPABILITIES: dict[str, dict] = {
         "windows": "dictado.hook:HookThread",
         "macos": "dictado.platform.macos.keyhook:HookThread",
     },
+    "Language key (dictation key + L picks the next language)": {
+        "windows": "dictado.hook:VK_LANG",
+        "macos": ("ticket", "dictado-982"),
+    },
     "Paste text where the cursor is": {
         "windows": "dictado.deliver:deliver,set_clipboard_text",
         "macos": "dictado.platform.macos.deliver:deliver,set_clipboard_text",

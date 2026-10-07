@@ -18,7 +18,8 @@ Built once for both. "Check on Mac" = works in tests, still to be tried for real
 | Dictation: tap or hold, paste, cancel with key + Esc | done | done |
 | Pill with timer, level and cancel hint | done | done |
 | Window: Home, History, Meetings, Settings | done | done |
-| Dictation languages: English, Swedish, Spanish, English + Spanish | done | done |
+| Dictation languages: any mix of English, Spanish, Swedish, Greek, auto-detected among them | done | check on Mac (shared code; key: dictado-982) |
+| Pill shows the language it heard, tray "Next dictation in" | done | check on Mac |
 | Your words (spelling list) | done | done |
 | Snippets | done | done |
 | Voice commands + full list in Settings | done | check on Mac (dictado-tjn) |
@@ -36,6 +37,7 @@ Built once for both. "Check on Mac" = works in tests, still to be tried for real
 | Capability | Windows | macOS |
 |---|---|---|
 | Hotkey (tap / hold / combo, Esc cancel) | done (low-level keyboard hook) | done (CGEventTap, Right Command) |
+| Language key (dictation key + L picks the next language) | done (Right Ctrl + L, swallowed) | ticket dictado-982 |
 | Paste text where the cursor is | done (clipboard + Ctrl+V) | done (NSPasteboard + Cmd+V) |
 | Names on your screen | done (UI Automation, one COM thread) | done (Accessibility API) |
 | Speech engine on the GPU | done (faster-whisper, CUDA) | done (mlx-whisper, Metal) |

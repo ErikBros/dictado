@@ -355,8 +355,10 @@ def main(argv=None) -> int:
             log.info("dictation language -> %s from the tray", code)
             ipc.signal_reload(ipc.RELOAD_EVENT + ("-test" if args.test else ""))
         ui.tray = Tray(lambda: app, log_path, quit_app, open_window=lambda: ipc.open_ui(),
-                       dict_langs=[(c, n.replace(" and ", " + ")) for c, n in LANGUAGES],
-                       dict_lang=lambda: ",".join(cfg.whisper.languages), set_dict_lang=set_dict_lang, **meet_kw)
+                       dict_langs=[("", "Auto")] + [(c, n) for c, n in LANGUAGES if c in cfg.whisper.languages]
+                       if len(cfg.whisper.languages) > 1 else None,
+                       dict_lang=lambda: app.next_lang or "", set_dict_lang=lambda c: app.set_next_language(c),
+                       **meet_kw)
 
     def restart():
         """Settings were saved: come back with the new config (a clean re-exec)."""

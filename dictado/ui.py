@@ -373,7 +373,7 @@ class Tray:
             def dict_item(code, name):
                 return pystray.MenuItem(name, lambda: set_dict_lang(code),
                                         checked=lambda _i: dict_lang() == code, radio=True)
-            dict_items = [pystray.MenuItem("Dictation language", pystray.Menu(*[dict_item(c, n) for c, n in dict_langs]))]
+            dict_items = [pystray.MenuItem("Next dictation in", pystray.Menu(*[dict_item(c, n) for c, n in dict_langs]))]
         menu = pystray.Menu(
             pystray.MenuItem("Open Dictado", lambda: open_window and open_window(), default=True),
             pystray.Menu.SEPARATOR,

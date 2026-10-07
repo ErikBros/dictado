@@ -25,7 +25,7 @@ HOTKEYS = [("rctrl", "Right Ctrl (recommended)"), ("scrolllock", "Scroll Lock"),
 if sys.platform == "darwin":  # a MacBook has no Right Ctrl (decision D2: Right Command)
     HOTKEYS = [("rcmd", "Right Command (recommended)"), ("fn", "Fn / Globe"),
                ("rctrl", "Right Control (external keyboard)")] + [(f"f{n}", f"F{n}") for n in range(13, 20)]
-LANGUAGES = [("en", "English"), ("sv", "Swedish"), ("es", "Spanish"), ("en,es", "English and Spanish")]
+LANGUAGES = [("en", "English"), ("es", "Spanish"), ("sv", "Swedish"), ("el", "Greek")]  # tick any mix
 MEET_MODES = [("prompt", "Ask"), ("auto", "Start by itself"), ("off", "Don't detect")]
 MEET_LANGS = [("sv", "Swedish"), ("en", "English"), ("es", "Spanish"), ("el", "Greek"), ("el,es", "Greek + Spanish"), ("auto", "Detect")]
 
@@ -37,12 +37,16 @@ def _voice_command_list() -> list[dict]:
             for _, what, langs in VOICE_COMMANDS]
 
 
+DICT_LANGS = [("en", "English"), ("es", "Spanish"), ("sv", "Swedish"), ("el", "Greek")]
+
+
 def parse_languages(value) -> list[str]:
-    """'en,es' -> ['en', 'es']. Swedish only on its own: it runs on its own model (t0u.24)."""
-    langs = [x for x in str(value).split(",") if x]
-    if not langs or any(x not in ("en", "es", "sv") for x in langs) or ("sv" in langs and langs != ["sv"]):
+    """'sv,en' -> ['en', 'sv']: any mix of the dictation languages, in a fixed order
+    (dictation-languages; Swedish or Greek in the mix moves dictation to large-v3)."""
+    got = {x.strip() for x in str(value).split(",") if x.strip()}
+    if not got or got - {c for c, _ in DICT_LANGS}:
         raise ValueError("languages")
-    return langs
+    return [c for c, _ in DICT_LANGS if c in got]
 
 
 def save_dictation_languages(config_path: Path, value) -> list[str]:

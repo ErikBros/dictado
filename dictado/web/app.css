@@ -318,3 +318,11 @@ select:hover { border-color: #d6d2c6; }
 .vc-table { width: 100%; border-collapse: collapse; margin: 8px 0; font-size: 13px; }
 .vc-table th { text-align: left; font-weight: 600; color: var(--ink-soft, #5b6470); padding: 6px 8px; border-bottom: 1px solid var(--line); }
 .vc-table td { padding: 6px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+
+/* dictation-languages: tick any mix */
+.lang-checks { display: flex; flex-wrap: wrap; gap: 8px; }
+.lang-check { display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; border: 1px solid var(--line);
+  border-radius: var(--radius-sm); background: var(--card); cursor: pointer; font-weight: 500; }
+.lang-check:has(input:checked) { border-color: var(--aegean); background: var(--aegean-soft); }
+.lang-check input { accent-color: var(--aegean); margin: 0; }
+kbd { font: inherit; font-size: 12px; padding: 1px 6px; border: 1px solid var(--line); border-radius: 4px; background: var(--card); }
