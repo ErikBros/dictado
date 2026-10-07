@@ -8,6 +8,10 @@ Everything is worked out here, on this computer, from the dictation history (his
 - Coach me (9jc.2): your recent dictations to people (messages, email; not prompts to AI apps) as one
   prompt asking Claude for your recurring patterns, before -> after rewrites of your own sentences
   and one habit to try. The text leaves the computer only when you paste it.
+- Fillers and hedges (9jc.3): per 100 words in your messages to people, week by week, and (opt-in) a
+  short note on the pill right after such a message: immediate feedback cuts fillers without making
+  people anxious. Neutral on purpose: fillers are normal discourse markers in speech; in writing to
+  someone, hedges ("maybe", "I think", "kind of") can read as unsure.
 """
 from __future__ import annotations
 
@@ -20,6 +24,22 @@ UNSURE_P = 0.5  # under this, a word it struggled with
 MIN_WORDS = 3  # fewer words say nothing about clarity
 MAX_UNSURE = 20  # per dictation
 WEEKS = 8
+# "like" only as a filler: not "I'd like", "would like", "looks like", "I like it", "I feel like" (a hedge)
+LIKE = r"(?<!would )(?<!'d )(?<!’d )(?<!i )(?<!you )(?<!we )(?<!they )(?<!looks )(?<!look )(?<!feels )(?<!feel )(?<!don't )(?<!to )like"
+FILLERS = {
+    "en": [LIKE, "actually", "basically", "you know", "i mean", "literally", "right?", "yeah yeah"],
+    "es": ["o sea", "bueno", "pues", "en plan", "vale", "sabes", "¿vale?", "tipo", "digamos"],
+    "sv": ["typ", "liksom", "alltså", "asså", "ju", "ba", "va"],
+    "el": ["λοιπόν", "δηλαδή", "ας πούμε", "ξέρεις", "καλά", "βασικά"],
+}
+HEDGES = {
+    "en": ["kind of", "sort of", "maybe", "i think", "i guess", "i don't know", "perhaps", "probably", "i feel like",
+           "i suppose", "a little bit"],
+    "es": ["creo que", "a lo mejor", "quizás", "quizá", "tal vez", "no sé", "más o menos", "supongo", "un poco"],
+    "sv": ["kanske", "jag tror", "jag vet inte", "på något sätt", "ungefär", "antagligen", "lite grann"],
+    "el": ["ίσως", "νομίζω", "μάλλον", "δεν ξέρω", "κάπως", "λίγο πολύ", "πιθανόν"],
+}
+MIN_WEEK_WORDS = 50  # a week with fewer words to people says nothing
 WORD = re.compile(r"[^\W\d_][\w'’-]*", re.UNICODE)
 
 
@@ -180,3 +200,66 @@ def coach_prompt(rows: list[dict], now: datetime | None = None, max_words: int =
         app = str(r.get("target") or "").removesuffix(".exe")
         lines.append(f"- [{t.strftime('%a %H:%M') if t else ''}{', ' + app if app else ''}] {r['text'].strip()}")
     return "\n".join(lines) + "\n"
+
+
+def count(text: str, phrases: list[str]) -> dict[str, int]:
+    """{phrase: times} in lowercase `text`, whole words only ("like" only as a filler)."""
+    out = {}
+    for f in dict.fromkeys(phrases):
+        pat = f if f == LIKE else re.escape(f)
+        out["like" if f == LIKE else f] = len(re.findall(r"(?<!\w)" + pat + r"(?!\w)", text))
+    return out
+
+
+def markers(text: str, lang: str | None) -> dict:
+    """{"fillers": {word: n}, "hedges": {word: n}} said in one text; a mix ("es+sv") uses each language's lists."""
+    low = (text or "").lower()
+    langs = str(lang or "").split("+")
+    out = {}
+    for kind, lists in (("fillers", FILLERS), ("hedges", HEDGES)):
+        phrases = [p for code in langs for p in lists.get(code, [])]
+        out[kind] = {w: k for w, k in count(low, phrases).items() if k}
+    return out
+
+
+def pill_note(m: dict, top: int = 3) -> str | None:
+    """The pill's note after a message to a person: "like ×3 · i think · maybe", or None."""
+    both = Counter({**m.get("fillers", {}), **m.get("hedges", {})})
+    if not both:
+        return None
+    return " · ".join(f"{w} ×{k}" if k > 1 else w for w, k in both.most_common(top))
+
+
+def markers_summary(rows: list[dict], now: datetime | None = None, top: int = 5) -> dict:
+    """Fillers and hedges per 100 words in dictations to people: over `rows`, per week (8 weeks, oldest
+    first, None for a week under MIN_WEEK_WORDS) and the most used of each."""
+    now = now or datetime.now()
+    people = [r for r in rows if row_audience(r) == "people" and str(r.get("text", "")).strip()]
+    if not people:
+        return {"words": 0}
+
+    def tally(rs):
+        n, f, h = 0, Counter(), Counter()
+        for r in rs:
+            n += len(WORD.findall(r["text"]))
+            m = markers(r["text"], r.get("lang"))
+            f.update(m["fillers"])
+            h.update(m["hedges"])
+        return n, f, h
+
+    def per_100(k, n):
+        return round(100 * k / n, 1) if n else 0
+    n, f, h = tally(people)
+    this_week = now.date() - timedelta(days=now.weekday())
+    weeks = []
+    for i in range(WEEKS - 1, -1, -1):
+        start = this_week - timedelta(weeks=i)
+        wn, wf, wh = tally([r for r in people if (t := _ts(r)) and start <= t.date() < start + timedelta(weeks=1)])
+        ok = wn >= MIN_WEEK_WORDS
+        weeks.append({"week": start.isoformat(), "words": wn,
+                      "fillers_per_100": per_100(sum(wf.values()), wn) if ok else None,
+                      "hedges_per_100": per_100(sum(wh.values()), wn) if ok else None})
+    return {"words": n, "dictations": len(people), "fillers_per_100": per_100(sum(f.values()), n),
+            "hedges_per_100": per_100(sum(h.values()), n), "weeks": weeks,
+            "top_fillers": [{"word": w, "count": k} for w, k in f.most_common(top)],
+            "top_hedges": [{"word": w, "count": k} for w, k in h.most_common(top)]}

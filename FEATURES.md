@@ -32,6 +32,7 @@ Built once for both. "Check on Mac" = works in tests, still to be tried for real
 | Dictation recovered after a crash | done | done (real crash mid-dictation: back in History, not pasted) |
 | Home crash card, Settings > Troubleshooting | done | done (real SIGSEGV of the installed app: report, restart, card) |
 | Call detection tried on real calls | done | needs real calls (dictado-nhn) |
+| Insights: filler words and hedges in messages to people (per 100 words, weekly), optional note on the pill after such a message | done | done (pill note: check on Mac, dictado-9jc.7) |
 | Insights: Coach me (recent messages and emails to people, not AI prompts, as one prompt for Claude) | done | done (people / AI split: check on Mac, dictado-9jc.7) |
 | Insights: how clearly you speak (share of words heard clearly per week, words it wasn't sure of per language) | done | needs word confidence (dictado-9jc.6) |
 

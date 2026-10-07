@@ -83,6 +83,7 @@ class UiCfg:
     overlay: bool = True
     live_text: bool = True  # dictado-live: the pill shows what it has heard so far while you dictate
     insights: bool = False  # dictado-3je: the Insights tab (what your dictations say about how you talk)
+    speech_feedback: bool = False  # dictado-9jc.3: the pill notes fillers and hedges after a message to a person
     sounds: bool = True
     debug_log: bool = False  # t0u.37: Settings > Troubleshooting > Detailed logging (DEBUG level)
 

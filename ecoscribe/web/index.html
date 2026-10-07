@@ -193,6 +193,18 @@
           <div class="i-sub">Phrases you repeat</div>
           <div class="i-chips" id="i-phrases"></div>
         </div>
+        <div class="card i-card" id="i-markers-card">
+          <div class="card-title">In your messages to people</div>
+          <p class="muted small" id="i-markers-empty">Fills as you dictate messages and emails to people (not prompts to AI apps).</p>
+          <div id="i-markers-body">
+            <div class="i-habit"><span class="i-habit-num" id="i-hedges">0</span><span class="muted">hedges per 100 words</span>
+              <span class="i-habit-num" id="i-fillers">0</span><span class="muted">filler words per 100</span></div>
+            <div class="i-chart" id="i-markers-weeks" data-label="Hedges and filler words per 100 words, per week"></div>
+            <div class="i-sub">Hedges you use most</div>
+            <div class="i-chips" id="i-top-hedges"></div>
+            <p class="muted small">Filler words are normal in speech. In a message, hedges ("maybe", "I think", "kind of") can read as unsure: say it straight when you mean it.</p>
+          </div>
+        </div>
         <div class="card i-card" id="i-clarity-card">
           <div class="card-title">How clearly you speak</div>
           <p class="muted small" id="i-clarity-empty">Fills from your next dictations on: after each one, Ecoscribe takes a second look at how sure it was of every word.</p>
@@ -341,6 +353,8 @@
             <input type="checkbox" class="switch" name="live_text" id="f-live-text"></label>
           <label class="row toggle-row"><span class="row-text"><span class="row-label">Insights tab</span><span class="muted small">A tab with what your dictations say: time saved, when and where you talk, your languages, filler words, names to add. Worked out on this computer.</span></span>
             <input type="checkbox" class="switch" name="insights" id="f-insights"></label>
+          <label class="row toggle-row"><span class="row-text"><span class="row-label">Note filler words after a message</span><span class="muted small">Right after you dictate a message or an email to someone, the pill shows the filler words and hedges you used ("like ×3 · maybe"). Never after prompts to AI apps.</span></span>
+            <input type="checkbox" class="switch" name="speech_feedback" id="f-speech-feedback"></label>
           <label class="row toggle-row" id="row-startup"><span class="row-text"><span class="row-label">Start with Windows</span><span class="muted small" id="startup-hint">Ecoscribe starts by itself when you sign in.</span></span>
             <input type="checkbox" class="switch" name="startup" id="f-startup"></label>
         </div>

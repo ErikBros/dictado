@@ -402,3 +402,25 @@ def test_who_it_was_for_is_saved_but_never_the_window_title(tmp_path):
     line = (tmp_path / "h.jsonl").read_text(encoding="utf-8")
     assert json.loads(line)["to"] == "people" and "Invented subject" not in line
     app.shutdown()
+
+
+def test_the_pill_notes_fillers_and_hedges_after_a_message_to_a_person_when_switched_on(tmp_path):
+    """dictado-9jc.3: opt-in, only to people, neutral; off by default."""
+    class Hedgy(FakeEngine):
+        def transcribe(self, audio):
+            return Result(text="Like, I think maybe we go. ", lang="en", speech_s=1.0, ms=5)
+
+    def run(on, target):
+        ui = FakeUi()
+        cfg = Config()
+        cfg.ui.speech_feedback = on
+        app = App(cfg, FakeRecorder(), Hedgy(), lambda t: DeliveryResult(True, target, "ok"), ui,
+                  history_path=tmp_path / f"{on}{target}.jsonl", window_title=lambda: "")
+        app.start()
+        app.on_action("toggle"); app.on_action("toggle")
+        assert wait(lambda: (tmp_path / f"{on}{target}.jsonl").exists())
+        app.shutdown()
+        return [e for e in ui.events if e[0] == "flash"]
+
+    assert ("flash", "like · maybe · i think", 2.5) in run(True, "slack.exe")
+    assert run(False, "slack.exe") == [] and run(True, "claude.exe") == []

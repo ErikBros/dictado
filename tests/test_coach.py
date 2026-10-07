@@ -110,3 +110,40 @@ def test_coach_me_copies_the_prompt_or_says_there_is_nothing(tmp_path, monkeypat
     (tmp_path / "history.jsonl").write_text("".join(_json.dumps(r) + "\n" for r in rows), encoding="utf-8")
     r = api.coach_me()
     assert r["ok"] and "station at six" in copied[0] and "Summarise this file" not in copied[0]
+
+
+def test_fillers_and_hedges_are_counted_apart_per_language():
+    m = coach.markers("So, like, I think we could maybe, kind of, move it. I'd like that. You know?", "en")
+    assert m["fillers"] == {"like": 1, "you know": 1}  # not "I'd like"
+    assert m["hedges"] == {"i think": 1, "maybe": 1, "kind of": 1}
+    m = coach.markers("Bueno, creo que a lo mejor llego tarde. Kanske imorgon.", "es+sv")
+    assert m["fillers"] == {"bueno": 1} and m["hedges"] == {"creo que": 1, "a lo mejor": 1, "kanske": 1}
+    assert coach.markers("Plain sentence.", "de") == {"fillers": {}, "hedges": {}}
+
+
+def test_the_pill_note_is_short_neutral_and_only_when_there_is_something():
+    assert coach.pill_note(coach.markers("Like, I think, like, maybe. Like.", "en")) == "like ×3 · maybe · i think"
+    assert coach.pill_note(coach.markers("All set for Friday.", "en")) is None
+
+
+def test_markers_trend_is_for_messages_to_people_per_week():
+    rows = [
+        {"ts": "2026-09-29T10:00:00", "text": "I think maybe we should go. " * 10, "lang": "en", "to": "people"},
+        {"ts": "2026-10-06T10:00:00", "text": "We should go at noon today, see you there. " * 10, "lang": "en", "to": "people"},
+        {"ts": "2026-10-06T11:00:00", "text": "Like, basically, refactor it, you know. " * 10, "lang": "en", "to": "ai"},
+    ]
+    s = coach.markers_summary(rows, NOW)
+    assert s["words"] == 60 + 90 and s["dictations"] == 2
+    assert s["hedges_per_100"] == round(100 * 20 / 150, 1) and s["fillers_per_100"] == 0
+    assert s["weeks"][-2]["hedges_per_100"] == round(100 * 20 / 60, 1) and s["weeks"][-1]["hedges_per_100"] == 0
+    assert s["weeks"][0]["hedges_per_100"] is None
+    assert s["top_hedges"] == [{"word": "maybe", "count": 10}, {"word": "i think", "count": 10}]
+    assert coach.markers_summary(rows[2:], NOW) == {"words": 0}
+
+
+def test_the_pill_note_setting_round_trips_and_is_off_by_default(tmp_path):
+    from ecoscribe.window import Api
+    api = Api(data_dir=tmp_path, config_path=tmp_path / "config.toml", signal_reload=lambda: True)
+    assert api.get_settings()["values"]["speech_feedback"] is False
+    assert api.save_settings({"speech_feedback": True})["ok"]
+    assert api.get_settings()["values"]["speech_feedback"] is True

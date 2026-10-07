@@ -376,7 +376,10 @@ class App:
         self.last_text = res.text
         if res.lang and "+" not in res.lang:  # a mixed one ("es+el") says nothing about the next
             self.last_lang = res.lang
-        if multi and dr.pasted:  # which language it heard, for a second
+        note = self._speech_note(res, to) if dr.pasted else None
+        if note:  # dictado-9jc.3: fillers and hedges in a message to a person (opt-in)
+            self.ui.flash(f"✓ {str(res.lang).upper()} · {note}" if multi else note, 2.5)
+        elif multi and dr.pasted:  # which language it heard, for a second
             self.ui.flash(f"✓ {str(res.lang).upper()}", 1.2)
         dropout_s = dropout_seconds(audio)
         log.info("delivered chars=%d lang=%s audio_s=%.2f speech_s=%.2f dropout_s=%.2f transcribe_ms=%d "
@@ -387,6 +390,12 @@ class App:
         if not dr.pasted:
             self.ui.flash(NOT_PASTED.get(dr.reason, f"Copied: paste with {PASTE_KEYS}"), 4.0 if dr.reason == "no_text_box" else 2.0)
         return res, audio, dr, words, to
+
+    def _speech_note(self, res, to: str) -> str | None:
+        if to != "people" or not getattr(self.cfg.ui, "speech_feedback", False):
+            return None
+        from .coach import markers, pill_note
+        return pill_note(markers(res.text, res.lang))
 
     def _audience(self, target) -> str:
         """dictado-9jc.2: people / ai / other, from the app and (in a browser) the tab's title, read once
