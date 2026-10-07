@@ -161,3 +161,18 @@ def _swallow(fn, *a):
         fn(*a)
     except Exception:
         pass
+
+
+def test_preview_skips_until_the_worker_is_ready_then_round_trips():
+    """dictado-live: a preview never starts or waits for the worker; once it's up it answers."""
+    spawn, procs = spawner("slow_ready")
+    e = proxy(spawn)
+    assert e.preview(audio()) is None and procs == []  # nothing running: not spawned for a preview
+    e.warm()
+    assert e.preview(audio()) is None  # still loading: skipped at once
+    r = e.transcribe(audio(32000))
+    assert r.text.endswith("n32000")
+    p = e.preview(audio(16000), lang="es")
+    assert p.text == "preview n16000" and p.lang == "es"
+    assert e.transcribe(audio(8000)).text.endswith("n8000")  # replies stay paired
+    e.close()

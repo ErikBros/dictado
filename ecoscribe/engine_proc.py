@@ -89,7 +89,13 @@ def serve(engine, inp, out) -> None:
         try:
             if words:
                 kw["words"] = words
-            r = engine.transcribe(audio, **kw)
+            if req.get("preview"):  # the live transcript's quick pass: may be skipped (dictado-live)
+                r = engine.preview(audio, **{k: v for k, v in kw.items() if k != "words"})
+                if r is None:
+                    _send(out, json.dumps({"skipped": True}).encode())
+                    continue
+            else:
+                r = engine.transcribe(audio, **kw)
             reply = {"text": r.text, "lang": r.lang, "speech_s": r.speech_s, "ms": r.ms,
                      "device": engine.device, "fallback": engine.fallback_reason}
         except Exception as e:
@@ -252,6 +258,32 @@ class EngineProxy:
                     if self._w is w:
                         self._w = None
             raise RuntimeError("engine worker failed twice")
+
+    def preview(self, audio: np.ndarray, lang: str | None = None, prefer: str | None = None) -> Result | None:
+        """The live transcript's quick pass (dictado-live). None, without waiting, while the worker
+        is still loading or a dictation holds it: the paste never waits for a preview."""
+        w = self._w
+        if w is None or not w.ready.is_set() or not self._lock.acquire(blocking=False):
+            return None
+        try:
+            if self._w is not w or not w.alive():
+                return None
+            audio = np.asarray(audio, np.float32)
+            reply = self._ask(w, audio, 10.0, None, {"preview": True,
+                                                     **{k: v for k, v in (("lang", lang), ("prefer", prefer)) if v}})
+            if reply is None:  # no answer: a late one would be read as the next dictation's
+                log.error("engine worker gave no answer to a preview: restarting it")
+                w.kill()
+                with self._spawn_lock:
+                    if self._w is w:
+                        self._w = None
+                return None
+            if "error" in reply or reply.get("skipped"):
+                return None
+            self._last = self.clock()
+            return Result(text=reply["text"], lang=reply["lang"], speech_s=reply["speech_s"], ms=reply["ms"])
+        finally:
+            self._lock.release()
 
     def check_idle(self) -> None:
         if not self._lock.acquire(blocking=False):

@@ -37,6 +37,10 @@ class FakeEngine:
         return Result(text=f"pid{os.getpid()} n{len(audio)}{tail}", lang="en", speech_s=len(audio) / 16000, ms=5)
 
 
+    def preview(self, audio, lang=None, prefer=None):
+        return Result(text=f"preview n{len(audio)}", lang=lang or "en", speech_s=len(audio) / 16000, ms=1)
+
+
 e = FakeEngine()
 e.load()
 engine_proc.serve(e, *engine_proc.std_pipes())

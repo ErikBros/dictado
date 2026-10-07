@@ -71,6 +71,7 @@ class Engine:
         self.device = cfg.device
         self.fallback_reason: str | None = None
         self._load_lock = threading.Lock()
+        self._busy = threading.Lock()  # a dictation waits for a preview pass; a preview never waits
         # Never free a model: destroying one after a long (>30 s) transcription throws
         # an uncaught C++ exception in CTranslate2 and aborts the process (2026-10-02).
         self._retired: list = []
@@ -111,17 +112,34 @@ class Engine:
         """`words`: extra names for this dictation only (from the screen), after Your words."""
         t0 = time.perf_counter()
         audio = np.asarray(audio, dtype=np.float32)
-        try:
-            text, lang, speech_s = self._run(audio, words, lang, prefer)
-        except Exception as e:
-            if not _is_gpu_error(e):
-                raise
-            log.error("whisper failed at runtime (%s: %s); reloading and retrying", type(e).__name__, e)
-            self.load()
-            text, lang, speech_s = self._run(audio, words, lang, prefer)
+        with self._busy:
+            try:
+                text, lang, speech_s = self._run(audio, words, lang, prefer)
+            except Exception as e:
+                if not _is_gpu_error(e):
+                    raise
+                log.error("whisper failed at runtime (%s: %s); reloading and retrying", type(e).__name__, e)
+                self.load()
+                text, lang, speech_s = self._run(audio, words, lang, prefer)
         return Result(text=text, lang=lang, speech_s=speech_s, ms=int((time.perf_counter() - t0) * 1000))
 
-    def _run(self, audio: np.ndarray, words=None, forced: str | None = None, prefer: str | None = None):
+    def preview(self, audio: np.ndarray, lang: str | None = None, prefer: str | None = None) -> Result | None:
+        """The live transcript's quick pass (dictado-live): greedy, no screen names. None when the
+        model is loading or a dictation is being transcribed: the preview never makes it wait."""
+        if self.model is None or not self._busy.acquire(blocking=False):
+            return None
+        t0 = time.perf_counter()
+        try:
+            text, lang, speech_s = self._run(np.asarray(audio, dtype=np.float32), None, lang, prefer, beam_size=1)
+        except Exception:
+            log.debug("preview pass failed", exc_info=True)
+            return None
+        finally:
+            self._busy.release()
+        return Result(text=text, lang=lang, speech_s=speech_s, ms=int((time.perf_counter() - t0) * 1000))
+
+    def _run(self, audio: np.ndarray, words=None, forced: str | None = None, prefer: str | None = None,
+             beam_size: int | None = None):
         if forced:
             lang = forced  # the user chose this dictation's language (dictation key + L)
         elif len(self.cfg.languages) == 1:
@@ -135,7 +153,7 @@ class Engine:
                     raise
                 lang = self.cfg.languages[0]  # no speech for detection to look at
         segments, info = self.model.transcribe(
-            audio, language=lang, beam_size=self.cfg.beam_size, vad_filter=True,
+            audio, language=lang, beam_size=beam_size or self.cfg.beam_size, vad_filter=True,
             vad_parameters={"min_silence_duration_ms": 500}, condition_on_previous_text=False,
             without_timestamps=True, initial_prompt=vocab_prompt([*self.text_cfg.vocabulary, *(words or [])]))
         segments = list(segments)
