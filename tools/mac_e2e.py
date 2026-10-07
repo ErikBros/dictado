@@ -5,13 +5,15 @@ mic, taps Right Command with tagged synthetic events, and checks what lands in t
 Never while the user works: waits for 45 s of idle (HIDIdleTime) and aborts (exit 3) on any real key or
 click during the run (a listen-only tap counts events without Ecoscribe's tag).
 
-    .venv/bin/python tools/mac_e2e.py [--scenario basic|voice|recover|langkey|all]
+    .venv/bin/python tools/mac_e2e.py [--scenario basic|voice|recover|langkey|added|all]
 
 voice: a clip made with macOS `say` ("... new line ... send it"): a real line break in the middle and
 Enter pressed at the end. recover: the app is crashed (SIGSEGV) mid-dictation and started again on
 the same data folder: what was said must come back in History as recovered, never pasted.
 langkey: Right Command + L twice -> the next dictation's language goes auto -> English -> Spanish, and
 no "l" reaches the window.
+added: languages added in Settings (German, Finnish: dictado-tjn): clips spoken by `say` in each, the app
+restarted with English + German + Finnish ticked; Finnish in the set puts dictation on large-v3.
 """
 from __future__ import annotations
 
@@ -238,6 +240,37 @@ def scenario_langkey(r: Run) -> dict:
     return {"picks": picks, "no_l_typed": r.text() == before}
 
 
+ADDED = {"de": ("Anna", "Morgen fahren wir mit dem Zug nach Berlin und besuchen meine Schwester."),
+         "fi": ("Eddy (Finnish (Finland))", "Huomenna menemme junalla Helsinkiin ja tapaamme ystäviä.")}
+
+
+def scenario_added(r: Run) -> dict:
+    (r.data / "config.toml").write_text('[whisper]\nlanguages = ["en", "de", "fi"]\nextra_languages = ["de", "fi"]\n',
+                                        encoding="utf-8")
+    r.app.terminate()
+    r.app.wait(10)
+    r.start_app()
+    out = {}
+    for code, (voice, said) in ADDED.items():
+        clip = f"say_{code}.wav"
+        subprocess.run(["say", "-v", voice, "-o", str(r.clips / clip), "--file-format=WAVE",
+                        "--data-format=LEI16@16000", said], check=True)
+        r.use(clip)
+        before = r.text()
+        tap_rcmd()
+        time.sleep((r.clips / clip).stat().st_size / 32000 + 0.6)
+        tap_rcmd()
+        end = time.monotonic() + 30  # the first one loads large-v3
+        while time.monotonic() < end and r.text() == before:
+            time.sleep(0.1)
+        got = r.text()[len(before):]
+        out[code] = {"got": got, "recall": round(recall(got, said), 2)}
+        time.sleep(1.5)
+    m = re.findall(r"ready \S+ model=(\S+)", r._log())
+    out["dictation_model"] = m[-1] if m else None
+    return out
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--scenario", default="basic")
@@ -267,6 +300,8 @@ def main() -> int:
                 results["recover"] = scenario_recover(r)
             elif sc == "langkey":
                 results["langkey"] = scenario_langkey(r)
+            elif sc == "added":
+                results["added"] = scenario_added(r)
             time.sleep(1.5)
     finally:
         r.stop()
@@ -283,6 +318,10 @@ def main() -> int:
     if "langkey" in results:
         v = results["langkey"]
         ok = ok and v["picks"] == ["en", "es"] and v["no_l_typed"]
+    if "added" in results:
+        v = results["added"]
+        ok = ok and v["de"]["recall"] >= 0.85 and v["fi"]["recall"] >= 0.85 and "large-v3" in (v["dictation_model"] or "") \
+            and "turbo" not in v["dictation_model"]
     if "recover" in results:
         v = results["recover"]
         ok = ok and v["recovered"] and not v["pasted"] and v["nothing_pasted_into_window"] and v["recall_of_first_half"] >= 0.7
