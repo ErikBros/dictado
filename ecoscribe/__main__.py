@@ -426,12 +426,21 @@ def main(argv=None) -> int:
         def _permissions():
             hook.ready.wait(5)
             from .platform.macos import permissions
-            st = permissions.status()
-            missing = permissions.missing()
-            status.write(status_path, permissions=st, key_tap=bool(hook.ok))
-            if missing:
-                log.warning("missing macOS permissions: %s (key tap ok=%s)", ", ".join(missing), hook.ok)
-                ui.flash("Ecoscribe needs " + " + ".join(missing) + ": see Settings", )
+
+            def changed(st, before):  # first check, then each grant while running (dictado-6qp)
+                status.write(status_path, permissions=st, key_tap=bool(hook.ok))
+                missing = permissions.missing(st=st)
+                if before is None:
+                    if missing:
+                        log.warning("missing macOS permissions: %s (key tap ok=%s)", ", ".join(missing), hook.ok)
+                        ui.flash("Ecoscribe needs " + " + ".join(missing) + ": see Settings", )
+                    return
+                got = [permissions.PANES[k][0] for k, on in st.items() if on and not before.get(k)]
+                log.info("macOS permission granted: %s (still missing: %s)", ", ".join(got) or "-",
+                         ", ".join(missing) or "none")
+                if not hook.ok and st.get("accessibility") and st.get("input"):
+                    ui.flash("Permissions on: quit and reopen Ecoscribe to use the key")  # a key tap starts only at launch
+            permissions.watch(changed)
         threading.Thread(target=_permissions, name="ecoscribe-permissions", daemon=True).start()
 
     # only now: restart() needs the hook to exist

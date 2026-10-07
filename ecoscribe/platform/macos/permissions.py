@@ -34,10 +34,30 @@ def status() -> dict[str, bool]:
     return out
 
 
-def missing(needed=("accessibility", "input", "microphone")) -> list[str]:
+DICTATION = ("accessibility", "input", "microphone")
+
+
+def missing(needed=DICTATION, st: dict | None = None) -> list[str]:
     """Labels of the permissions dictation needs and doesn't have (system audio only matters for meetings)."""
-    st = status()
+    st = status() if st is None else st
     return [PANES[k][0] for k in needed if not st.get(k)]
+
+
+def watch(on_change, interval: float = 15.0, stop=None, check=status) -> None:
+    """Check now, then again every `interval` s while anything is still off, and call
+    on_change(new, old) on every change (old is None the first time). A permission granted
+    while Ecoscribe runs (the mic is asked for at the first dictation) shows up within seconds,
+    not at the next start (dictado-6qp). Returns when everything is on, or when `stop` is set."""
+    import threading
+    stop = stop or threading.Event()
+    last = None
+    while True:
+        st = check()
+        if st != last:
+            on_change(st, last)
+            last = st
+        if all(st.values()) or stop.wait(interval):
+            return
 
 
 def open_pane(key: str) -> None:
