@@ -117,7 +117,9 @@ def test_mixed_dictation_after_a_breath(engine, gap_s):
     half = len(words(r.text)) // 2
     assert recall(" ".join(words(r.text)[:half + 3]), EXPECTED["es_climb"][1]) >= 0.8, r.text
     assert recall(r.text, EXPECTED["en_fox"][1]) >= 0.85, r.text
-    assert r.ms < 2500
+    # dictado-gyt: a piece the quick check is unsure of (< QUICK_SURE) goes the full way; mlx is less sure on
+    # these pieces than CUDA, so more of them do (~3 s on the Mac; sweeps on mlx and CUDA found no cleaner QUICK_SURE)
+    assert r.ms < (3500 if engine.device == "mlx" else 2500), r.ms
 
 
 def test_word_confidence_after_the_paste(engine):
