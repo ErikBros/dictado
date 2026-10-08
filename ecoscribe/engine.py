@@ -25,6 +25,8 @@ SR = 16000
 MIX_PAUSE_MS = 200  # a breath can switch language
 MIX_PAD_MS = 30  # Silero pads 400 ms each side by default: a pause under ~1 s vanished, so a switch after a breath never split (Mac, 2026-10-07: 0/6 at 400 ms, 6/6 at 30 ms for 0.3 s pauses; runs keep a 0.1 s margin)
 QUICK_SURE = 0.95  # a quick answer less sure than this is checked the full way: turbo heard a clean 3 s Spanish piece as English at 0.87 (Windows GPU, 2026-10-07; every wrong quick answer in 967 fixture pieces was under 0.95)
+# On the Mac (mlx, large-v3 and turbo) no Swedish piece was heard as English at >= 0.95 either: the sure
+# "sv heard as en" pieces of an earlier sweep were a Swedish podcast's spoken English intro (dictado-hpc, 2026-10-08)
 MIX_MIN_S = 1.5  # a shorter piece joins the next one: too little to tell the language
 MIX_FROM_S = 3.0  # shorter dictations are one language
 _GPU_ERRORS = ("cuda", "cublas", "cudnn", "out of memory", "metal")  # metal: the Mac GPU
