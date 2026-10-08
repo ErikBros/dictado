@@ -30,7 +30,7 @@ NOT_PASTED = {"clipboard_busy": "Couldn't paste",
 class App:
     LIVE_EVERY_S = 2.0  # dictado-live: one quick pass this often while recording
     def __init__(self, cfg, recorder, engine, deliver_fn, ui, gate=None, history_path: Path | None = None,
-                 press_enter=None, screen=None, spool=None, window_title=None):
+                 press_enter=None, screen=None, spool=None, window_title=None, app_id=None):
         self.cfg = cfg
         self.recorder = recorder
         self.engine = engine
@@ -41,6 +41,7 @@ class App:
         self.press_enter = press_enter or _press_enter
         self.spool = spool  # t0u.37: the recording on disk while it happens, for crash recovery
         self._window_title = window_title  # dictado-9jc.2: None -> ecoscribe.context.foreground_title
+        self._app_id = app_id  # dictado-uee: read with the title (context.foreground_app) unless the title is given
         self._screen_factory = screen  # None: ecoscribe.context.ScreenNames (read lazily, Windows only)
         self._screen = None
         self._live = None  # dictado-live: the pill's live transcript for the recording in progress
@@ -403,9 +404,10 @@ class App:
         from .coach import audience
         try:
             if self._window_title is None:
-                from .context import foreground_title
-                self._window_title = foreground_title
-            return audience(target, self._window_title())
+                from .context import foreground_app, foreground_title
+                self._window_title, self._app_id = foreground_title, self._app_id or foreground_app
+            app = self._app_id() if self._app_id else ""
+            return audience(app or target, self._window_title())
         except Exception:
             log.debug("audience unknown", exc_info=True)
             return audience(target)

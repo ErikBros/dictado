@@ -39,6 +39,30 @@ def foreground_title() -> str:
     return str(title) if title else ""
 
 
+# dictado-uee: localizedName is translated on a non-English macOS (Messages under its own language's name), so
+# coach matches the app by bundle id: these, plus the meeting apps and browsers in detect.BUNDLES
+APP_IDS = {"com.apple.mail": "mail", "com.apple.mobilesms": "messages", "com.microsoft.outlook": "outlook",
+           "com.readdle.smartemail-mac": "spark", "com.anthropic.claudefordesktop": "claude", "com.openai.chat": "chatgpt",
+           "com.apple.terminal": "terminal", "com.googlecode.iterm2": "iterm2", "com.mitchellh.ghostty": "ghostty",
+           "dev.warp.warp-stable": "warp", "com.microsoft.vscode": "code", "dev.zed.zed": "zed"}
+
+
+def app_key(bundle: str) -> str:
+    """The English app name coach knows for a bundle id, or "" (the caller falls back to localizedName)."""
+    from .detect import BUNDLES, app_of_bundle
+    b = (bundle or "").lower()
+    if b in APP_IDS:
+        return APP_IDS[b]
+    return app_of_bundle(b) if any(b.startswith(p) for p in BUNDLES) else ""
+
+
+def foreground_app() -> str:
+    """app_key of the frontmost app (read at the paste, with the window title)."""
+    from AppKit import NSWorkspace
+    app = NSWorkspace.sharedWorkspace().frontmostApplication()
+    return app_key(str(app.bundleIdentifier() or "")) if app is not None else ""
+
+
 def window_texts(max_elems: int = 1500, budget_s: float = 0.25) -> list[str]:
     from AppKit import NSWorkspace
     from ApplicationServices import (AXUIElementCreateApplication, AXUIElementCreateSystemWide,

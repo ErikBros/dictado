@@ -109,6 +109,10 @@ CAPABILITIES: dict[str, dict] = {
         "windows": "ecoscribe.platform.windows.context:foreground_title",  # GetWindowText of the foreground window
         "macos": "ecoscribe.platform.macos.context:foreground_title",  # AXFocusedWindow's AXTitle (desktop check: dictado-9jc.7)
     },
+    "App at the paste by a locale-independent id (people / AI app)": {
+        "windows": ("not_needed", "process names (slack.exe) are the same in every language"),
+        "macos": "ecoscribe.platform.macos.context:foreground_app",  # bundle id -> the English name coach knows (dictado-uee)
+    },
     "Installer": {
         "windows": "file:packaging/windows/ecoscribe.iss",
         "macos": "file:tools/build_mac.py",  # Ecoscribe.app + .dmg, signed so permissions survive updates
