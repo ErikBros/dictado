@@ -404,6 +404,17 @@ def test_who_it_was_for_is_saved_but_never_the_window_title(tmp_path):
     app.shutdown()
 
 
+def test_a_translated_app_name_still_counts_by_its_id(tmp_path):
+    """dictado-uee: the app id read at the paste wins over the target's (translated) name."""
+    app = App(Config(), FakeRecorder(), FakeEngine(), lambda t: DeliveryResult(True, "Meddelanden", "ok"), FakeUi(),
+              history_path=tmp_path / "h.jsonl", window_title=lambda: "", app_id=lambda: "messages")
+    app.start()
+    app.on_action("toggle"); app.on_action("toggle")
+    assert wait(lambda: (tmp_path / "h.jsonl").exists())
+    assert json.loads((tmp_path / "h.jsonl").read_text(encoding="utf-8"))["to"] == "people"
+    app.shutdown()
+
+
 def test_the_pill_notes_fillers_and_hedges_after_a_message_to_a_person_when_switched_on(tmp_path):
     """dictado-9jc.3: opt-in, only to people, neutral; off by default."""
     class Hedgy(FakeEngine):

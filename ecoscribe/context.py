@@ -65,9 +65,10 @@ def names_from_text(texts, limit: int = MAX_NAMES) -> list[str]:
 
 
 if __import__("sys").platform == "darwin":  # Accessibility (ecoscribe/platform/macos/context.py)
-    from .platform.macos.context import foreground_title as _title, window_texts
+    from .platform.macos.context import foreground_app as _app, foreground_title as _title, window_texts
 else:  # UI Automation (ecoscribe/platform/windows/context.py)
     from .platform.windows.context import foreground_title as _title, window_texts
+    _app = None  # process names (slack.exe) aren't translated: the target name is enough
 
 
 def foreground_title() -> str:
@@ -77,6 +78,15 @@ def foreground_title() -> str:
         return str(_title() or "")
     except Exception:
         log.debug("window title unreadable", exc_info=True)
+        return ""
+
+
+def foreground_app() -> str:
+    """dictado-uee: a locale-independent name for the app you dictate into ("" when the target name will do)."""
+    try:
+        return str(_app() or "") if _app else ""
+    except Exception:
+        log.debug("app id unreadable", exc_info=True)
         return ""
 
 

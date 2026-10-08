@@ -65,4 +65,5 @@ Built once for both. "Check on Mac" = works in tests, still to be tried for real
 | Claude app connection (MCP) | done | done (~/Library/Application Support/Claude) |
 | Word confidence for Insights (clarity, words it wasn't sure of) | done (a second pass with word timestamps after the paste, ~0.3 s on the GPU, only with Insights on and nothing waiting) | done (the dictation's own tokens aligned to the audio, ~0.56 s on large-v3-turbo; the first after a load ~1 s) |
 | Window title at the paste (who a dictation was for: people / AI app) | done (GetWindowText; only the label is saved) | done (Accessibility: the focused window's title; desktop check: dictado-9jc.7) |
+| App at the paste by a locale-independent id (people / AI app) | not needed: process names (slack.exe) are the same in every language | done (bundle id, so a translated app name still counts: dictado-uee) |
 | Installer | done (.exe, Inno Setup) | done (Ecoscribe.app + .dmg, com.erikbros.ecoscribe, self-signed: this Mac only; a public build needs a Developer ID) |
