@@ -89,7 +89,8 @@ def test_mouse_click_while_held_makes_it_a_shortcut():
 def test_hold_to_talk_presses_holds_and_releases():
     h, acts = hook(hold=True, hold_s=0.2)
     h.handle("flags", RCMD, CMD_BITS, False)
-    time.sleep(0.35)
+    # dictado-2jy: wait for the consumer to fire the hold; a fixed sleep raced it on the shared CI runner
+    assert settle(acts, 2, 2.0) == ["press", "hold"]
     h.handle("flags", RCMD, 0, False)
     assert settle(acts, 3) == ["press", "hold", "release"]
 
